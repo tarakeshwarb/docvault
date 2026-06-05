@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Plus, CheckCircle2, XCircle } from "lucide-react";
-import { getSemesters } from "./actions";
+import { getSemesters, deleteSemester } from "./actions";
+import { DeleteButton } from "@/components/ui/DeleteButton";
 
 export default async function SemestersPage() {
   const semesters = await getSemesters();
@@ -48,7 +49,19 @@ export default async function SemestersPage() {
                     )}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <Button variant="ghost" size="sm" className="text-[var(--color-accent)]">Edit</Button>
+                    <div className="flex items-center justify-end gap-2">
+                      <a 
+                        href={`/admin/semesters/${semester.semester_id}/edit`}
+                        className="inline-flex h-8 items-center justify-center rounded-md px-3 text-xs font-medium text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 transition-colors"
+                      >
+                        Edit
+                      </a>
+                      <DeleteButton 
+                        id={semester.semester_id} 
+                        entityName="Semester" 
+                        deleteAction={deleteSemester} 
+                      />
+                    </div>
                   </td>
                 </tr>
               ))

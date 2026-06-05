@@ -50,8 +50,6 @@ export default async function LoginPage() {
         </div>
 
         <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[#2b4f8c] p-6 sm:p-8 text-white shadow-[0_20px_60px_rgba(43,79,140,0.25)]">
-          <div className="absolute -top-32 -right-32 h-64 w-64 rounded-full bg-[#c9a127]/10 blur-3xl" />
-          <div className="absolute -bottom-32 -left-32 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
           
           <div className="relative z-10 space-y-2">
             <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/60">

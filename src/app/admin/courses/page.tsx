@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { getCourses } from "../actions";
+import { getCourses, deleteCourse } from "../actions";
 import { formatDate } from "@/lib/utils";
+import { DeleteButton } from "@/components/ui/DeleteButton";
 
 export default async function CoursesPage() {
   const courses = await getCourses();
@@ -44,7 +45,19 @@ export default async function CoursesPage() {
                   <td className="px-6 py-4 text-gray-500">{course.credits}</td>
                   <td className="px-6 py-4 text-gray-500">{formatDate(course.created_at)}</td>
                   <td className="px-6 py-4 text-right">
-                    <Button variant="ghost" size="sm" className="text-[var(--color-accent)]">Edit</Button>
+                    <div className="flex items-center justify-end gap-2">
+                      <a 
+                        href={`/admin/courses/${course.course_id}/edit`}
+                        className="inline-flex h-8 items-center justify-center rounded-md px-3 text-xs font-medium text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 transition-colors"
+                      >
+                        Edit
+                      </a>
+                      <DeleteButton 
+                        id={course.course_id} 
+                        entityName="Course" 
+                        deleteAction={deleteCourse} 
+                      />
+                    </div>
                   </td>
                 </tr>
               ))

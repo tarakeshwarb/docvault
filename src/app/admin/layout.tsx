@@ -10,7 +10,6 @@ const adminSidebarItems = [
   { label: "Courses", href: "/admin/courses", icon: BookOpen },
   { label: "Course Offerings", href: "/admin/offerings", icon: BookOpen },
   { label: "Faculty Directory", href: "/admin/faculty", icon: Users },
-  { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
 const adminSidebarNote = {

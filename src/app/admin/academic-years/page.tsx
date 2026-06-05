@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { getAcademicYears } from "./actions";
+import { getAcademicYears, deleteAcademicYear } from "./actions";
 import { formatDate } from "@/lib/utils";
+import { DeleteButton } from "@/components/ui/DeleteButton";
 
 export default async function AcademicYearsPage() {
   const years = await getAcademicYears();
@@ -42,7 +43,19 @@ export default async function AcademicYearsPage() {
                   <td className="px-6 py-4 text-gray-500">{formatDate(year.start_date)}</td>
                   <td className="px-6 py-4 text-gray-500">{formatDate(year.end_date)}</td>
                   <td className="px-6 py-4 text-right">
-                    <Button variant="ghost" size="sm" className="text-[var(--color-accent)]">Edit</Button>
+                    <div className="flex items-center justify-end gap-2">
+                      <a 
+                        href={`/admin/academic-years/${year.year_id}/edit`}
+                        className="inline-flex h-8 items-center justify-center rounded-md px-3 text-xs font-medium text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 transition-colors"
+                      >
+                        Edit
+                      </a>
+                      <DeleteButton 
+                        id={year.year_id} 
+                        entityName="Academic Year" 
+                        deleteAction={deleteAcademicYear} 
+                      />
+                    </div>
                   </td>
                 </tr>
               ))

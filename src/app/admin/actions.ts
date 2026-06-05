@@ -44,6 +44,41 @@ export async function getCourses(): Promise<Course[]> {
   }
 }
 
+export async function getCourseById(course_id: string): Promise<Course | null> {
+  try {
+    const rows = await queryDb<Course>(
+      "SELECT * FROM public.course_master WHERE course_id = $1 LIMIT 1",
+      [course_id]
+    );
+    return rows[0] || null;
+  } catch (error) {
+    console.error("Failed to fetch course:", error);
+    return null;
+  }
+}
+
+export async function updateCourse(
+  course_id: string,
+  data: { course_code: string; course_name: string; credits: number }
+) {
+  await executeDb(
+    `UPDATE public.course_master 
+     SET course_code = $1, course_name = $2, credits = $3 
+     WHERE course_id = $4`,
+    [data.course_code, data.course_name, data.credits, course_id]
+  );
+  revalidatePath("/admin/courses");
+}
+
+export async function deleteCourse(course_id: string) {
+  await executeDb(
+    "DELETE FROM public.course_master WHERE course_id = $1",
+    [course_id]
+  );
+  revalidatePath("/admin/courses");
+}
+
+
 export async function getAllFaculty(): Promise<Faculty[]> {
   try {
     return await queryDb<Faculty>(
@@ -152,7 +187,7 @@ export async function createAcademicYear(formData: FormData) {
 export async function createSemester(formData: FormData) {
   const name = (formData.get("semester_name") as string)?.trim();
   const year = (formData.get("year_id") as string)?.trim();
-  const copyFromSemesterId = (formData.get("copy_from_semester_id") as string)?.trim();
+  
   if (!name || !year) throw new Error("All fields are required.");
 
   const rows = await queryDb<{ semester_id: string }>(
@@ -167,110 +202,10 @@ export async function createSemester(formData: FormData) {
     throw new Error("Failed to create semester.");
   }
 
-  if (copyFromSemesterId) {
-    await cloneSemesterConfiguration(copyFromSemesterId, semesterId);
-  }
-
   revalidatePath("/admin/semesters");
   revalidatePath("/admin/offerings");
   revalidatePath("/course-coordinator");
   revalidatePath("/faculty");
-}
-
-async function cloneSemesterConfiguration(sourceSemesterId: string, targetSemesterId: string) {
-  const offerings = await queryDb<{ offering_id: string; course_id: string }>(
-    "SELECT offering_id, course_id FROM public.course_offering WHERE semester_id = $1 ORDER BY created_at ASC",
-    [sourceSemesterId]
-  );
-
-  for (const offering of offerings) {
-    const newOfferingRows = await queryDb<{ offering_id: string }>(
-      `INSERT INTO public.course_offering (course_id, semester_id)
-       VALUES ($1, $2)
-       RETURNING offering_id`,
-      [offering.course_id, targetSemesterId]
-    );
-
-    const newOfferingId = newOfferingRows[0]?.offering_id;
-    if (!newOfferingId) {
-      continue;
-    }
-
-    const coordinators = await queryDb<{ faculty_id: number }>(
-      "SELECT faculty_id FROM public.coordinator_assignment WHERE offering_id = $1",
-      [offering.offering_id]
-    );
-
-    for (const coordinator of coordinators) {
-      await executeDb(
-        "INSERT INTO public.coordinator_assignment (offering_id, faculty_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
-        [newOfferingId, coordinator.faculty_id]
-      );
-      await executeDb(
-        "UPDATE public.faculty SET role = 'course_coordinator' WHERE faculty_id = $1 AND role = 'faculty'",
-        [coordinator.faculty_id]
-      );
-    }
-
-    const components = await queryDb<{
-      component_id: string;
-      deadline: string | null;
-      template_id: string | null;
-      mandatory: boolean;
-    }>(
-      `SELECT component_id, deadline, template_id, mandatory
-       FROM public.course_component
-       WHERE offering_id = $1
-       ORDER BY created_at ASC`,
-      [offering.offering_id]
-    );
-
-    const componentIdMap = new Map<string, string>();
-    for (const component of components) {
-      const componentRows = await queryDb<{ id: string }>(
-        `INSERT INTO public.course_component (offering_id, component_id, deadline, template_id, mandatory)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING id`,
-        [newOfferingId, component.component_id, component.deadline, component.template_id, component.mandatory]
-      );
-
-      const newComponentId = componentRows[0]?.id;
-      if (newComponentId) {
-        componentIdMap.set(component.component_id, newComponentId);
-      }
-    }
-
-    const assignments = await queryDb<{ id: string; faculty_id: number; section_id: string; student_count: number }>(
-      `SELECT id, faculty_id, section_id, student_count
-       FROM public.faculty_assignment
-       WHERE offering_id = $1
-       ORDER BY created_at ASC`,
-      [offering.offering_id]
-    );
-
-    for (const assignment of assignments) {
-      const assignmentRows = await queryDb<{ id: string }>(
-        `INSERT INTO public.faculty_assignment (offering_id, faculty_id, section_id, student_count)
-         VALUES ($1, $2, $3, $4)
-         RETURNING id`,
-        [newOfferingId, assignment.faculty_id, assignment.section_id, assignment.student_count]
-      );
-
-      const clonedAssignmentId = assignmentRows[0]?.id;
-      if (!clonedAssignmentId) {
-        continue;
-      }
-
-      for (const newComponentId of componentIdMap.values()) {
-        await executeDb(
-          `INSERT INTO public.submission (faculty_assignment_id, course_component_id, status)
-           VALUES ($1, $2, 'pending')
-           ON CONFLICT DO NOTHING`,
-          [clonedAssignmentId, newComponentId]
-        );
-      }
-    }
-  }
 }
 
 export async function createDepartment(formData: FormData) {
