@@ -1,0 +1,247 @@
+// Faculty dashboard: shows all assigned courses and pending submissions.
+import { getFacultyCourses, getFacultySubmissions, type PendingSubmission } from "./actions";
+import { UploadModal } from "./UploadModal";
+import {
+  BookOpen,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+} from "lucide-react";
+import { formatDate } from "@/lib/utils";
+import { getFacultySession } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
+
+function StatusBadge({ status, deadline }: { status: string; deadline: string | null }) {
+  const isLate = deadline && new Date() > new Date(deadline) && status === "pending";
+  const effectiveStatus = isLate ? "late" : status;
+
+  if (effectiveStatus === "submitted")
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
+        <CheckCircle2 className="w-3 h-3" /> Submitted
+      </span>
+    );
+  if (effectiveStatus === "late")
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
+        <AlertCircle className="w-3 h-3" /> Late
+      </span>
+    );
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+      <Clock className="w-3 h-3" /> Pending
+    </span>
+  );
+}
+
+export default async function FacultyPage() {
+  const session = await getFacultySession();
+  if (!session) {
+    return null;
+  }
+
+  const [courses, submissions] = await Promise.all([
+    getFacultyCourses(session.faculty_id),
+    getFacultySubmissions(session.faculty_id),
+  ]);
+
+  const pending = submissions.filter((s: PendingSubmission) => s.status === "pending");
+  const submitted = submissions.filter((s: PendingSubmission) => s.status === "submitted");
+  const completionPct =
+    submissions.length > 0
+      ? Math.round((submitted.length / submissions.length) * 100)
+      : 0;
+
+  // Group submissions by course offering + section
+  const grouped = submissions.reduce(
+    (acc, s: PendingSubmission) => {
+      const key = `${s.offering_id}::${s.section_name}`;
+      if (!acc.has(key)) {
+        acc.set(key, {
+          courseCode: s.course_code,
+          courseName: s.course_name,
+          sectionName: s.section_name,
+          items: [],
+        });
+      }
+      acc.get(key)!.items.push(s);
+      return acc;
+    },
+    new Map<
+      string,
+      {
+        courseCode: string;
+        courseName: string;
+        sectionName: string;
+        items: PendingSubmission[];
+      }
+    >()
+  );
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="rounded-[28px] bg-[#2b4f8c] p-6 text-white shadow-[0_18px_50px_rgba(43,79,140,0.18)]">
+        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/60">
+          Faculty workspace
+        </p>
+        <h1 className="mt-2 text-3xl font-semibold">My Submission Dashboard</h1>
+        <p className="mt-1 max-w-2xl text-sm text-white/72">
+          Review assigned courses and sections, upload PDFs, Excel sheets, Word files,
+          images, or ZIP archives, and monitor every deadline from one portal.
+        </p>
+        <div className="mt-5 flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.18em] text-white/70">
+          <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1">R2 storage</span>
+          <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1">Deadline tracking</span>
+          <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1">Version history</span>
+        </div>
+      </div>
+
+      {/* Stats - using the navigation card UI style */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {[
+          { label: "Courses", value: courses.length, icon: BookOpen, color: "text-blue-500 bg-blue-50" },
+          { label: "Total Tasks", value: submissions.length, icon: Clock, color: "text-purple-500 bg-purple-50" },
+          { label: "Submitted", value: submitted.length, icon: CheckCircle2, color: "text-emerald-500 bg-emerald-50" },
+          { label: "Pending", value: pending.length, icon: AlertCircle, color: "text-orange-500 bg-orange-50" },
+        ].map(({ label, value, icon: Icon, color }) => (
+          <div
+            key={label}
+            className="group rounded-xl border border-black/5 bg-white p-5 shadow-sm hover:shadow-md hover:border-black/10 transition-all"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className={`rounded-lg p-2.5 ${color}`}>
+                <Icon className="w-5 h-5" />
+              </div>
+            </div>
+            <h3 className="font-semibold text-2xl text-[var(--color-ink)]">{value}</h3>
+            <p className="mt-1 text-xs text-gray-500">{label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Overall Progress */}
+      {submissions.length > 0 && (
+        <div className="rounded-xl border border-black/5 bg-white p-5 shadow-sm space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium text-[var(--color-ink)]">Overall Completion</span>
+            <span className="font-bold text-[var(--color-ink)]">{completionPct}%</span>
+          </div>
+          <div className="h-2.5 w-full rounded-full bg-gray-100 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[var(--color-accent)] to-green-400 transition-all duration-500"
+              style={{ width: `${completionPct}%` }}
+            />
+          </div>
+          <p className="text-xs text-gray-400">
+            {submitted.length} of {submissions.length} documents submitted
+          </p>
+        </div>
+      )}
+
+      {/* Upcoming deadlines */}
+      {pending.length > 0 && (
+        <div className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-muted)]">
+                Priority queue
+              </p>
+              <h2 className="mt-1 text-lg font-semibold text-[var(--color-ink)]">Upcoming submissions</h2>
+            </div>
+            <p className="text-xs text-gray-400">Sorted by course and section</p>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {pending.slice(0, 6).map((submission) => (
+              <div key={submission.submission_id} className="rounded-2xl border border-black/5 bg-slate-50 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-[var(--color-ink)]">{submission.component_name}</p>
+                  <StatusBadge status={submission.status} deadline={submission.deadline} />
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                  {submission.course_code} · {submission.course_name} · Section {submission.section_name}
+                </p>
+                <p className="mt-1 text-xs text-gray-400">
+                  Deadline: {submission.deadline ? formatDate(submission.deadline) : "No deadline set"}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Submissions by Course */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold text-[var(--color-ink)] mb-4">Assigned Courses</h2>
+        
+        {courses.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-gray-300 bg-white p-5 text-center shadow-sm">
+            <BookOpen className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+            <h2 className="font-semibold text-gray-600">No courses assigned</h2>
+            <p className="text-sm text-gray-400 mt-1">
+              Wait for the Course Coordinator to assign you to a course section.
+            </p>
+          </div>
+        ) : grouped.size === 0 ? (
+          <div className="rounded-xl border border-black/5 bg-white p-5 text-center shadow-sm">
+            <p className="text-sm text-gray-500">
+              You are assigned to courses, but no document requirements have been set yet.
+            </p>
+          </div>
+        ) : (
+          Array.from(grouped.entries()).map(([key, group]) => (
+            <div key={key} className="space-y-3 rounded-xl border border-black/5 bg-white p-5 shadow-sm">
+              <div className="flex items-center gap-3">
+                <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                  {group.courseCode}
+                </span>
+                <h2 className="font-semibold text-[var(--color-ink)]">{group.courseName}</h2>
+                <span className="text-xs text-gray-400">— Section {group.sectionName}</span>
+              </div>
+              <div className="rounded-xl border border-black/5 bg-white shadow-sm overflow-hidden mt-4">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5">
+                    <tr>
+                      <th className="px-5 py-3">Document Required</th>
+                      <th className="px-5 py-3">Deadline</th>
+                      <th className="px-5 py-3">Status</th>
+                      <th className="px-5 py-3">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-black/5">
+                    {group.items.map((sub: PendingSubmission) => (
+                      <tr key={sub.submission_id} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-5 py-3 font-medium text-[var(--color-ink)]">
+                          {sub.component_name}
+                          {sub.mandatory && (
+                            <span className="ml-2 text-[10px] font-semibold text-orange-500 uppercase">
+                              Required
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3 text-xs text-gray-500">
+                          {sub.deadline ? formatDate(sub.deadline) : "No deadline"}
+                        </td>
+                        <td className="px-5 py-3">
+                          <StatusBadge status={sub.status} deadline={sub.deadline} />
+                        </td>
+                        <td className="px-5 py-3">
+                          <UploadModal
+                            submission_id={sub.submission_id}
+                            component_name={sub.component_name}
+                            isSubmitted={sub.status === "submitted" || sub.status === "late"}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
