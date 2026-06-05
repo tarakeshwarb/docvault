@@ -1,5 +1,7 @@
 "use server";
 
+import { redirect } from "next/navigation";
+
 import { queryDb } from "@/lib/db";
 import {
   clearFacultySession,
@@ -138,5 +140,5 @@ export async function loginFaculty(
 
 export async function logoutFaculty() {
   await clearFacultySession();
-  return { ok: true };
+  redirect("/");
 }

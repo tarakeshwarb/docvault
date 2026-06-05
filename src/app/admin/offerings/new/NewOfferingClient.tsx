@@ -7,7 +7,7 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 
 type Course = { course_id: string; course_code: string; course_name: string };
 type Semester = { semester_id: string; semester_name: string; year_name: string };
-type Faculty = { faculty_id: number; faculty_name: string; role: string };
+type Faculty = { faculty_id: number; faculty_name: string; designation: string; role: string };
 
 export default function NewOfferingClient({
   courses,

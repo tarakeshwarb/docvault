@@ -4,8 +4,10 @@ import { redirect } from "next/navigation";
 import { getFacultySession } from "@/lib/auth";
 import { getCoordinatorOfferings } from "../course-coordinator/actions";
 
-const facultySidebarItems = [
-  { label: "My Dashboard", href: "/faculty", icon: LayoutDashboard },
+import { type SidebarItem } from "@/components/layout/Sidebar";
+
+const facultySidebarItems: SidebarItem[] = [
+  { label: "My Dashboard", href: "/faculty", icon: LayoutDashboard, variant: "faculty" },
 ];
 
 const facultySidebarNote = {
