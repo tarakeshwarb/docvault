@@ -11,7 +11,7 @@ export default function DocumentList({
 }) {
   if (documents.length === 0) {
     return (
-      <p className="rounded-2xl border border-dashed border-black/10 bg-white/70 px-4 py-3 text-sm text-[var(--color-muted)]">
+      <p className="panel-card border-dashed border-black/10 px-4 py-3 text-sm text-[var(--color-muted)]">
         {emptyMessage}
       </p>
     );
@@ -23,7 +23,7 @@ export default function DocumentList({
         <Link
           key={document.id}
           href={`/documents/${document.id}`}
-          className="flex items-center justify-between gap-4 rounded-2xl border border-black/5 bg-white/80 px-4 py-3 text-sm transition hover:border-black/10"
+          className="panel-card panel-card-hover flex items-center justify-between gap-4 px-4 py-3 text-sm"
         >
           <div>
             <p className="font-semibold text-[var(--color-ink)]">

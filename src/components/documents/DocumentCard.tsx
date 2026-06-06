@@ -14,7 +14,7 @@ export default function DocumentCard({
   const categoryLabel = document.category || "Uncategorized";
 
   return (
-    <div className="group relative overflow-hidden rounded-[24px] border border-black/5 bg-white/85 p-4 shadow-[0_18px_45px_rgba(12,10,8,0.08)] transition hover:-translate-y-1 sm:p-5">
+    <div className="panel-card panel-card-hover group relative overflow-hidden p-4 sm:p-5">
       <div className="absolute inset-x-0 top-0 h-1 bg-[var(--color-accent)]/80" />
       <div className="flex items-start justify-between gap-3">
         <div>

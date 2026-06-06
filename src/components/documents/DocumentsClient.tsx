@@ -63,7 +63,7 @@ export default function DocumentsClient({
   return (
     <section className="space-y-8">
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="rounded-[28px] border border-black/5 bg-white/80 p-6 shadow-[0_20px_60px_rgba(12,10,8,0.08)]">
+        <div className="panel-card p-6">
           <div className="flex flex-col gap-2">
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--color-muted)]">
               Search the vault

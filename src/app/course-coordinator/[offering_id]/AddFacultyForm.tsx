@@ -79,7 +79,7 @@ export function AddFacultyForm({
       ) : (
         <form
           onSubmit={handleSubmit}
-          className="rounded-xl border border-black/5 bg-white p-5 shadow-sm space-y-4"
+          className="panel-card space-y-4 p-5"
         >
           <h3 className="font-semibold text-[var(--color-ink)] text-sm">Assign Faculty to Section</h3>
 

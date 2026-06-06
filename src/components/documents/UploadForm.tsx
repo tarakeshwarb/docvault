@@ -31,7 +31,7 @@ export default function UploadForm({
   return (
     <form
       action={action}
-      className="rounded-[28px] border border-black/5 bg-white/80 p-5 shadow-[0_20px_60px_rgba(12,10,8,0.08)] sm:p-6"
+      className="panel-card p-5 sm:p-6"
       encType="multipart/form-data"
     >
       <div className="flex flex-col gap-2">

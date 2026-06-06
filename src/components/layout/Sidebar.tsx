@@ -30,7 +30,7 @@ export default function Sidebar({
 }) {
   return (
     <aside className="hidden lg:block lg:w-64">
-      <div className="sticky top-6 space-y-6 rounded-[28px] border border-black/5 bg-white/70 p-6 shadow-[0_20px_60px_rgba(12,10,8,0.08)] backdrop-blur">
+      <div className="panel-card sticky top-6 space-y-6 p-6">
         {items.length > 0 && (
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--color-muted)]">

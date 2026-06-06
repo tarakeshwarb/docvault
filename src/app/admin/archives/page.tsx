@@ -92,7 +92,7 @@ export default async function ArchivesPage() {
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-[var(--color-ink)]">Recent Generated Reports</h2>
-        <div className="overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm">
+        <div className="panel-card overflow-hidden">
           <table className="w-full text-sm text-left">
             <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5">
               <tr>
@@ -145,7 +145,7 @@ export default async function ArchivesPage() {
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-[var(--color-ink)]">Archived Semesters</h2>
-        <div className="overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm">
+        <div className="panel-card overflow-hidden">
           <table className="w-full text-sm text-left">
             <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5">
               <tr>

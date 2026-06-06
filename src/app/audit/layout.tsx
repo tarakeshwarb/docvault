@@ -18,6 +18,12 @@ export default async function AuditLayout({ children }: { children: React.ReactN
     redirect("/");
   }
 
+  // Only allow the designated auditor ID (or admin) to access the audit logs
+  if (Number(session.faculty_id) !== 100174 && session.role !== "admin") {
+    const { getDashboardPathForRole } = await import("@/lib/auth");
+    redirect(getDashboardPathForRole(session.role));
+  }
+
   return (
     <AppShell sidebarItems={auditSidebarItems} sidebarNote={auditSidebarNote}>
       {children}

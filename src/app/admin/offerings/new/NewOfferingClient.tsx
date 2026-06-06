@@ -78,7 +78,7 @@ export default function NewOfferingClient({
 
       <form
         onSubmit={handleSubmit}
-        className="space-y-5 rounded-xl border border-black/5 bg-white p-5 shadow-sm"
+        className="panel-card space-y-5 p-5"
       >
         <div>
           <label className="block text-sm font-medium text-[var(--color-ink)] mb-2">

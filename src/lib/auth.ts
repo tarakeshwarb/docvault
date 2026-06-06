@@ -86,7 +86,7 @@ export async function setFacultySession(session: FacultySession): Promise<void> 
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60 * 12,
+    maxAge: 5 * 60,
   });
 }
 

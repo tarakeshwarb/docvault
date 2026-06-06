@@ -44,7 +44,7 @@ export default function AuditClient({ initialLogs }: { initialLogs: AuditLog[] }
       <div>
         
         {/* Filters */}
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center bg-white p-4 rounded-xl border border-black/5 shadow-sm">
+        <div className="panel-card mb-6 flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
@@ -77,7 +77,7 @@ export default function AuditClient({ initialLogs }: { initialLogs: AuditLog[] }
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-xl border border-black/5 shadow-sm overflow-hidden">
+        <div className="panel-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="bg-gray-50 border-b border-black/5 text-gray-500 font-medium">

@@ -19,7 +19,7 @@ export default async function AcademicYearsPage() {
         </a>
       </div>
 
-      <div className="rounded-xl border border-black/5 bg-white shadow-sm overflow-hidden">
+      <div className="panel-card overflow-hidden">
         <table className="w-full text-sm text-left">
           <thead className="bg-gray-50/50 text-gray-500 font-medium border-b border-black/5">
             <tr>

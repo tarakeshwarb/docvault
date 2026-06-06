@@ -108,7 +108,7 @@ export default async function FacultyPage() {
         ].map(({ label, value, icon: Icon, color }) => (
           <div
             key={label}
-            className="group rounded-xl border border-black/5 bg-white p-5 shadow-sm hover:shadow-md hover:border-black/10 transition-all"
+            className="panel-card panel-card-hover group p-5"
           >
             <div className="flex items-center justify-between mb-3">
               <div className={`rounded-lg p-2.5 ${color}`}>
@@ -123,7 +123,7 @@ export default async function FacultyPage() {
 
       {/* Overall Progress */}
       {submissions.length > 0 && (
-        <div className="rounded-xl border border-black/5 bg-white p-5 shadow-sm space-y-2">
+        <div className="panel-card space-y-2 p-5">
           <div className="flex items-center justify-between text-sm">
             <span className="font-medium text-[var(--color-ink)]">Overall Completion</span>
             <span className="font-bold text-[var(--color-ink)]">{completionPct}%</span>
@@ -142,7 +142,7 @@ export default async function FacultyPage() {
 
       {/* Upcoming deadlines */}
       {pending.length > 0 && (
-        <div className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
+        <div className="panel-card p-5">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-muted)]">
@@ -154,7 +154,7 @@ export default async function FacultyPage() {
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {pending.slice(0, 6).map((submission) => (
-              <div key={submission.submission_id} className="rounded-2xl border border-black/5 bg-slate-50 p-4">
+              <div key={submission.submission_id} className="panel-card bg-slate-50/70 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-[var(--color-ink)]">{submission.component_name}</p>
                   <StatusBadge status={submission.status} deadline={submission.deadline} />
@@ -176,7 +176,7 @@ export default async function FacultyPage() {
         <h2 className="text-lg font-semibold text-[var(--color-ink)] mb-4">Assigned Courses</h2>
         
         {courses.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-300 bg-white p-5 text-center shadow-sm">
+          <div className="panel-card border-dashed border-gray-300 p-5 text-center">
             <BookOpen className="w-10 h-10 mx-auto mb-3 text-gray-300" />
             <h2 className="font-semibold text-gray-600">No courses assigned</h2>
             <p className="text-sm text-gray-400 mt-1">
@@ -184,14 +184,14 @@ export default async function FacultyPage() {
             </p>
           </div>
         ) : grouped.size === 0 ? (
-          <div className="rounded-xl border border-black/5 bg-white p-5 text-center shadow-sm">
+          <div className="panel-card p-5 text-center">
             <p className="text-sm text-gray-500">
               You are assigned to courses, but no document requirements have been set yet.
             </p>
           </div>
         ) : (
           Array.from(grouped.entries()).map(([key, group]) => (
-            <div key={key} className="space-y-3 rounded-xl border border-black/5 bg-white p-5 shadow-sm">
+            <div key={key} className="panel-card space-y-3 p-5">
               <div className="flex items-center gap-3">
                 <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700 ring-1 ring-inset ring-blue-700/10">
                   {group.courseCode}
@@ -199,7 +199,7 @@ export default async function FacultyPage() {
                 <h2 className="font-semibold text-[var(--color-ink)]">{group.courseName}</h2>
                 <span className="text-xs text-gray-400">— Section {group.sectionName}</span>
               </div>
-              <div className="rounded-xl border border-black/5 bg-white shadow-sm overflow-hidden mt-4">
+              <div className="panel-card mt-4 overflow-hidden">
                 <table className="w-full text-sm text-left">
                   <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5">
                     <tr>

@@ -125,14 +125,14 @@ export default async function OfferingDetailPage({
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
+          <div className="panel-card p-5">
             <div className="grid gap-4 sm:grid-cols-3">
               {[
                 { label: "Faculty Assigned", value: assignments.length },
                 { label: "Components Required", value: components.length },
                 { label: "Completion", value: `${completionPct}%` },
               ].map((item) => (
-                <div key={item.label} className="rounded-2xl border border-black/5 bg-slate-50 p-4">
+                <div key={item.label} className="panel-card bg-slate-50/70 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)]">
                     {item.label}
                   </p>
@@ -199,11 +199,11 @@ export default async function OfferingDetailPage({
         </div>
 
         {assignments.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-200 bg-white p-5 text-center shadow-sm">
+          <div className="panel-card border-dashed border-gray-200 p-5 text-center">
             <p className="text-sm text-gray-500">No faculty assigned yet.</p>
           </div>
         ) : (
-          <div className="rounded-xl border border-black/5 bg-white shadow-sm overflow-hidden">
+          <div className="panel-card overflow-hidden">
             <table className="w-full text-sm text-left">
               <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5">
                 <tr>
@@ -250,13 +250,13 @@ export default async function OfferingDetailPage({
         </div>
 
         {components.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-200 bg-white p-5 text-center shadow-sm">
+          <div className="panel-card border-dashed border-gray-200 p-5 text-center">
             <p className="text-sm text-gray-500">
               No components defined. Add document requirements above.
             </p>
           </div>
         ) : (
-          <div className="rounded-xl border border-black/5 bg-white shadow-sm overflow-hidden">
+          <div className="panel-card overflow-hidden">
             <table className="w-full text-sm text-left">
               <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5">
                 <tr>
@@ -288,11 +288,11 @@ export default async function OfferingDetailPage({
         </h2>
 
         {submissions.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-200 bg-white p-5 text-center shadow-sm">
+          <div className="panel-card border-dashed border-gray-200 p-5 text-center">
             <p className="text-sm text-gray-500">Generate a report after faculty begin uploading files.</p>
           </div>
         ) : (
-          <div className="rounded-xl border border-black/5 bg-white shadow-sm overflow-hidden">
+          <div className="panel-card overflow-hidden">
             <table className="w-full text-sm text-left">
               <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5">
                 <tr>
@@ -348,7 +348,7 @@ export default async function OfferingDetailPage({
               Submission Tracking
             </h2>
           </div>
-          <div className="rounded-2xl border border-black/5 bg-white shadow-sm overflow-x-auto">
+          <div className="panel-card overflow-x-auto">
             <table className="w-full text-sm text-left border-collapse">
               <thead className="bg-gray-50/50 text-gray-500 font-medium border-b border-black/5">
                 <tr>

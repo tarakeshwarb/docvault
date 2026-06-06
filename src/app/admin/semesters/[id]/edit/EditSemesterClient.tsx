@@ -57,7 +57,7 @@ export default function EditSemesterClient({
 
       <form
         onSubmit={handleSubmit}
-        className="space-y-5 rounded-xl border border-black/5 bg-white p-5 shadow-sm"
+        className="panel-card space-y-5 p-5"
       >
         <div className="space-y-2">
           <label className="text-sm font-medium text-[var(--color-ink)]">Semester Name</label>

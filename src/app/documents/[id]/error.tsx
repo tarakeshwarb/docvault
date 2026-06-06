@@ -9,7 +9,7 @@ export default function Error({
 }) {
   return (
     <div className="flex min-h-screen w-full items-center justify-center p-4">
-      <div className="flex w-full max-w-md flex-col items-center justify-center gap-4 rounded-[28px] border border-dashed border-black/10 bg-white/70 p-10 text-center shadow-sm">
+      <div className="panel-card flex w-full max-w-md flex-col items-center justify-center gap-4 border-dashed border-black/10 p-10 text-center">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">
           Something went wrong
         </p>

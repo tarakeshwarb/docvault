@@ -49,7 +49,7 @@ export default async function CourseCoordinatorPage() {
       </div>
 
       {offerings.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-gray-300 bg-white p-5 text-center shadow-sm">
+        <div className="panel-card border-dashed border-gray-300 p-5 text-center">
           <BookOpen className="w-10 h-10 mx-auto mb-3 text-gray-300" />
           <h2 className="font-semibold text-gray-600">No courses assigned</h2>
           <p className="text-sm text-gray-400 mt-1">
@@ -62,7 +62,7 @@ export default async function CourseCoordinatorPage() {
             <Link
               key={offering.offering_id}
               href={`/course-coordinator/${offering.offering_id}`}
-              className="group rounded-xl border border-black/5 bg-white p-5 shadow-sm hover:shadow-md hover:border-black/10 transition-all"
+              className="panel-card panel-card-hover group p-5"
             >
               <div className="flex items-start justify-between">
                 <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700 ring-1 ring-inset ring-blue-700/10">

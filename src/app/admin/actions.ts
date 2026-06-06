@@ -109,6 +109,7 @@ export async function getCourseOfferings(): Promise<CourseOffering[]> {
       JOIN public.academic_year ay ON sm.year_id = ay.year_id
       LEFT JOIN public.coordinator_assignment ca ON co.offering_id = ca.offering_id
       LEFT JOIN public.faculty f ON ca.faculty_id = f.faculty_id
+      WHERE sm.is_active = true
       ORDER BY ay.start_date DESC, sm.semester_name, cm.course_code
     `);
   } catch (error) {
@@ -150,10 +151,6 @@ export async function createCourseOffering(data: {
       "INSERT INTO public.coordinator_assignment (offering_id, faculty_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
       [offering_id, data.coordinator_id]
     );
-    await executeDb(
-      "UPDATE public.faculty SET role = 'course_coordinator' WHERE faculty_id = $1 AND role = 'faculty'",
-      [data.coordinator_id]
-    );
   }
   revalidatePath("/admin/offerings");
 }
@@ -163,10 +160,6 @@ export async function assignCoordinator(offering_id: string, faculty_id: number)
     `INSERT INTO public.coordinator_assignment (offering_id, faculty_id) VALUES ($1, $2)
      ON CONFLICT (offering_id, faculty_id) DO NOTHING`,
     [offering_id, faculty_id]
-  );
-  await executeDb(
-    "UPDATE public.faculty SET role = 'course_coordinator' WHERE faculty_id = $1 AND role = 'faculty'",
-    [faculty_id]
   );
   revalidatePath("/admin/offerings");
 }

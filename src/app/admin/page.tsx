@@ -85,7 +85,7 @@ export default async function AdminPage() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="group rounded-xl border border-black/5 bg-white p-5 shadow-sm hover:shadow-md hover:border-black/10 transition-all"
+                className="panel-card panel-card-hover group p-5"
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className={`rounded-lg p-2.5 ${link.color}`}>

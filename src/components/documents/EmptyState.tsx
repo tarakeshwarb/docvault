@@ -2,7 +2,7 @@
 
 export default function EmptyState({ query }: { query: string }) {
   return (
-    <div className="rounded-[28px] border border-dashed border-black/10 bg-white/70 p-10 text-center">
+    <div className="panel-card border-dashed border-black/10 p-10 text-center">
       <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--color-muted)]">
         Nothing here yet
       </p>

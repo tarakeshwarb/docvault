@@ -27,7 +27,7 @@ export default async function DocumentPage({
           Back to dashboard
         </Link>
 
-        <div className="rounded-[28px] border border-black/5 bg-white/85 p-6 shadow-[0_20px_60px_rgba(12,10,8,0.08)]">
+        <div className="panel-card p-6">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)]">
@@ -49,7 +49,7 @@ export default async function DocumentPage({
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-[28px] border border-black/5 bg-white/80 p-4 shadow-[0_20px_60px_rgba(12,10,8,0.08)]">
+        <div className="panel-card overflow-hidden p-4">
           <iframe
             title={document.title}
             src={document.pdf_url}
@@ -57,7 +57,7 @@ export default async function DocumentPage({
           />
         </div>
 
-        <div className="rounded-[22px] border border-black/5 bg-white/70 p-4 text-sm text-[var(--color-muted)]">
+        <div className="panel-card p-4 text-sm text-[var(--color-muted)]">
           If the PDF does not load, confirm the R2 bucket is public or use a
           signed URL.
         </div>

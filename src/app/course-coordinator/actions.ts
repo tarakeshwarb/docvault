@@ -93,6 +93,7 @@ export async function getCoordinatorOfferings(faculty_id: number): Promise<Coord
     JOIN public.course_master cm ON co.course_id = cm.course_id
     JOIN public.semester_master sm ON co.semester_id = sm.semester_id
     JOIN public.academic_year ay ON sm.year_id = ay.year_id
+    WHERE sm.is_active = true
     ORDER BY ay.start_date DESC, sm.semester_name, cm.course_code
   `, [faculty_id]);
 }

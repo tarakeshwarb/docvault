@@ -57,7 +57,7 @@ export default function NewSemesterPage({
 
       <form
         onSubmit={handleSubmit}
-        className="space-y-4 rounded-xl border border-black/5 bg-white p-5 shadow-sm"
+        className="panel-card space-y-4 p-5"
       >
         <div>
           <label className="mb-1 block text-sm font-medium text-[var(--color-ink)]">
