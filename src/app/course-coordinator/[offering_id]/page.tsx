@@ -100,13 +100,7 @@ export default async function OfferingDetailPage({
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <Link
-          href="/course-coordinator"
-          className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-[var(--color-ink)] mb-4"
-        >
-          <ArrowLeft className="w-3 h-3" />
-          Back to My Courses
-        </Link>
+
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
