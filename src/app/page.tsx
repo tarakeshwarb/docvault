@@ -8,7 +8,11 @@ async function resolvePortalPath(faculty_id: number, role: "admin" | "hod" | "co
   if (role === "admin") return "/admin";
   if (role === "faculty") {
     const coordinatorRows = await queryDb<{ count: string }>(
-      `SELECT COUNT(*) AS count FROM public.coordinator_assignment WHERE faculty_id = $1`,
+      `SELECT COUNT(*) AS count 
+       FROM public.coordinator_assignment ca
+       JOIN public.course_offering co ON ca.offering_id = co.offering_id
+       JOIN public.semester_master sm ON co.semester_id = sm.semester_id
+       WHERE ca.faculty_id = $1 AND sm.is_active = true`,
       [faculty_id]
     );
     if (Number(coordinatorRows[0]?.count ?? 0) > 0) return "/course-coordinator";

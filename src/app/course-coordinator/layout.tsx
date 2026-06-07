@@ -28,10 +28,10 @@ export default async function CourseCoordinatorLayout({
     redirect("/");
   }
 
-  if (session.role === "faculty") {
+  if (session.role !== "admin") {
     const offerings = await getCoordinatorOfferings(session.faculty_id);
     if (offerings.length === 0) {
-      redirect(getDashboardPathForRole(session.role));
+      redirect("/faculty");
     }
   }
 
