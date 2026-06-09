@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { recordFileUpload, getSubmissionFiles, deleteFileAction, type FileMetadata } from "./actions";
 import { Upload, Loader2, CheckCircle2, X, Trash2, File as FileIcon, UploadCloud, Plus } from "lucide-react";
 import { formatBytes } from "@/lib/utils";
@@ -173,13 +174,13 @@ export function UploadModal({
         )}
       </button>
 
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {isOpen && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
             onClick={() => !uploading && setIsOpen(false)}
           />
-          <div className="relative z-10 w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+          <div className="relative z-10 w-[95vw] max-w-lg min-h-[500px] overflow-hidden rounded-2xl bg-white shadow-2xl flex flex-col max-h-[90vh]">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-black/5 px-6 py-4">
               <div>
@@ -199,11 +200,7 @@ export function UploadModal({
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {/* Existing Files */}
-              {loadingFiles ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-                </div>
-              ) : existingFiles.length > 0 ? (
+              {existingFiles.length > 0 ? (
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
                     Uploaded Files ({existingFiles.length})
@@ -335,7 +332,8 @@ export function UploadModal({
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

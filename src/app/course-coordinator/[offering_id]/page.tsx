@@ -105,21 +105,21 @@ export default async function OfferingDetailPage({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700 ring-1 ring-inset ring-blue-700/10">
+              <span className="inline-flex items-center rounded-md bg-blue-50 px-3 py-1.5 text-sm font-bold text-blue-700 ring-1 ring-inset ring-blue-700/10">
                 {offering.course_code}
               </span>
-              <span className="text-xs text-gray-400">
+              <span className="text-sm font-medium text-gray-400">
                 {offering.semester_name} · {offering.year_name}
               </span>
             </div>
-            <h1 className="mt-2 text-2xl font-semibold text-[var(--color-ink)]">
+            <h1 className="mt-3 text-4xl font-bold tracking-tight text-[var(--color-ink)]">
               {offering.course_name}
             </h1>
           </div>
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="panel-card p-5">
+          <div className="panel-card h-fit self-center p-8">
             <div className="grid gap-4 sm:grid-cols-3">
               {[
                 { label: "Faculty Assigned", value: assignments.length },

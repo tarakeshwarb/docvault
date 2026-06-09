@@ -121,24 +121,7 @@ export default async function FacultyPage() {
         ))}
       </div>
 
-      {/* Overall Progress */}
-      {submissions.length > 0 && (
-        <div className="panel-card space-y-2 p-5">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-medium text-[var(--color-ink)]">Overall Completion</span>
-            <span className="font-bold text-[var(--color-ink)]">{completionPct}%</span>
-          </div>
-          <div className="h-2.5 w-full rounded-full bg-gray-100 overflow-hidden">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-[var(--color-accent)] to-green-400 transition-all duration-500"
-              style={{ width: `${completionPct}%` }}
-            />
-          </div>
-          <p className="text-xs text-gray-400">
-            {submitted.length} of {submissions.length} documents submitted
-          </p>
-        </div>
-      )}
+
 
       {/* Upcoming deadlines */}
       {pending.length > 0 && (
