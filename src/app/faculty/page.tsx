@@ -82,7 +82,7 @@ export default async function FacultyPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="rounded-[28px] bg-[#2b4f8c] p-6 text-white shadow-[0_18px_50px_rgba(43,79,140,0.18)]">
+      <div className="rounded-[28px] bg-[#0c4da2] p-6 text-white shadow-[0_18px_50px_rgba(12,77,162,0.18)]">
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/60">
           Faculty workspace
         </p>
@@ -101,22 +101,22 @@ export default async function FacultyPage() {
       {/* Stats - using the navigation card UI style */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
-          { label: "Courses", value: courses.length, icon: BookOpen, color: "text-blue-500 bg-blue-50" },
-          { label: "Total Tasks", value: submissions.length, icon: Clock, color: "text-purple-500 bg-purple-50" },
-          { label: "Submitted", value: submitted.length, icon: CheckCircle2, color: "text-emerald-500 bg-emerald-50" },
-          { label: "Pending", value: pending.length, icon: AlertCircle, color: "text-orange-500 bg-orange-50" },
+          { label: "Courses", value: courses.length, icon: BookOpen, color: "text-[var(--color-accent)] bg-[var(--color-accent)]/10" },
+          { label: "Total Tasks", value: submissions.length, icon: Clock, color: "text-[var(--color-accent)] bg-[var(--color-accent)]/10" },
+          { label: "Submitted", value: submitted.length, icon: CheckCircle2, color: "text-[var(--color-accent)] bg-[var(--color-accent)]/10" },
+          { label: "Pending", value: pending.length, icon: AlertCircle, color: "text-[var(--color-accent)] bg-[var(--color-accent)]/10" },
         ].map(({ label, value, icon: Icon, color }) => (
           <div
             key={label}
-            className="panel-card panel-card-hover group p-5"
+            className="panel-card panel-card-hover group p-4 flex items-center gap-4"
           >
-            <div className="flex items-center justify-between mb-3">
-              <div className={`rounded-lg p-2.5 ${color}`}>
-                <Icon className="w-5 h-5" />
-              </div>
+            <div className={`rounded-lg p-2 ${color} shrink-0`}>
+              <Icon className="w-5 h-5" />
             </div>
-            <h3 className="font-semibold text-2xl text-[var(--color-ink)]">{value}</h3>
-            <p className="mt-1 text-xs text-gray-500">{label}</p>
+            <div>
+              <p className="text-xs font-medium text-gray-500">{label}</p>
+              <h3 className="text-xl font-bold text-[var(--color-ink)]">{value}</h3>
+            </div>
           </div>
         ))}
       </div>

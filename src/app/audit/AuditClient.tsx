@@ -27,7 +27,7 @@ export default function AuditClient({ initialLogs }: { initialLogs: AuditLog[] }
   return (
     <div className="space-y-6">
       {/* Hero Header */}
-      <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between rounded-[28px] bg-[#2b4f8c] p-6 text-white shadow-[0_18px_50px_rgba(43,79,140,0.18)]">
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between rounded-[28px] bg-[var(--color-accent)] p-6 text-white shadow-[0_18px_50px_rgba(12,77,162,0.18)]">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/60">
             IQAC Audit & Compliance
@@ -128,7 +128,7 @@ export default function AuditClient({ initialLogs }: { initialLogs: AuditLog[] }
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 border border-blue-200">
+                        <span className="inline-flex items-center rounded-full bg-[var(--color-accent)]/10 px-2.5 py-0.5 text-xs font-semibold text-[var(--color-accent)] border border-[var(--color-accent)]/20">
                           v{log.version}
                         </span>
                       </td>

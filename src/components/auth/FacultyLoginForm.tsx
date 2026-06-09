@@ -60,7 +60,7 @@ export default function FacultyLoginForm() {
           type="email"
           name="email"
           placeholder="Enter your mail address"
-          className="block w-full rounded-md border border-gray-300 px-4 py-2 text-sm placeholder-gray-400 focus:border-[#5840d8] focus:outline-none focus:ring-1 focus:ring-[#5840d8]"
+          className="block w-full rounded-md border border-gray-300 px-4 py-2 text-sm placeholder-gray-400 focus:border-[#0c4da2] focus:outline-none focus:ring-1 focus:ring-[#0c4da2]"
           required
         />
       </div>
@@ -75,7 +75,7 @@ export default function FacultyLoginForm() {
             type={showPassword ? "text" : "password"}
             name="password"
             placeholder="Enter password"
-            className="block w-full rounded-md border border-gray-300 px-4 py-2 pr-10 text-sm placeholder-gray-400 focus:border-[#5840d8] focus:outline-none focus:ring-1 focus:ring-[#5840d8]"
+            className="block w-full rounded-md border border-gray-300 px-4 py-2 pr-10 text-sm placeholder-gray-400 focus:border-[#0c4da2] focus:outline-none focus:ring-1 focus:ring-[#0c4da2]"
             required
           />
           <button
@@ -100,7 +100,7 @@ export default function FacultyLoginForm() {
       {/* Forgot Password */}
       <div className="flex items-center justify-end">
         <div className="text-sm">
-          <a href="#" className="font-medium text-[#5840d8] hover:text-[#4530af]">
+          <a href="#" className="font-medium text-[#0c4da2] hover:text-[#093980]">
             Forgot your password ?
           </a>
         </div>
@@ -118,7 +118,7 @@ export default function FacultyLoginForm() {
         <button
           type="submit"
           disabled={pending}
-          className="flex w-full justify-center items-center gap-2 rounded-lg bg-[#5840d8] px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#4530af] focus:outline-none focus:ring-2 focus:ring-[#5840d8] focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed"
+          className="flex w-full justify-center items-center gap-2 rounded-lg bg-[#0c4da2] px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#093980] focus:outline-none focus:ring-2 focus:ring-[#0c4da2] focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed"
         >
           {pending ? (
               <>

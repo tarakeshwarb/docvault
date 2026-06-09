@@ -8,7 +8,7 @@ export default function Footer() {
           <div className="max-w-sm space-y-6">
             <div className="flex items-center gap-4">
               <Image
-                src="/SRMlogo.png"
+                src="/SRM_Institute_of_Science_and_Technology_Logo.svg"
                 alt="SRM Institute of Science and Technology logo"
                 width={140}
                 height={52}

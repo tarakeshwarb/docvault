@@ -25,7 +25,7 @@ export default async function CourseCoordinatorPage() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-[28px] bg-[#2b4f8c] p-6 text-white shadow-[0_18px_50px_rgba(43,79,140,0.18)]">
+      <div className="rounded-[28px] bg-[#0c4da2] p-6 text-white shadow-[0_18px_50px_rgba(12,77,162,0.18)]">
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/60">
           Course Coordinator Dashboard
         </p>
@@ -65,7 +65,7 @@ export default async function CourseCoordinatorPage() {
               className="panel-card panel-card-hover group p-5"
             >
               <div className="flex items-start justify-between">
-                <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                <span className="inline-flex items-center rounded-md bg-[var(--color-accent)]/10 px-2 py-1 text-xs font-bold text-[var(--color-accent)] ring-1 ring-inset ring-[var(--color-accent)]/20">
                   {offering.course_code}
                 </span>
                 <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-[var(--color-accent)] transition-colors" />

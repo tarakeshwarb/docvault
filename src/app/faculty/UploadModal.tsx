@@ -254,7 +254,7 @@ export function UploadModal({
 
                 <div
                   onClick={() => inputRef.current?.click()}
-                  className="group flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50/50 py-10 hover:border-[var(--color-accent)] hover:bg-blue-50/50 transition-colors"
+                  className="group flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50/50 py-10 hover:border-[var(--color-accent)] hover:bg-[var(--color-accent)]/5 transition-colors"
                 >
                   <div className="rounded-full bg-white p-3 shadow-sm ring-1 ring-black/5 group-hover:ring-[var(--color-accent)]/50 transition-all">
                     <UploadCloud className="h-6 w-6 text-gray-400 group-hover:text-[var(--color-accent)]" />
@@ -275,10 +275,10 @@ export function UploadModal({
                     {stagedFiles.map((f, i) => (
                       <div
                         key={i}
-                        className="flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50/50 p-3"
+                        className="flex items-center justify-between rounded-lg border border-[var(--color-accent)]/20 bg-[var(--color-accent)]/5 p-3"
                       >
                         <div className="flex items-center gap-3 overflow-hidden">
-                          <FileIcon className="h-4 w-4 text-blue-500 shrink-0" />
+                          <FileIcon className="h-4 w-4 text-[var(--color-accent)] shrink-0" />
                           <div className="truncate">
                             <p className="truncate text-sm font-medium text-gray-900" title={f.name}>
                               {f.name}
@@ -315,7 +315,7 @@ export function UploadModal({
                   type="button"
                   onClick={handleSubmit}
                   disabled={uploading}
-                  className="rounded-lg bg-[var(--color-accent)] px-6 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-600 transition-colors disabled:opacity-50 inline-flex items-center gap-2"
+                  className="rounded-lg bg-[var(--color-accent)] px-6 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[var(--color-accent)]/90 transition-colors disabled:opacity-50 inline-flex items-center gap-2"
                 >
                   {uploading ? (
                     <>
