@@ -1,0 +1,92 @@
+<svg width="100%" height="100%" viewBox="0 0 1333.33 1200" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+  <!-- Grid 4x4 Structure, 333.33px wide columns, 300px high rows -->
+
+  <!-- Top Row -->
+  <rect x="0" y="0" width="333.33" height="300" fill="#a855f7" />
+  <rect x="333.33" y="0" width="333.33" height="300" fill="#1e1b4b" />
+  <rect x="666.66" y="0" width="333.33" height="300" fill="#3730a3" />
+  <rect x="1000" y="0" width="333.33" height="300" fill="#312e81" />
+
+  <!-- Top Row Elements -->
+  <circle cx="166.66" cy="150" r="100" fill="#9333ea" />
+  
+  <polygon points="480,80 500,100 480,120 460,100" fill="#f59e0b" />
+  <polygon points="520,80 540,100 520,120 500,100" fill="#fbbf24" />
+  <rect x="380" y="180" width="240" height="10" fill="#06b6d4" />
+  <rect x="380" y="230" width="240" height="2" fill="#6366f1" />
+  <rect x="380" y="270" width="240" height="2" fill="#6366f1" />
+
+  <polygon points="833.33,0 1000,150 833.33,300 666.66,150" fill="#4f46e5" />
+  <circle cx="1166.66" cy="150" r="80" fill="#4f46e5" />
+
+  <!-- Second Row -->
+  <rect x="0" y="300" width="333.33" height="300" fill="#312e81" />
+  <rect x="333.33" y="300" width="333.33" height="300" fill="#3730a3" />
+  <rect x="666.66" y="300" width="333.33" height="300" fill="#312e81" />
+  <rect x="1000" y="300" width="333.33" height="300" fill="#a855f7" />
+
+  <!-- Second Row Elements -->
+  <polygon points="166.66,350 216.66,410 116.66,410" fill="#3b82f6" />
+  <polygon points="166.66,450 216.66,510 116.66,510" fill="#2563eb" />
+
+  <polygon points="500,370 560,430 500,490 440,430" fill="#ffffff" />
+
+  <circle cx="1000" cy="450" r="200" fill="#6366f1" />
+  <polygon points="1066.66,400 1266.66,400 1166.66,500" fill="#c084fc" />
+
+  <!-- Third Row -->
+  <rect x="0" y="600" width="333.33" height="300" fill="#4f46e5" />
+  <rect x="333.33" y="600" width="333.33" height="300" fill="#4338ca" />
+  <rect x="666.66" y="600" width="333.33" height="300" fill="#312e81" />
+  <rect x="1000" y="600" width="333.33" height="300" fill="#1e1b4b" />
+
+  <!-- Third Row Elements -->
+  <rect x="40" y="650" width="253.33" height="200" fill="#06b6d4" />
+  <polygon points="166.66,650 293.33,850 40,850" fill="#0891b2" />
+
+  <polygon points="500,680 520,740 580,740 530,780 550,840 500,800 450,840 470,780 420,740 480,740" fill="#facc15" />
+
+  <circle cx="833.33" cy="750" r="100" stroke="#818cf8" stroke-width="2" fill="none" />
+  <line x1="763" y1="680" x2="903" y2="820" stroke="#818cf8" stroke-width="2" />
+  <line x1="903" y1="680" x2="763" y2="820" stroke="#818cf8" stroke-width="2" />
+
+  <line x1="1066.66" y1="700" x2="1266.66" y2="700" stroke="#818cf8" stroke-width="4" stroke-dasharray="10, 10" />
+  <line x1="1066.66" y1="750" x2="1266.66" y2="750" stroke="#818cf8" stroke-width="4" stroke-dasharray="10, 10" />
+  <line x1="1066.66" y1="800" x2="1266.66" y2="800" stroke="#818cf8" stroke-width="4" stroke-dasharray="10, 10" />
+
+  <!-- Bottom Row -->
+  <rect x="0" y="900" width="333.33" height="300" fill="#a855f7" />
+  <rect x="333.33" y="900" width="1000" height="300" fill="#0f172a" />
+
+  <!-- Bottom Row Elements -->
+  <circle cx="0" cy="1200" r="300" fill="#c084fc" />
+  <rect x="80" y="1050" width="200" height="6" fill="#3b82f6" />
+  <rect x="80" y="1070" width="240" height="6" fill="#3b82f6" />
+  <rect x="80" y="1090" width="180" height="6" fill="#3b82f6" />
+
+  <circle cx="1333.33" cy="1200" r="350" stroke="#3b82f6" stroke-width="2" fill="none" />
+  
+  <!-- Bottom Right Dots Grid (Shifted Right) -->
+  <g fill="#ffffff">
+    <!-- Row 1 -->
+    <circle cx="1200" cy="1050" r="5" />
+    <circle cx="1220" cy="1050" r="5" />
+    <circle cx="1240" cy="1050" r="5" />
+    <circle cx="1260" cy="1050" r="5" />
+    <!-- Row 2 -->
+    <circle cx="1200" cy="1070" r="5" />
+    <circle cx="1220" cy="1070" r="5" />
+    <circle cx="1240" cy="1070" r="5" />
+    <circle cx="1260" cy="1070" r="5" />
+    <!-- Row 3 -->
+    <circle cx="1200" cy="1090" r="5" />
+    <circle cx="1220" cy="1090" r="5" />
+    <circle cx="1240" cy="1090" r="5" />
+    <circle cx="1260" cy="1090" r="5" />
+    <!-- Row 4 -->
+    <circle cx="1200" cy="1110" r="5" />
+    <circle cx="1220" cy="1110" r="5" />
+    <circle cx="1240" cy="1110" r="5" />
+    <circle cx="1260" cy="1110" r="5" />
+  </g>
+</svg>

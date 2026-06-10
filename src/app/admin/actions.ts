@@ -233,3 +233,62 @@ export async function getAcademicYears() {
     "SELECT * FROM public.academic_year ORDER BY start_date DESC"
   );
 }
+
+export async function getCourseOfferingById(offering_id: string): Promise<CourseOffering | null> {
+  try {
+    const rows = await queryDb<CourseOffering>(`
+      SELECT
+        co.offering_id,
+        co.course_id,
+        co.semester_id,
+        cm.course_code,
+        cm.course_name,
+        sm.semester_name,
+        ay.year_name,
+        ca.faculty_id AS coordinator_id,
+        f.faculty_name AS coordinator_name
+      FROM public.course_offering co
+      JOIN public.course_master cm ON co.course_id = cm.course_id
+      JOIN public.semester_master sm ON co.semester_id = sm.semester_id
+      JOIN public.academic_year ay ON sm.year_id = ay.year_id
+      LEFT JOIN public.coordinator_assignment ca ON co.offering_id = ca.offering_id
+      LEFT JOIN public.faculty f ON ca.faculty_id = f.faculty_id
+      WHERE co.offering_id = $1
+      LIMIT 1
+    `, [offering_id]);
+    return rows[0] || null;
+  } catch (error) {
+    console.error("Failed to fetch course offering by id:", error);
+    return null;
+  }
+}
+
+export async function updateCourseOffering(
+  offering_id: string,
+  data: {
+    course_id: string;
+    semester_id: string;
+    coordinator_id?: number | null;
+  }
+) {
+  await executeDb(
+    "UPDATE public.course_offering SET course_id = $1, semester_id = $2 WHERE offering_id = $3",
+    [data.course_id, data.semester_id, offering_id]
+  );
+
+  await executeDb("DELETE FROM public.coordinator_assignment WHERE offering_id = $1", [offering_id]);
+  if (data.coordinator_id) {
+    await executeDb(
+      "INSERT INTO public.coordinator_assignment (offering_id, faculty_id) VALUES ($1, $2)",
+      [offering_id, data.coordinator_id]
+    );
+  }
+
+  revalidatePath("/admin/offerings");
+}
+
+export async function deleteCourseOffering(offering_id: string) {
+  await executeDb("DELETE FROM public.coordinator_assignment WHERE offering_id = $1", [offering_id]);
+  await executeDb("DELETE FROM public.course_offering WHERE offering_id = $1", [offering_id]);
+  revalidatePath("/admin/offerings");
+}

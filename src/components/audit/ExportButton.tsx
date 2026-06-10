@@ -63,7 +63,7 @@ export function ExportButton({ data }: { data: AuditLog[] }) {
   return (
     <button
       onClick={handleExport}
-      className="inline-flex items-center gap-2 rounded-md bg-[var(--color-ink)] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[var(--color-ink)]/90 transition-colors"
+      className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-[var(--color-ink)] shadow-sm hover:bg-gray-50 transition-colors"
     >
       <Download className="w-4 h-4" />
       Export to CSV

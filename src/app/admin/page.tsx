@@ -9,14 +9,14 @@ const quickLinks = [
     desc: "Create and manage academic calendar years",
     href: "/admin/academic-years",
     icon: Calendar,
-    color: "text-blue-500 bg-blue-50",
+    color: "text-[var(--color-accent)] bg-[var(--color-accent)]/10",
   },
   {
     title: "Semesters",
     desc: "Create Odd/Even semesters for each year",
     href: "/admin/semesters",
     icon: Layers,
-    color: "text-purple-500 bg-purple-50",
+    color: "text-[var(--color-accent)] bg-[var(--color-accent)]/10",
   },
 
   {
@@ -24,21 +24,21 @@ const quickLinks = [
     desc: "Add and maintain course master data",
     href: "/admin/courses",
     icon: GraduationCap,
-    color: "text-orange-500 bg-orange-50",
+    color: "text-[var(--color-accent)] bg-[var(--color-accent)]/10",
   },
   {
     title: "Course Offerings",
     desc: "Map courses to semesters, assign coordinators",
     href: "/admin/offerings",
     icon: Link2,
-    color: "text-red-500 bg-red-50",
+    color: "text-[var(--color-accent)] bg-[var(--color-accent)]/10",
   },
   {
     title: "Faculty Directory",
     desc: "View all faculty members and their roles",
     href: "/admin/faculty",
     icon: Users,
-    color: "text-indigo-500 bg-indigo-50",
+    color: "text-[var(--color-accent)] bg-[var(--color-accent)]/10",
   },
 ];
 
@@ -46,7 +46,7 @@ export default async function AdminPage() {
   return (
     <div className="space-y-8">
       {/* Hero */}
-      <div className="rounded-xl bg-gradient-to-br from-[var(--color-ink)] to-[#1e4080] p-5 text-white shadow-sm">
+      <div className="rounded-xl bg-[#0c4da2] p-5 text-white shadow-sm">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/50">
           Admin Command Center
         </p>

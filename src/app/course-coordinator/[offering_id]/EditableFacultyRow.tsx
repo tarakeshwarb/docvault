@@ -70,7 +70,7 @@ export function EditableFacultyRow({
 
   if (isEditing) {
     return (
-      <tr className="bg-blue-50/50">
+      <tr className="bg-[var(--color-accent)]/5">
         <td className="px-5 py-3">
           <p className="font-medium text-[var(--color-ink)]">{fa.faculty_name}</p>
           <p className="text-xs text-gray-400">{fa.designation}</p>
@@ -141,10 +141,10 @@ export function EditableFacultyRow({
       </td>
       <td className="px-5 py-3 text-center text-gray-600">{fa.student_count}</td>
       <td className="px-5 py-3 text-center">
-        <span className="text-green-600 font-semibold">{submittedCount}</span>
+        <span className="text-[var(--color-accent)] font-semibold">{submittedCount}</span>
       </td>
       <td className="px-5 py-3 text-center">
-        <span className={pendingCount > 0 ? "text-orange-500 font-semibold" : "text-gray-400"}>
+        <span className={pendingCount > 0 ? "text-[var(--color-accent)] font-semibold" : "text-gray-400"}>
           {pendingCount}
         </span>
       </td>
@@ -153,7 +153,7 @@ export function EditableFacultyRow({
           <button
             onClick={() => setIsEditing(true)}
             disabled={loading}
-            className="p-1.5 text-gray-400 hover:text-[var(--color-accent)] hover:bg-blue-50 rounded transition-colors"
+            className="p-1.5 text-gray-400 hover:text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded transition-colors"
             title="Edit"
           >
             <Pencil className="w-4 h-4" />

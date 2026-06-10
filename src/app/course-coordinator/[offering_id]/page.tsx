@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { CoordinatorToolbar } from "@/components/coordinator/CoordinatorToolbar";
 import { getFacultySession } from "@/lib/auth";
 import {
   getFacultyAssignments,
@@ -31,7 +32,7 @@ export const dynamic = "force-dynamic";
 function StatusBadge({ status }: { status: string }) {
   if (status === "submitted") {
     return (
-      <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+      <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[var(--color-accent)]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-accent)] ring-1 ring-inset ring-[var(--color-accent)]/20">
         <CheckCircle2 className="w-3 h-3" />
         Submitted
       </div>
@@ -39,7 +40,7 @@ function StatusBadge({ status }: { status: string }) {
   }
   if (status === "late") {
     return (
-      <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-orange-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-orange-700 ring-1 ring-inset ring-orange-600/20">
+      <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[var(--color-accent)]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-accent)] ring-1 ring-inset ring-[var(--color-accent)]/20">
         <AlertCircle className="w-3 h-3" />
         Late
       </div>
@@ -105,21 +106,21 @@ export default async function OfferingDetailPage({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700 ring-1 ring-inset ring-blue-700/10">
+              <span className="inline-flex items-center rounded-md bg-[var(--color-accent)]/10 px-3 py-1.5 text-sm font-bold text-[var(--color-accent)] ring-1 ring-inset ring-[var(--color-accent)]/20">
                 {offering.course_code}
               </span>
-              <span className="text-xs text-gray-400">
+              <span className="text-sm font-medium text-gray-400">
                 {offering.semester_name} · {offering.year_name}
               </span>
             </div>
-            <h1 className="mt-2 text-2xl font-semibold text-[var(--color-ink)]">
+            <h1 className="mt-3 text-4xl font-bold tracking-tight text-[var(--color-ink)]">
               {offering.course_name}
             </h1>
           </div>
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="panel-card p-5">
+          <div className="panel-card h-fit self-center p-8">
             <div className="grid gap-4 sm:grid-cols-3">
               {[
                 { label: "Faculty Assigned", value: assignments.length },
@@ -136,7 +137,7 @@ export default async function OfferingDetailPage({
             </div>
           </div>
 
-          <div className="rounded-3xl border border-black/5 bg-[#2b4f8c] p-5 text-white shadow-[0_18px_45px_rgba(43,79,140,0.16)]">
+          <div className="rounded-3xl border border-black/5 bg-[var(--color-accent)] p-5 text-white shadow-[0_18px_45px_rgba(12,77,162,0.16)]">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-white/60">
               One-click reports
             </p>
@@ -172,6 +173,7 @@ export default async function OfferingDetailPage({
                 className="inline-flex w-full items-center justify-center rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-0.5"
               >
                 Generate and store in R2
+                <CoordinatorToolbar offering_id={offering_id} />
               </button>
             </form>
           </div>
@@ -371,7 +373,7 @@ export default async function OfferingDetailPage({
                     <tr key={fa.id} className="hover:bg-slate-50/50 transition-colors group">
                       <td className="px-5 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-700 font-bold ring-1 ring-inset ring-blue-700/10">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-accent)]/10 text-[var(--color-accent)] font-bold ring-1 ring-inset ring-[var(--color-accent)]/20">
                             {fa.faculty_name.charAt(0).toUpperCase()}
                           </div>
                           <div>

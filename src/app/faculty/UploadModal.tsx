@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { recordFileUpload, getSubmissionFiles, deleteFileAction, type FileMetadata } from "./actions";
 import { Upload, Loader2, CheckCircle2, X, Trash2, File as FileIcon, UploadCloud, Plus } from "lucide-react";
 import { formatBytes } from "@/lib/utils";
@@ -173,13 +174,13 @@ export function UploadModal({
         )}
       </button>
 
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {isOpen && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
             onClick={() => !uploading && setIsOpen(false)}
           />
-          <div className="relative z-10 w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+          <div className="relative z-10 w-[95vw] max-w-lg min-h-[500px] overflow-hidden rounded-2xl bg-white shadow-2xl flex flex-col max-h-[90vh]">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-black/5 px-6 py-4">
               <div>
@@ -199,11 +200,7 @@ export function UploadModal({
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {/* Existing Files */}
-              {loadingFiles ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-                </div>
-              ) : existingFiles.length > 0 ? (
+              {existingFiles.length > 0 ? (
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
                     Uploaded Files ({existingFiles.length})
@@ -257,7 +254,7 @@ export function UploadModal({
 
                 <div
                   onClick={() => inputRef.current?.click()}
-                  className="group flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50/50 py-10 hover:border-[var(--color-accent)] hover:bg-blue-50/50 transition-colors"
+                  className="group flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50/50 py-10 hover:border-[var(--color-accent)] hover:bg-[var(--color-accent)]/5 transition-colors"
                 >
                   <div className="rounded-full bg-white p-3 shadow-sm ring-1 ring-black/5 group-hover:ring-[var(--color-accent)]/50 transition-all">
                     <UploadCloud className="h-6 w-6 text-gray-400 group-hover:text-[var(--color-accent)]" />
@@ -278,10 +275,10 @@ export function UploadModal({
                     {stagedFiles.map((f, i) => (
                       <div
                         key={i}
-                        className="flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50/50 p-3"
+                        className="flex items-center justify-between rounded-lg border border-[var(--color-accent)]/20 bg-[var(--color-accent)]/5 p-3"
                       >
                         <div className="flex items-center gap-3 overflow-hidden">
-                          <FileIcon className="h-4 w-4 text-blue-500 shrink-0" />
+                          <FileIcon className="h-4 w-4 text-[var(--color-accent)] shrink-0" />
                           <div className="truncate">
                             <p className="truncate text-sm font-medium text-gray-900" title={f.name}>
                               {f.name}
@@ -318,7 +315,7 @@ export function UploadModal({
                   type="button"
                   onClick={handleSubmit}
                   disabled={uploading}
-                  className="rounded-lg bg-[var(--color-accent)] px-6 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-600 transition-colors disabled:opacity-50 inline-flex items-center gap-2"
+                  className="rounded-lg bg-[var(--color-accent)] px-6 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[var(--color-accent)]/90 transition-colors disabled:opacity-50 inline-flex items-center gap-2"
                 >
                   {uploading ? (
                     <>
@@ -335,7 +332,8 @@ export function UploadModal({
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

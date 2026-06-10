@@ -39,17 +39,17 @@ export default function Sidebar({
             <div className="mt-4 space-y-2 text-sm font-medium">
               {items.map((item) => {
                 let classes = item.active
-                  ? "rounded-full bg-[var(--color-ink)] px-4 py-2 text-white flex items-center gap-3"
+                  ? "rounded-full bg-[var(--color-accent)] px-4 py-2 text-white flex items-center gap-3"
                   : "rounded-full border border-black/10 bg-white px-4 py-2 text-[var(--color-ink)] flex items-center gap-3 hover:bg-gray-50 transition-colors";
                 
                 if (item.variant === "faculty") {
                   classes = item.active
-                    ? "rounded-full bg-emerald-600 px-4 py-2 text-white flex items-center gap-3"
-                    : "rounded-full border border-emerald-600/20 bg-emerald-50 px-4 py-2 text-emerald-800 flex items-center gap-3 hover:bg-emerald-100 transition-colors font-semibold shadow-sm";
+                    ? "rounded-full bg-[var(--color-accent)] px-4 py-2 text-white flex items-center gap-3"
+                    : "rounded-full border border-[var(--color-accent)]/20 bg-white px-4 py-2 text-[var(--color-accent)] flex items-center gap-3 hover:bg-gray-50 transition-colors font-semibold shadow-sm";
                 } else if (item.variant === "coordinator") {
                   classes = item.active
-                    ? "rounded-full bg-indigo-600 px-4 py-2 text-white flex items-center gap-3"
-                    : "rounded-full border border-indigo-600/20 bg-indigo-50 px-4 py-2 text-indigo-800 flex items-center gap-3 hover:bg-indigo-100 transition-colors font-semibold shadow-sm";
+                    ? "rounded-full bg-[var(--color-accent)] px-4 py-2 text-white flex items-center gap-3"
+                    : "rounded-full border border-[var(--color-accent)]/20 bg-white px-4 py-2 text-[var(--color-accent)] flex items-center gap-3 hover:bg-gray-50 transition-colors font-semibold shadow-sm";
                 }
                 
                 const Icon = item.icon;

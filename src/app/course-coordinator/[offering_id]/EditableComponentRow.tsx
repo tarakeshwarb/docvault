@@ -59,7 +59,7 @@ export function EditableComponentRow({
 
   if (isEditing) {
     return (
-      <tr className="bg-blue-50/50">
+      <tr className="bg-[var(--color-accent)]/5">
         <td className="px-5 py-3 font-medium text-[var(--color-ink)]">
           {comp.component_name}
         </td>
@@ -117,7 +117,7 @@ export function EditableComponentRow({
       </td>
       <td className="px-5 py-3 text-center">
         {comp.mandatory ? (
-          <CheckCircle2 className="w-4 h-4 text-green-500 inline" />
+          <CheckCircle2 className="w-4 h-4 text-[var(--color-accent)] inline" />
         ) : (
           <span className="text-xs text-gray-400">Optional</span>
         )}
@@ -130,7 +130,7 @@ export function EditableComponentRow({
           <button
             onClick={() => setIsEditing(true)}
             disabled={loading}
-            className="p-1.5 text-gray-400 hover:text-[var(--color-accent)] hover:bg-blue-50 rounded transition-colors"
+            className="p-1.5 text-gray-400 hover:text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded transition-colors"
             title="Edit"
           >
             <Pencil className="w-4 h-4" />

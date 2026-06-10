@@ -3,8 +3,8 @@ import { getAllFaculty } from "../actions";
 
 const roleBadge: Record<string, { label: string; classes: string }> = {
   admin: { label: "Admin", classes: "bg-slate-100 text-slate-700 ring-slate-700/10" },
-  hod: { label: "HOD", classes: "bg-purple-50 text-purple-700 ring-purple-700/10" },
-  course_coordinator: { label: "Coordinator", classes: "bg-blue-50 text-blue-700 ring-blue-700/10" },
+  hod: { label: "HOD", classes: "bg-[var(--color-accent)]/10 text-[var(--color-accent)] ring-[var(--color-accent)]/20" },
+  course_coordinator: { label: "Coordinator", classes: "bg-[var(--color-accent)]/10 text-[var(--color-accent)] ring-[var(--color-accent)]/20" },
   faculty: { label: "Faculty", classes: "bg-gray-50 text-gray-700 ring-gray-700/10" },
 };
 
