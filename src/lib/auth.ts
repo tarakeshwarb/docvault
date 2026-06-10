@@ -23,20 +23,13 @@ function encodeSession(session: FacultySession): string {
 
 function decodeSession(token: string): FacultySession | null {
   const [payload, signature] = token.split(".");
-  if (!payload || !signature) {
-    return null;
-  }
+  if (!payload || !signature) return null;
 
   const expected = signPayload(payload);
   const expectedBuffer = Buffer.from(expected);
   const signatureBuffer = Buffer.from(signature);
-  if (expectedBuffer.length !== signatureBuffer.length) {
-    return null;
-  }
-
-  if (!timingSafeEqual(expectedBuffer, signatureBuffer)) {
-    return null;
-  }
+  if (expectedBuffer.length !== signatureBuffer.length) return null;
+  if (!timingSafeEqual(expectedBuffer, signatureBuffer)) return null;
 
   try {
     const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
@@ -46,36 +39,27 @@ function decodeSession(token: string): FacultySession | null {
       typeof parsed.faculty_name !== "string" ||
       typeof parsed.email !== "string" ||
       typeof parsed.designation !== "string" ||
-      (parsed.role !== "admin" && parsed.role !== "hod" && parsed.role !== "course_coordinator" && parsed.role !== "faculty")
+      !["admin", "hod", "course_coordinator", "faculty"].includes(parsed.role)
     ) {
       return null;
     }
-    
-    return {
-      ...parsed,
-      faculty_id: Number(parsed.faculty_id)
-    } as FacultySession;
+    return { ...parsed, faculty_id: Number(parsed.faculty_id) } as FacultySession;
   } catch {
     return null;
   }
 }
 
 export function getDashboardPathForRole(role: FacultySession["role"]): string {
-  if (role === "admin") {
-    return "/admin";
-  }
-  if (role === "course_coordinator") {
-    return "/course-coordinator";
-  }
+  if (role === "admin") return "/admin";
+  if (role === "hod") return "/hod";
+  if (role === "course_coordinator") return "/course-coordinator";
   return "/faculty";
 }
 
 export async function getFacultySession(): Promise<FacultySession | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-  if (!token) {
-    return null;
-  }
+  if (!token) return null;
   return decodeSession(token);
 }
 
@@ -86,7 +70,7 @@ export async function setFacultySession(session: FacultySession): Promise<void> 
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 5 * 60,
+    maxAge: 8 * 60 * 60, // FIX: was 5 minutes, now 8 hours
   });
 }
 
