@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { CoordinatorToolbar } from "@/components/coordinator/CoordinatorToolbar";
 import { getFacultySession } from "@/lib/auth";
 import {
   getFacultyAssignments,
@@ -172,6 +173,7 @@ export default async function OfferingDetailPage({
                 className="inline-flex w-full items-center justify-center rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-0.5"
               >
                 Generate and store in R2
+                <CoordinatorToolbar offering_id={offering_id} />
               </button>
             </form>
           </div>
