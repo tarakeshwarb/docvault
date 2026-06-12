@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { CoordinatorToolbar } from "@/components/coordinator/CoordinatorToolbar";
+import { CoordinatorExportButton } from "@/components/coordinator/CoordinatorExportButton";
 import { getFacultySession } from "@/lib/auth";
+import { SubmissionFilesModal } from "@/components/coordinator/SubmissionFilesModal";
 import {
   getFacultyAssignments,
   getCourseComponents,
@@ -97,6 +99,13 @@ export default async function OfferingDetailPage({
     submissions.map((s) => [`${s.faculty_assignment_id}::${s.course_component_id}`, s])
   );
 
+  const statusByKey: Record<string, string> = Object.fromEntries(
+    submissions.map((s) => [
+      `${s.faculty_assignment_id}::${s.course_component_id}`,
+      s.status,
+    ])
+  );
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -173,9 +182,11 @@ export default async function OfferingDetailPage({
                 className="inline-flex w-full items-center justify-center rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-0.5"
               >
                 Generate and store in R2
-                <CoordinatorToolbar offering_id={offering_id} />
               </button>
             </form>
+            <div className="mt-3">
+              <CoordinatorToolbar offering_id={offering_id} />
+            </div>
           </div>
         </div>
       </div>
@@ -343,6 +354,24 @@ export default async function OfferingDetailPage({
               <CheckCircle2 className="w-5 h-5 text-[var(--color-accent)]" />
               Submission Tracking
             </h2>
+            <CoordinatorExportButton
+              offering={{
+                course_code: offering.course_code,
+                course_name: offering.course_name,
+                semester_name: offering.semester_name,
+                year_name: offering.year_name,
+              }}
+              assignments={assignments.map((fa) => ({
+                id: fa.id,
+                faculty_name: fa.faculty_name,
+                section_name: fa.section_name,
+              }))}
+              components={components.map((c) => ({
+                id: c.id,
+                component_name: c.component_name,
+              }))}
+              statuses={statusByKey}
+            />
           </div>
           <div className="panel-card overflow-x-auto">
             <table className="w-full text-sm text-left border-collapse">
@@ -397,7 +426,13 @@ export default async function OfferingDetailPage({
                         const status = sub?.status ?? "pending";
                         return (
                           <td key={comp.id} className="px-4 py-4 text-center">
-                            <StatusBadge status={status} />
+                            <SubmissionFilesModal
+                            submission_id={sub?.submission_id ?? ""}
+                           faculty_name={fa.faculty_name}
+                           component_name={comp.component_name}
+                           section_name={fa.section_name}
+                           status={status}
+                           />
                           </td>
                         );
                       })}

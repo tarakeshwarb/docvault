@@ -1,6 +1,6 @@
 "use client";
 
-import { Download } from "lucide-react";
+import { ExcelExportButton } from "@/components/ui/ExcelExportButton";
 
 type AuditLog = {
   log_id: string;
@@ -18,55 +18,44 @@ type AuditLog = {
 };
 
 export function ExportButton({ data }: { data: AuditLog[] }) {
-  function handleExport() {
-    const headers = [
-      "Timestamp",
-      "Academic Year",
-      "Semester",
-      "Course Code",
-      "Course Name",
-      "Section",
-      "Component",
-      "Faculty Name",
-      "File Name",
-      "Version",
-      "File URL"
-    ];
-
-    const rows = data.map((log) => [
-      new Date(log.uploaded_at).toLocaleString(),
-      log.year_name,
-      log.semester_name,
-      log.course_code,
-      log.course_name,
-      log.section_name,
-      log.component_name,
-      log.uploaded_by,
-      log.file_name,
-      `v${log.version}`,
-      log.file_url
-    ]);
-
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      [headers.join(","), ...rows.map((e) => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(","))].join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `IQAC_Audit_Export_${new Date().toISOString().split("T")[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
   return (
-    <button
-      onClick={handleExport}
-      className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-[var(--color-ink)] shadow-sm hover:bg-gray-50 transition-colors"
-    >
-      <Download className="w-4 h-4" />
-      Export to CSV
-    </button>
+    <ExcelExportButton
+      variant="light"
+      disabled={data.length === 0}
+      build={() => ({
+        filename: "IQAC_Audit_Trail",
+        title: "IQAC Audit & Compliance — Master Action Trail",
+        subtitle: "Document upload and assignment activity across all terms",
+        sheetName: "Audit Trail",
+        orientation: "landscape",
+        columns: [
+          { header: "Timestamp", key: "timestamp", width: 20 },
+          { header: "Academic Year", key: "year_name", width: 16 },
+          { header: "Semester", key: "semester_name", width: 16 },
+          { header: "Course Code", key: "course_code", width: 14 },
+          { header: "Course Name", key: "course_name", width: 28 },
+          { header: "Section", key: "section_name", width: 12 },
+          { header: "Component", key: "component_name", width: 20 },
+          { header: "Faculty Name", key: "uploaded_by", width: 22 },
+          { header: "File Name", key: "file_name", width: 30 },
+          { header: "Version", key: "version", width: 10 },
+        ],
+        rows: data.map((log) => ({
+          timestamp: new Date(log.uploaded_at).toLocaleString("en-IN", {
+            dateStyle: "medium",
+            timeStyle: "short",
+          }),
+          year_name: log.year_name,
+          semester_name: log.semester_name,
+          course_code: log.course_code,
+          course_name: log.course_name,
+          section_name: log.section_name,
+          component_name: log.component_name,
+          uploaded_by: log.uploaded_by,
+          file_name: log.file_name,
+          version: `v${log.version}`,
+        })),
+      })}
+    />
   );
 }
