@@ -29,6 +29,7 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${spaceGrotesk.variable} ${plexMono.variable} h-full antialiased`}
+      data-scroll-behavior="smooth"
     >
       <body className="min-h-full bg-[var(--color-canvas)] font-sans text-[var(--color-ink)]">
         <div className="min-h-screen flex flex-col">

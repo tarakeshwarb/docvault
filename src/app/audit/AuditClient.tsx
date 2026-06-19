@@ -102,10 +102,10 @@ export default function AuditClient({ initialLogs }: { initialLogs: AuditLog[] }
                     <tr key={log.log_id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-6 py-4">
                         <span className="block text-[var(--color-ink)] font-medium">
-                          {new Date(log.uploaded_at).toLocaleDateString()}
+                          {new Date(log.uploaded_at).toLocaleDateString("en-US")}
                         </span>
                         <span className="text-xs text-gray-400">
-                          {new Date(log.uploaded_at).toLocaleTimeString()}
+                          {new Date(log.uploaded_at).toLocaleTimeString("en-US")}
                         </span>
                       </td>
                       <td className="px-6 py-4">
