@@ -1,5 +1,6 @@
 import { Plus, Link2 } from "lucide-react";
 import { getCourseOfferings } from "../actions";
+import { AdminListExport } from "@/components/admin/AdminListExport";
 
 export default async function OfferingsPage() {
   const offerings = await getCourseOfferings();
@@ -15,13 +16,16 @@ export default async function OfferingsPage() {
             Map courses to semesters and assign course coordinators.
           </p>
         </div>
-        <a
-          href="/admin/offerings/new"
-          className="inline-flex items-center gap-2 rounded-full bg-[var(--color-ink)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-ink)]/80 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          New Offering
-        </a>
+        <div className="flex items-center gap-3">
+          <AdminListExport kind="offerings" rows={offerings} />
+          <a
+            href="/admin/offerings/new"
+            className="inline-flex items-center gap-2 rounded-full bg-[var(--color-ink)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-ink)]/80 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            New Offering
+          </a>
+        </div>
       </div>
 
       <div className="panel-card overflow-hidden">

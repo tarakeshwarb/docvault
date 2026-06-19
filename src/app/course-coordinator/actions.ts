@@ -45,6 +45,7 @@ export type Section = {
 };
 
 export type SubmissionStatus = {
+  submission_id: string | null;
   faculty_assignment_id: string;
   faculty_name: string;
   section_name: string;
@@ -152,6 +153,7 @@ export async function getAllFacultyForAssignment() {
 export async function getSubmissionStatus(offering_id: string): Promise<SubmissionStatus[]> {
   return queryDb<SubmissionStatus>(`
     SELECT
+      s.submission_id,
       s.faculty_assignment_id,
       f.faculty_name,
       sec.section_name,
