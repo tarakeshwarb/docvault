@@ -27,6 +27,7 @@ create table if not exists public.course_master (
   course_code text not null unique,
   course_name text not null,
   credits integer not null,
+  course_type text, -- e.g., 'T' for Theory, 'L' for Lab
   created_at timestamptz not null default now()
 );
 
@@ -160,6 +161,16 @@ create table if not exists public.report_template (
   description text,
   r2_template_path text not null,
   is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.course_broadcast (
+  broadcast_id uuid primary key default gen_random_uuid(),
+  offering_id uuid not null references public.course_offering(offering_id) on delete cascade,
+  title text not null,
+  r2_file_key text not null,
+  file_name text not null,
+  uploaded_by bigint references public.faculty(faculty_id) on delete set null,
   created_at timestamptz not null default now()
 );
 

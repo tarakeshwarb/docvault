@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { type LucideIcon } from "lucide-react";
+import SidebarLink from "./SidebarLink";
 
 export type SidebarItem = {
   label: string;
@@ -38,40 +38,12 @@ export default function Sidebar({
             </p>
             <div className="mt-4 space-y-2 text-sm font-medium">
               {items.map((item) => {
-                let classes = item.active
-                  ? "rounded-full bg-[var(--color-accent)] px-4 py-2 text-white flex items-center gap-3"
-                  : "rounded-full border border-black/10 bg-white px-4 py-2 text-[var(--color-ink)] flex items-center gap-3 hover:bg-gray-50 transition-colors";
-                
-                if (item.variant === "faculty") {
-                  classes = item.active
-                    ? "rounded-full bg-[var(--color-accent)] px-4 py-2 text-white flex items-center gap-3"
-                    : "rounded-full border border-[var(--color-accent)]/20 bg-white px-4 py-2 text-[var(--color-accent)] flex items-center gap-3 hover:bg-gray-50 transition-colors font-semibold shadow-sm";
-                } else if (item.variant === "coordinator") {
-                  classes = item.active
-                    ? "rounded-full bg-[var(--color-accent)] px-4 py-2 text-white flex items-center gap-3"
-                    : "rounded-full border border-[var(--color-accent)]/20 bg-white px-4 py-2 text-[var(--color-accent)] flex items-center gap-3 hover:bg-gray-50 transition-colors font-semibold shadow-sm";
-                } else if (item.variant === "audit") {
-                  classes = item.active
-                    ? "rounded-full bg-[var(--color-accent)] px-4 py-2 text-white flex items-center gap-3"
-                    : "rounded-full border border-[var(--color-accent)]/20 bg-white px-4 py-2 text-[var(--color-accent)] flex items-center gap-3 hover:bg-gray-50 transition-colors font-semibold shadow-sm";
-                }
-                
                 const Icon = item.icon;
-                
-                const content = item.href ? (
-                  <Link href={item.href} className={classes}>
-                    {Icon && <Icon className="w-4 h-4" />}
-                    {item.label}
-                  </Link>
-                ) : (
-                  <div className={classes}>
-                    {Icon && <Icon className="w-4 h-4" />}
-                    {item.label}
-                  </div>
-                );
                 return (
                   <div key={item.label}>
-                    {content}
+                    <SidebarLink item={{ href: item.href, label: item.label, active: item.active, variant: item.variant }}>
+                      {Icon && <Icon className="w-4 h-4" />}
+                    </SidebarLink>
                   </div>
                 );
               })}

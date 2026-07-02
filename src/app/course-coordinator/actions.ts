@@ -495,3 +495,85 @@ export async function generateConsolidatedReport(formData: FormData) {
   revalidatePath("/course-coordinator");
   revalidatePath("/secondary-coordinator");
 }
+
+export type CourseBroadcast = {
+  broadcast_id: string;
+  offering_id: string;
+  title: string;
+  r2_file_key: string;
+  file_name: string;
+  uploaded_by: number | null;
+  uploaded_by_name: string | null;
+  created_at: string;
+};
+
+export async function getCourseBroadcasts(offering_id: string): Promise<CourseBroadcast[]> {
+  return queryDb<CourseBroadcast>(`
+    SELECT
+      cb.broadcast_id,
+      cb.offering_id,
+      cb.title,
+      cb.r2_file_key,
+      cb.file_name,
+      cb.uploaded_by,
+      f.faculty_name AS uploaded_by_name,
+      cb.created_at
+    FROM public.course_broadcast cb
+    LEFT JOIN public.faculty f ON cb.uploaded_by = f.faculty_id
+    WHERE cb.offering_id = $1
+    ORDER BY cb.created_at DESC
+  `, [offering_id]);
+}
+
+export type GlobalCourseBroadcast = CourseBroadcast & {
+  course_code: string;
+  course_name: string;
+};
+
+export async function getAllCourseBroadcasts(): Promise<GlobalCourseBroadcast[]> {
+  return queryDb<GlobalCourseBroadcast>(`
+    SELECT
+      cb.broadcast_id,
+      cb.offering_id,
+      cb.title,
+      cb.r2_file_key,
+      cb.file_name,
+      cb.uploaded_by,
+      f.faculty_name AS uploaded_by_name,
+      cb.created_at,
+      cm.course_code,
+      cm.course_name
+    FROM public.course_broadcast cb
+    LEFT JOIN public.faculty f ON cb.uploaded_by = f.faculty_id
+    JOIN public.course_offering co ON cb.offering_id = co.offering_id
+    JOIN public.course_master cm ON co.course_id = cm.course_id
+    ORDER BY cb.created_at DESC
+  `);
+}
+
+export async function addCourseBroadcast(data: {
+  offering_id: string;
+  title: string;
+  r2_file_key: string;
+  file_name: string;
+  uploaded_by: number;
+}) {
+  await executeDb(
+    `INSERT INTO public.course_broadcast (offering_id, title, r2_file_key, file_name, uploaded_by)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [data.offering_id, data.title, data.r2_file_key, data.file_name, data.uploaded_by]
+  );
+  revalidatePath(`/course-coordinator/${data.offering_id}`);
+  revalidatePath(`/secondary-coordinator/${data.offering_id}`);
+  revalidatePath(`/faculty`);
+}
+
+export async function deleteCourseBroadcast(broadcast_id: string, offering_id: string) {
+  await executeDb(
+    `DELETE FROM public.course_broadcast WHERE broadcast_id = $1 AND offering_id = $2`,
+    [broadcast_id, offering_id]
+  );
+  revalidatePath(`/course-coordinator/${offering_id}`);
+  revalidatePath(`/secondary-coordinator/${offering_id}`);
+  revalidatePath(`/faculty`);
+}

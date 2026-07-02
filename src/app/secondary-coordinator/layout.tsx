@@ -1,13 +1,13 @@
 import AppShell from "@/components/layout/AppShell";
-import { LayoutDashboard, ClipboardList, UserSquare2, Users } from "lucide-react";
+import { LayoutDashboard, ClipboardList, UserSquare2, Users, Megaphone } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getDashboardPathForRole, getFacultySession } from "@/lib/auth";
 import { queryDb } from "@/lib/db";
 
 import { type SidebarItem } from "@/components/layout/Sidebar";
 
-const coordinatorSidebarItems: SidebarItem[] = [
-  { label: "My Courses", href: "/secondary-coordinator", icon: LayoutDashboard, variant: "coordinator" },
+const secondaryCoordinatorSidebarItems: SidebarItem[] = [
+  { label: "My Assigned Courses", href: "/secondary-coordinator", icon: LayoutDashboard, variant: "coordinator" },
   { label: "Faculty Assign", href: "#faculty-assignments", icon: Users },
   { label: "Documents", href: "#document-requirements", icon: ClipboardList },
   { label: "Faculty Portal", href: "/faculty", icon: UserSquare2, variant: "faculty" },
@@ -50,7 +50,7 @@ export default async function SecondaryCoordinatorLayout({
 
   return (
     <AppShell
-      sidebarItems={coordinatorSidebarItems}
+      sidebarItems={secondaryCoordinatorSidebarItems}
       sidebarNote={coordinatorSidebarNote}
     >
       {children}

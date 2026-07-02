@@ -1,5 +1,5 @@
 import AppShell from "@/components/layout/AppShell";
-import { LayoutDashboard, Upload, History, BookOpen, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, Upload, History, BookOpen, ShieldCheck, Megaphone } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getFacultySession } from "@/lib/auth";
 import { getCoordinatorOfferings } from "../course-coordinator/actions";
@@ -9,6 +9,7 @@ import { type SidebarItem } from "@/components/layout/Sidebar";
 
 const facultySidebarItems: SidebarItem[] = [
   { label: "My Dashboard", href: "/faculty", icon: LayoutDashboard, variant: "faculty" },
+  { label: "Course Materials", href: "#broadcasts", icon: Megaphone },
 ];
 
 const facultySidebarNote = {

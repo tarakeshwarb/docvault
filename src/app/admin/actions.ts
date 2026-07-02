@@ -8,6 +8,7 @@ export type Course = {
   course_code: string;
   course_name: string;
   credits: number;
+  course_type: string | null;
   created_at: string;
 };
 
@@ -69,13 +70,13 @@ export async function getCourseById(course_id: string): Promise<Course | null> {
 
 export async function updateCourse(
   course_id: string,
-  data: { course_code: string; course_name: string; credits: number }
+  data: { course_code: string; course_name: string; credits: number; course_type: string }
 ) {
   await executeDb(
     `UPDATE public.course_master 
-     SET course_code = $1, course_name = $2, credits = $3 
-     WHERE course_id = $4`,
-    [data.course_code, data.course_name, data.credits, course_id]
+     SET course_code = $1, course_name = $2, credits = $3, course_type = $4 
+     WHERE course_id = $5`,
+    [data.course_code, data.course_name, data.credits, data.course_type, course_id]
   );
   revalidatePath("/admin/courses");
 }
@@ -210,14 +211,15 @@ export async function createCourse(formData: FormData) {
   const code = (formData.get("course_code") as string)?.trim();
   const name = (formData.get("course_name") as string)?.trim();
   const credits = parseInt(formData.get("credits") as string, 10);
+  const type = (formData.get("course_type") as string)?.trim();
 
   if (!code || !name || isNaN(credits)) {
     throw new Error("All fields are required.");
   }
 
   await executeDb(
-    "INSERT INTO public.course_master (course_code, course_name, credits) VALUES ($1, $2, $3)",
-    [code, name, credits]
+    "INSERT INTO public.course_master (course_code, course_name, credits, course_type) VALUES ($1, $2, $3, $4)",
+    [code, name, credits, type || null]
   );
   revalidatePath("/admin/courses");
 }

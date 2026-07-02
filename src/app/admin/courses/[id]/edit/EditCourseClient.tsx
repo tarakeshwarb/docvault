@@ -19,6 +19,7 @@ export default function EditCourseClient({ course }: { course: Course }) {
       course_code: formData.get("course_code") as string,
       course_name: formData.get("course_name") as string,
       credits: parseInt(formData.get("credits") as string),
+      course_type: formData.get("course_type") as string,
     };
 
     if (!data.course_code || !data.course_name || isNaN(data.credits)) {
@@ -81,6 +82,17 @@ export default function EditCourseClient({ course }: { course: Course }) {
             min="1"
             max="10"
             className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm outline-none transition hover:border-black/20 focus:border-[var(--color-ink)] focus:ring-1 focus:ring-[var(--color-ink)]"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-[var(--color-ink)]">Course Type (Optional)</label>
+          <input
+            name="course_type"
+            defaultValue={course.course_type ?? ""}
+            maxLength={2}
+            placeholder="e.g. T, L, EL"
+            className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm outline-none transition hover:border-black/20 focus:border-[var(--color-ink)] focus:ring-1 focus:ring-[var(--color-ink)] uppercase"
           />
         </div>
 

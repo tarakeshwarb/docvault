@@ -4,6 +4,7 @@ import { CoordinatorToolbar } from "@/components/coordinator/CoordinatorToolbar"
 import { CoordinatorExportButton } from "@/components/coordinator/CoordinatorExportButton";
 import { getFacultySession } from "@/lib/auth";
 import { SubmissionFilesModal } from "@/components/coordinator/SubmissionFilesModal";
+import { ConfirmDownloadLink } from "@/components/ui/ConfirmDownloadLink";
 import {
   getFacultyAssignments,
   getCourseComponents,
@@ -14,9 +15,11 @@ import {
   getAllSections,
   getAllFacultyForAssignment,
   getCoordinatorOfferings,
+  getAllCourseBroadcasts,
 } from "../actions";
 import { AddFacultyForm } from "./AddFacultyForm";
 import { AddComponentForm } from "./AddComponentForm";
+import { AddBroadcastForm } from "./AddBroadcastForm";
 import { EditableComponentRow } from "./EditableComponentRow";
 import { EditableFacultyRow } from "./EditableFacultyRow";
 import {
@@ -26,6 +29,7 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
+  Megaphone,
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
@@ -76,6 +80,7 @@ export default async function OfferingDetailPage({
     componentMasters,
     allSections,
     allFaculty,
+    broadcasts,
   ] =
     await Promise.all([
       getCoordinatorOfferings(session.faculty_id),
@@ -86,6 +91,7 @@ export default async function OfferingDetailPage({
       getComponentMasters(),
       getAllSections(),
       getAllFacultyForAssignment(),
+      getAllCourseBroadcasts(),
     ]);
 
   const offering = offerings.find((o) => o.offering_id === offering_id);
@@ -189,6 +195,51 @@ export default async function OfferingDetailPage({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Course Broadcasts */}
+      <div id="broadcasts" className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-[var(--color-ink)] flex items-center gap-2">
+            <Megaphone className="w-5 h-5 text-[var(--color-accent)]" />
+            Course Broadcasts
+          </h2>
+          <AddBroadcastForm offering_id={offering_id} faculty_id={session.faculty_id} />
+        </div>
+
+        {broadcasts.length === 0 ? (
+          <div className="panel-card border-dashed border-gray-200 p-5 text-center">
+            <p className="text-sm text-gray-500">No course materials broadcasted yet.</p>
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {broadcasts.map((b) => (
+              <ConfirmDownloadLink
+                key={b.broadcast_id}
+                href={`${process.env.R2_PUBLIC_BASE_URL}/${b.r2_file_key}`}
+                target="_blank"
+                className="panel-card group flex flex-col justify-between p-4 hover:border-[var(--color-accent)] hover:shadow-md transition-all bg-white"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="inline-flex items-center rounded-md bg-[var(--color-accent)]/10 px-2 py-0.5 text-[10px] font-bold text-[var(--color-accent)] ring-1 ring-inset ring-[var(--color-accent)]/20">
+                      {b.course_code}
+                    </span>
+                  </div>
+                  <h3 className="font-semibold text-gray-900 group-hover:text-[var(--color-accent)] transition-colors line-clamp-2" title={b.title}>
+                    {b.title}
+                  </h3>
+                  <p className="mt-2 text-[11px] text-gray-500">
+                    Uploaded by {b.uploaded_by_name ?? "System"} on {new Date(b.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="mt-4 flex items-center justify-between text-xs font-semibold text-[var(--color-accent)]">
+                  <span>Download File &rarr;</span>
+                </div>
+              </ConfirmDownloadLink>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Faculty Assignments */}
@@ -330,13 +381,13 @@ export default async function OfferingDetailPage({
                         {formatDate(report.generated_at)}
                       </td>
                       <td className="px-5 py-3 text-right">
-                        <Link
+                        <ConfirmDownloadLink
                           href={report.r2_report_path}
                           className="text-[var(--color-accent)] hover:underline"
                           target="_blank"
                         >
                           Download
-                        </Link>
+                        </ConfirmDownloadLink>
                       </td>
                     </tr>
                   ))
