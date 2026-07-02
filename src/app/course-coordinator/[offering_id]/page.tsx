@@ -128,40 +128,40 @@ export default async function OfferingDetailPage({
           </div>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="panel-card h-fit self-center p-8">
-            <div className="grid gap-4 sm:grid-cols-3">
+        <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_3fr]">
+          <div className="panel-card h-fit self-center p-6">
+            <div className="grid gap-4 grid-cols-1">
               {[
                 { label: "Faculty Assigned", value: assignments.length },
                 { label: "Components Required", value: components.length },
                 { label: "Completion", value: `${completionPct}%` },
               ].map((item) => (
                 <div key={item.label} className="panel-card bg-slate-50/70 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)]">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)]">
                     {item.label}
                   </p>
-                  <p className="mt-2 text-2xl font-semibold text-[var(--color-ink)]">{item.value}</p>
+                  <p className="mt-1.5 text-2xl font-semibold text-[var(--color-ink)]">{item.value}</p>
                 </div>
               ))}
             </div>
           </div>
 
           <div className="rounded-3xl border border-black/5 bg-[var(--color-accent)] p-5 text-white shadow-[0_18px_45px_rgba(12,77,162,0.16)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-white/60">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/60">
               One-click reports
             </p>
-            <h2 className="mt-2 text-xl font-semibold">Generate consolidated academic files</h2>
+            <h2 className="mt-1.5 text-xl font-semibold">Generate consolidated academic files</h2>
             <form action={generateConsolidatedReport} className="mt-4 space-y-3">
               <input type="hidden" name="offering_id" value={offering_id} />
               <input type="hidden" name="generated_by" value={session.faculty_id} />
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.18em] text-white/70">
+                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70">
                   Report type
                 </label>
                 <select
                   name="report_type"
                   defaultValue="consolidated_marks_report"
-                  className="w-full rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-sm text-white outline-none backdrop-blur"
+                  className="w-full rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-sm text-white outline-none backdrop-blur"
                 >
                   <option value="consolidated_marks_report" className="text-[var(--color-ink)]">
                     Consolidated Marks Report
@@ -179,7 +179,7 @@ export default async function OfferingDetailPage({
               </div>
               <button
                 type="submit"
-                className="inline-flex w-full items-center justify-center rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-0.5"
+                className="inline-flex w-full items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-0.5"
               >
                 Generate and store in R2
               </button>
@@ -234,6 +234,7 @@ export default async function OfferingDetailPage({
                       key={fa.id}
                       fa={fa}
                       allSections={allSections}
+                      allFaculty={allFaculty}
                       submittedCount={submittedCount}
                       pendingCount={pendingCount}
                       offering_id={offering_id}

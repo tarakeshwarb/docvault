@@ -35,14 +35,15 @@ export default async function OfferingsPage() {
               <th className="px-6 py-4">Course</th>
               <th className="px-6 py-4">Semester</th>
               <th className="px-6 py-4">Academic Year</th>
-              <th className="px-6 py-4">Coordinator</th>
+              <th className="px-6 py-4">Coordinators</th>
+              <th className="px-6 py-4">Audit Professors</th>
               <th className="px-6 py-4 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-black/5">
             {offerings.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-12 text-center">
+                <td colSpan={6} className="px-6 py-12 text-center">
                   <Link2 className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                   <p className="text-gray-500">
                     No course offerings yet. Create one to get started.
@@ -59,10 +60,33 @@ export default async function OfferingsPage() {
                   <td className="px-6 py-4 text-gray-600">{o.semester_name}</td>
                   <td className="px-6 py-4 text-gray-600">{o.year_name}</td>
                   <td className="px-6 py-4">
-                    {o.coordinator_name ? (
-                      <span className="text-[var(--color-ink)] font-medium">{o.coordinator_name}</span>
+                    <div className="space-y-1">
+                      {o.primary_coordinator.faculty_name ? (
+                        <div className="text-sm">
+                          <span className="text-[var(--color-ink)]">{o.primary_coordinator.faculty_name}</span>
+                          <span className="ml-1.5 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Primary</span>
+                        </div>
+                      ) : (
+                        <span className="text-orange-500 text-xs font-medium">⚠ Not assigned</span>
+                      )}
+                      {o.secondary_coordinators.map((c) => (
+                        <div key={c.faculty_id} className="text-sm text-gray-600">
+                          {c.faculty_name}
+                        </div>
+                      ))}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    {o.audit_professors.length > 0 ? (
+                      <div className="space-y-1">
+                        {o.audit_professors.map((a) => (
+                          <div key={a.faculty_id} className="text-sm text-[var(--color-ink)]">
+                            {a.faculty_name}
+                          </div>
+                        ))}
+                      </div>
                     ) : (
-                      <span className="text-orange-500 text-xs font-medium">⚠ Not assigned</span>
+                      <span className="text-gray-400 text-xs">None</span>
                     )}
                   </td>
                   <td className="px-6 py-4 text-right">

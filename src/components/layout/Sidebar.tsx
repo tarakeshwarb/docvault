@@ -6,7 +6,7 @@ export type SidebarItem = {
   href?: string;
   active?: boolean;
   icon?: LucideIcon;
-  variant?: "default" | "faculty" | "coordinator";
+  variant?: "default" | "faculty" | "coordinator" | "audit";
 };
 
 export type SidebarNote = {
@@ -47,6 +47,10 @@ export default function Sidebar({
                     ? "rounded-full bg-[var(--color-accent)] px-4 py-2 text-white flex items-center gap-3"
                     : "rounded-full border border-[var(--color-accent)]/20 bg-white px-4 py-2 text-[var(--color-accent)] flex items-center gap-3 hover:bg-gray-50 transition-colors font-semibold shadow-sm";
                 } else if (item.variant === "coordinator") {
+                  classes = item.active
+                    ? "rounded-full bg-[var(--color-accent)] px-4 py-2 text-white flex items-center gap-3"
+                    : "rounded-full border border-[var(--color-accent)]/20 bg-white px-4 py-2 text-[var(--color-accent)] flex items-center gap-3 hover:bg-gray-50 transition-colors font-semibold shadow-sm";
+                } else if (item.variant === "audit") {
                   classes = item.active
                     ? "rounded-full bg-[var(--color-accent)] px-4 py-2 text-white flex items-center gap-3"
                     : "rounded-full border border-[var(--color-accent)]/20 bg-white px-4 py-2 text-[var(--color-accent)] flex items-center gap-3 hover:bg-gray-50 transition-colors font-semibold shadow-sm";

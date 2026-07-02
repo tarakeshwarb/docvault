@@ -13,7 +13,7 @@ create table if not exists public.faculty (
   role text not null default 'faculty',
   created_at timestamptz not null default now(),
   constraint faculty_role_check
-    check (role in ('admin', 'hod', 'course_coordinator', 'faculty'))
+    check (role in ('admin', 'hod', 'course_coordinator', 'secondary_coordinator', 'faculty'))
 );
 
 create table if not exists public.department_master (
@@ -79,6 +79,22 @@ create table if not exists public.course_offering (
 );
 
 create table if not exists public.coordinator_assignment (
+  id uuid primary key default gen_random_uuid(),
+  offering_id uuid not null references public.course_offering(offering_id) on delete cascade,
+  faculty_id bigint not null references public.faculty(faculty_id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (offering_id, faculty_id)
+);
+
+create table if not exists public.secondary_coordinator_assignment (
+  id uuid primary key default gen_random_uuid(),
+  offering_id uuid not null references public.course_offering(offering_id) on delete cascade,
+  faculty_id bigint not null references public.faculty(faculty_id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (offering_id, faculty_id)
+);
+
+create table if not exists public.audit_assignment (
   id uuid primary key default gen_random_uuid(),
   offering_id uuid not null references public.course_offering(offering_id) on delete cascade,
   faculty_id bigint not null references public.faculty(faculty_id) on delete cascade,
@@ -180,6 +196,12 @@ create table if not exists public.notification (
 
 create index if not exists idx_course_offering_semester on public.course_offering(semester_id);
 create index if not exists idx_course_offering_course on public.course_offering(course_id);
+create index if not exists idx_coordinator_assignment_offering on public.coordinator_assignment(offering_id);
+create index if not exists idx_coordinator_assignment_faculty on public.coordinator_assignment(faculty_id);
+create index if not exists idx_secondary_coordinator_assignment_offering on public.secondary_coordinator_assignment(offering_id);
+create index if not exists idx_secondary_coordinator_assignment_faculty on public.secondary_coordinator_assignment(faculty_id);
+create index if not exists idx_audit_assignment_offering on public.audit_assignment(offering_id);
+create index if not exists idx_audit_assignment_faculty on public.audit_assignment(faculty_id);
 create index if not exists idx_faculty_assignment_offering on public.faculty_assignment(offering_id);
 create index if not exists idx_faculty_assignment_faculty on public.faculty_assignment(faculty_id);
 create index if not exists idx_course_component_offering on public.course_component(offering_id);
@@ -276,3 +298,17 @@ insert into public.component_master (component_name) values
   ('Question Bank'),
   ('End Semester Exam Documents')
 on conflict (component_name) do nothing;
+
+-- ==========================================
+-- MIGRATION NOTES
+-- ==========================================
+-- Run the following in Supabase SQL Editor if you have existing data:
+-- 1. Create secondary_coordinator_assignment table for secondary coordinators
+-- 2. Create audit_assignment table для audit professors
+-- 3. Add indexes for performance
+-- 4. Update faculty role constraint to include 'secondary_coordinator'
+-- 5. If you have existing coordinator_assignment with is_primary column, migrate secondary coordinators to new table
+
+-- Migration script for existing databases:
+-- ALTER TABLE public.faculty DROP CONSTRAINT IF EXISTS faculty_role_check;
+-- ALTER TABLE public.faculty ADD CONSTRAINT faculty_role_check CHECK (role in ('admin', 'hod', 'course_coordinator', 'secondary_coordinator', 'faculty'));

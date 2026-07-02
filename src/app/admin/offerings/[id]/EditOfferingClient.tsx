@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { updateCourseOffering, deleteCourseOffering, CourseOffering } from "../../actions";
 import { SearchableSelect } from "@/components/ui/searchable-select";
-import { Trash2 } from "lucide-react";
+import { Trash2, Plus, X } from "lucide-react";
 
 type Course = { course_id: string; course_code: string; course_name: string };
 type Semester = { semester_id: string; semester_name: string; year_name: string };
@@ -24,9 +24,22 @@ export default function EditOfferingClient({
   const router = useRouter();
   const [courseId, setCourseId] = useState(offering.course_id);
   const [semesterId, setSemesterId] = useState(offering.semester_id);
-  const [coordinatorId, setCoordinatorId] = useState(offering.coordinator_id ? String(offering.coordinator_id) : "");
+  const [primaryCoordinatorId, setPrimaryCoordinatorId] = useState("");
+  const [secondaryCoordinatorRows, setSecondaryCoordinatorRows] = useState<{id: string}[]>([{id: ""}]);
+  const [auditProfessorRows, setAuditProfessorRows] = useState<{id: string}[]>([{id: ""}]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Initialize state from offering data
+  useEffect(() => {
+    setPrimaryCoordinatorId(offering.primary_coordinator.faculty_id ? String(offering.primary_coordinator.faculty_id) : "");
+    setSecondaryCoordinatorRows(offering.secondary_coordinators.length > 0 
+      ? offering.secondary_coordinators.map(c => ({id: String(c.faculty_id)})) 
+      : [{id: ""}]);
+    setAuditProfessorRows(offering.audit_professors.length > 0 
+      ? offering.audit_professors.map(a => ({id: String(a.faculty_id)})) 
+      : [{id: ""}]);
+  }, [offering]);
 
   const courseOptions = courses.map((c) => ({
     value: c.course_id,
@@ -46,6 +59,46 @@ export default function EditOfferingClient({
     })),
   ];
 
+  const secondaryCoordinatorOptions = coordinators
+    .filter(f => String(f.faculty_id) !== primaryCoordinatorId)
+    .map((f) => ({
+      value: String(f.faculty_id),
+      label: `${f.faculty_name} · ${f.designation}`,
+    }));
+
+  const auditProfessorOptions = coordinators.map((f) => ({
+    value: String(f.faculty_id),
+    label: `${f.faculty_name} · ${f.designation}`,
+  }));
+
+  const addSecondaryCoordinatorRow = () => {
+    setSecondaryCoordinatorRows([...secondaryCoordinatorRows, {id: ""}]);
+  };
+
+  const removeSecondaryCoordinatorRow = (index: number) => {
+    setSecondaryCoordinatorRows(secondaryCoordinatorRows.filter((_, i) => i !== index));
+  };
+
+  const updateSecondaryCoordinatorRow = (index: number, value: string) => {
+    const newRows = [...secondaryCoordinatorRows];
+    newRows[index].id = value;
+    setSecondaryCoordinatorRows(newRows);
+  };
+
+  const addAuditProfessorRow = () => {
+    setAuditProfessorRows([...auditProfessorRows, {id: ""}]);
+  };
+
+  const removeAuditProfessorRow = (index: number) => {
+    setAuditProfessorRows(auditProfessorRows.filter((_, i) => i !== index));
+  };
+
+  const updateAuditProfessorRow = (index: number, value: string) => {
+    const newRows = [...auditProfessorRows];
+    newRows[index].id = value;
+    setAuditProfessorRows(newRows);
+  };
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!courseId || !semesterId) {
@@ -58,7 +111,9 @@ export default function EditOfferingClient({
       await updateCourseOffering(offering.offering_id, {
         course_id: courseId,
         semester_id: semesterId,
-        coordinator_id: coordinatorId ? parseInt(coordinatorId) : null,
+        primary_coordinator_id: primaryCoordinatorId ? parseInt(primaryCoordinatorId) : null,
+        secondary_coordinator_ids: secondaryCoordinatorRows.filter(r => r.id).map(r => parseInt(r.id)),
+        audit_professor_ids: auditProfessorRows.filter(r => r.id).map(r => parseInt(r.id)),
       });
       router.push("/admin/offerings");
     } catch (err) {
@@ -131,14 +186,88 @@ export default function EditOfferingClient({
 
         <div>
           <label className="block text-sm font-medium text-[var(--color-ink)] mb-2">
-            Assign Coordinator <span className="text-gray-400 font-normal">(optional)</span>
+            Primary Coordinator <span className="text-gray-400 font-normal">(optional)</span>
           </label>
           <SearchableSelect
             options={coordinatorOptions}
-            value={coordinatorId}
-            onChange={setCoordinatorId}
+            value={primaryCoordinatorId}
+            onChange={setPrimaryCoordinatorId}
             placeholder="Search faculty by name or employee ID..."
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--color-ink)] mb-2">
+            Secondary Coordinators <span className="text-gray-400 font-normal">(optional)</span>
+          </label>
+          <div className="space-y-2">
+            {secondaryCoordinatorRows.map((row, index) => (
+              <div key={index} className="flex gap-2">
+                <div className="flex-1">
+                  <SearchableSelect
+                    options={secondaryCoordinatorOptions}
+                    value={row.id}
+                    onChange={(value) => updateSecondaryCoordinatorRow(index, value)}
+                    placeholder="Search faculty..."
+                  />
+                </div>
+                {secondaryCoordinatorRows.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeSecondaryCoordinatorRow(index)}
+                    className="inline-flex items-center justify-center rounded-md bg-red-100 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-200 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={addSecondaryCoordinatorRow}
+              className="inline-flex items-center gap-2 rounded-md bg-[var(--color-accent)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-accent)]/80 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Secondary Coordinator
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--color-ink)] mb-2">
+            Audit Professors <span className="text-gray-400 font-normal">(optional)</span>
+          </label>
+          <div className="space-y-2">
+            {auditProfessorRows.map((row, index) => (
+              <div key={index} className="flex gap-2">
+                <div className="flex-1">
+                  <SearchableSelect
+                    options={auditProfessorOptions}
+                    value={row.id}
+                    onChange={(value) => updateAuditProfessorRow(index, value)}
+                    placeholder="Search faculty..."
+                  />
+                </div>
+                {auditProfessorRows.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeAuditProfessorRow(index)}
+                    className="inline-flex items-center justify-center rounded-md bg-red-100 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-200 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={addAuditProfessorRow}
+              className="inline-flex items-center gap-2 rounded-md bg-[var(--color-accent)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-accent)]/80 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Audit Professor
+            </button>
+          </div>
         </div>
 
         {error && (

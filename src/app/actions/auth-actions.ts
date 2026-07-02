@@ -46,13 +46,41 @@ async function resolvePortalPath(faculty_id: number, role: FacultyAuthRow["role"
 
   // For faculty role, check assignment tables to decide the correct portal
   if (role === "faculty") {
-    // Check coordinator_assignment first — if assigned as coordinator, open coordinator portal
+    // Check coordinator_assignment first — if assigned as primary coordinator, open coordinator portal
     const coordinatorRows = await queryDb<{ count: string }>(
       `SELECT COUNT(*) AS count FROM public.coordinator_assignment WHERE faculty_id = $1`,
       [faculty_id]
     );
     if (Number(coordinatorRows[0]?.count ?? 0) > 0) {
       return "/course-coordinator";
+    }
+
+    // Check secondary_coordinator_assignment — if assigned as secondary coordinator, open secondary coordinator portal
+    try {
+      const secondaryCoordinatorRows = await queryDb<{ count: string }>(
+        `SELECT COUNT(*) AS count FROM public.secondary_coordinator_assignment WHERE faculty_id = $1`,
+        [faculty_id]
+      );
+      if (Number(secondaryCoordinatorRows[0]?.count ?? 0) > 0) {
+        return "/secondary-coordinator";
+      }
+    } catch (error) {
+      // Table doesn't exist yet, skip secondary coordinator check
+      console.warn("secondary_coordinator_assignment table not found, skipping check");
+    }
+
+    // Check audit_assignment — if assigned as audit professor, open audit portal
+    try {
+      const auditRows = await queryDb<{ count: string }>(
+        `SELECT COUNT(*) AS count FROM public.audit_assignment WHERE faculty_id = $1`,
+        [faculty_id]
+      );
+      if (Number(auditRows[0]?.count ?? 0) > 0) {
+        return "/audit";
+      }
+    } catch (error) {
+      // Table doesn't exist yet, skip audit check
+      console.warn("audit_assignment table not found, skipping check");
     }
 
     // Check faculty_assignment — if assigned, open faculty portal

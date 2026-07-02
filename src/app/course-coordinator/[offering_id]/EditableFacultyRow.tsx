@@ -21,20 +21,30 @@ type Section = {
   section_name: string;
 };
 
+type Faculty = {
+  faculty_id: number;
+  faculty_name: string;
+  designation: string;
+  role: string;
+};
+
 export function EditableFacultyRow({
   fa,
   allSections,
+  allFaculty,
   submittedCount,
   pendingCount,
   offering_id,
 }: {
   fa: FacultyAssignment;
   allSections: Section[];
+  allFaculty: Faculty[];
   submittedCount: number;
   pendingCount: number;
   offering_id: string;
 }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [facultyId, setFacultyId] = useState(String(fa.faculty_id));
   const [sectionId, setSectionId] = useState(fa.section_id);
   const [studentCount, setStudentCount] = useState(String(fa.student_count));
   const [loading, setLoading] = useState(false);
@@ -46,6 +56,7 @@ export function EditableFacultyRow({
       await updateFacultyAssignment({
         id: fa.id,
         offering_id,
+        faculty_id: parseInt(facultyId) || fa.faculty_id,
         section_id: sectionId,
         student_count: parseInt(studentCount) || 0,
       });
@@ -72,8 +83,17 @@ export function EditableFacultyRow({
     return (
       <tr className="bg-[var(--color-accent)]/5">
         <td className="px-5 py-3">
-          <p className="font-medium text-[var(--color-ink)]">{fa.faculty_name}</p>
-          <p className="text-xs text-gray-400">{fa.designation}</p>
+          <select
+            value={facultyId}
+            onChange={(e) => setFacultyId(e.target.value)}
+            className="w-full max-w-[200px] rounded border border-gray-300 px-2 py-1 text-sm outline-none focus:border-[var(--color-accent)] bg-white"
+          >
+            {allFaculty.map((f) => (
+              <option key={f.faculty_id} value={f.faculty_id}>
+                {f.faculty_name} ({f.designation})
+              </option>
+            ))}
+          </select>
         </td>
         <td className="px-5 py-3">
           <select
@@ -112,6 +132,7 @@ export function EditableFacultyRow({
             </button>
             <button
               onClick={() => {
+                setFacultyId(String(fa.faculty_id));
                 setSectionId(fa.section_id);
                 setStudentCount(String(fa.student_count));
                 setIsEditing(false);
@@ -151,7 +172,12 @@ export function EditableFacultyRow({
       <td className="px-5 py-3 text-right">
         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
-            onClick={() => setIsEditing(true)}
+            onClick={() => {
+              setFacultyId(String(fa.faculty_id));
+              setSectionId(fa.section_id);
+              setStudentCount(String(fa.student_count));
+              setIsEditing(true);
+            }}
             disabled={loading}
             className="p-1.5 text-gray-400 hover:text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded transition-colors"
             title="Edit"

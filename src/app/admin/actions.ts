@@ -29,8 +29,18 @@ export type CourseOffering = {
   course_name: string;
   semester_name: string;
   year_name: string;
-  coordinator_id: number | null;
-  coordinator_name: string | null;
+  primary_coordinator: {
+    faculty_id: number | null;
+    faculty_name: string | null;
+  };
+  secondary_coordinators: Array<{
+    faculty_id: number;
+    faculty_name: string;
+  }>;
+  audit_professors: Array<{
+    faculty_id: number;
+    faculty_name: string;
+  }>;
 };
 
 export async function getCourses(): Promise<Course[]> {
@@ -92,7 +102,15 @@ export async function getAllFaculty(): Promise<Faculty[]> {
 
 export async function getCourseOfferings(): Promise<CourseOffering[]> {
   try {
-    return await queryDb<CourseOffering>(`
+    const offerings = await queryDb<{
+      offering_id: string;
+      course_id: string;
+      semester_id: string;
+      course_code: string;
+      course_name: string;
+      semester_name: string;
+      year_name: string;
+    }>(`
       SELECT
         co.offering_id,
         co.course_id,
@@ -100,18 +118,88 @@ export async function getCourseOfferings(): Promise<CourseOffering[]> {
         cm.course_code,
         cm.course_name,
         sm.semester_name,
-        ay.year_name,
-        ca.faculty_id AS coordinator_id,
-        f.faculty_name AS coordinator_name
+        ay.year_name
       FROM public.course_offering co
       JOIN public.course_master cm ON co.course_id = cm.course_id
       JOIN public.semester_master sm ON co.semester_id = sm.semester_id
       JOIN public.academic_year ay ON sm.year_id = ay.year_id
-      LEFT JOIN public.coordinator_assignment ca ON co.offering_id = ca.offering_id
-      LEFT JOIN public.faculty f ON ca.faculty_id = f.faculty_id
       WHERE sm.is_active = true
       ORDER BY ay.start_date DESC, sm.semester_name, cm.course_code
     `);
+
+    // Fetch primary coordinators for all offerings
+    const primaryCoordinators = await queryDb<{
+      offering_id: string;
+      faculty_id: number;
+      faculty_name: string;
+    }>(`
+      SELECT
+        ca.offering_id,
+        ca.faculty_id,
+        f.faculty_name
+      FROM public.coordinator_assignment ca
+      JOIN public.faculty f ON ca.faculty_id = f.faculty_id
+      WHERE ca.offering_id IN (${offerings.map((_, i) => `$${i + 1}`).join(', ')})
+    `, offerings.map(o => o.offering_id));
+
+    // Fetch secondary coordinators for all offerings
+    const secondaryCoordinators = await queryDb<{
+      offering_id: string;
+      faculty_id: number;
+      faculty_name: string;
+    }>(`
+      SELECT
+        sca.offering_id,
+        sca.faculty_id,
+        f.faculty_name
+      FROM public.secondary_coordinator_assignment sca
+      JOIN public.faculty f ON sca.faculty_id = f.faculty_id
+      WHERE sca.offering_id IN (${offerings.map((_, i) => `$${i + 1}`).join(', ')})
+      ORDER BY sca.offering_id, sca.created_at
+    `, offerings.map(o => o.offering_id));
+
+    // Fetch audit professors for all offerings
+    const auditProfessors = await queryDb<{
+      offering_id: string;
+      faculty_id: number;
+      faculty_name: string;
+    }>(`
+      SELECT
+        aa.offering_id,
+        aa.faculty_id,
+        f.faculty_name
+      FROM public.audit_assignment aa
+      JOIN public.faculty f ON aa.faculty_id = f.faculty_id
+      WHERE aa.offering_id IN (${offerings.map((_, i) => `$${i + 1}`).join(', ')})
+      ORDER BY aa.offering_id, aa.created_at
+    `, offerings.map(o => o.offering_id));
+
+    // Group by offering
+    const primaryCoordinatorsByOffering = new Map<string, typeof primaryCoordinators[0]>();
+    primaryCoordinators.forEach(c => {
+      primaryCoordinatorsByOffering.set(c.offering_id, c);
+    });
+
+    const secondaryCoordinatorsByOffering = new Map<string, typeof secondaryCoordinators>();
+    secondaryCoordinators.forEach(c => {
+      const existing = secondaryCoordinatorsByOffering.get(c.offering_id) || [];
+      existing.push(c);
+      secondaryCoordinatorsByOffering.set(c.offering_id, existing);
+    });
+
+    const auditProfessorsByOffering = new Map<string, typeof auditProfessors>();
+    auditProfessors.forEach(a => {
+      const existing = auditProfessorsByOffering.get(a.offering_id) || [];
+      existing.push(a);
+      auditProfessorsByOffering.set(a.offering_id, existing);
+    });
+
+    return offerings.map(o => ({
+      ...o,
+      primary_coordinator: primaryCoordinatorsByOffering.get(o.offering_id) || { faculty_id: null, faculty_name: null },
+      secondary_coordinators: secondaryCoordinatorsByOffering.get(o.offering_id) || [],
+      audit_professors: auditProfessorsByOffering.get(o.offering_id) || [],
+    }));
   } catch (error) {
     console.error("Failed to fetch course offerings:", error);
     return [];
@@ -137,7 +225,9 @@ export async function createCourse(formData: FormData) {
 export async function createCourseOffering(data: {
   course_id: string;
   semester_id: string;
-  coordinator_id?: number | null;
+  primary_coordinator_id?: number | null;
+  secondary_coordinator_ids?: number[];
+  audit_professor_ids?: number[];
 }) {
   const rows = await queryDb<{ offering_id: string }>(
     "INSERT INTO public.course_offering (course_id, semester_id) VALUES ($1, $2) RETURNING offering_id",
@@ -146,12 +236,34 @@ export async function createCourseOffering(data: {
   const offering_id = rows[0]?.offering_id;
   if (!offering_id) throw new Error("Failed to create course offering.");
 
-  if (data.coordinator_id) {
+  // Add primary coordinator
+  if (data.primary_coordinator_id) {
     await executeDb(
       "INSERT INTO public.coordinator_assignment (offering_id, faculty_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
-      [offering_id, data.coordinator_id]
+      [offering_id, data.primary_coordinator_id]
     );
   }
+
+  // Add secondary coordinators
+  if (data.secondary_coordinator_ids && data.secondary_coordinator_ids.length > 0) {
+    for (const faculty_id of data.secondary_coordinator_ids) {
+      await executeDb(
+        "INSERT INTO public.secondary_coordinator_assignment (offering_id, faculty_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        [offering_id, faculty_id]
+      );
+    }
+  }
+
+  // Add audit professors
+  if (data.audit_professor_ids && data.audit_professor_ids.length > 0) {
+    for (const faculty_id of data.audit_professor_ids) {
+      await executeDb(
+        "INSERT INTO public.audit_assignment (offering_id, faculty_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        [offering_id, faculty_id]
+      );
+    }
+  }
+
   revalidatePath("/admin/offerings");
 }
 
@@ -236,7 +348,15 @@ export async function getAcademicYears() {
 
 export async function getCourseOfferingById(offering_id: string): Promise<CourseOffering | null> {
   try {
-    const rows = await queryDb<CourseOffering>(`
+    const rows = await queryDb<{
+      offering_id: string;
+      course_id: string;
+      semester_id: string;
+      course_code: string;
+      course_name: string;
+      semester_name: string;
+      year_name: string;
+    }>(`
       SELECT
         co.offering_id,
         co.course_id,
@@ -244,19 +364,67 @@ export async function getCourseOfferingById(offering_id: string): Promise<Course
         cm.course_code,
         cm.course_name,
         sm.semester_name,
-        ay.year_name,
-        ca.faculty_id AS coordinator_id,
-        f.faculty_name AS coordinator_name
+        ay.year_name
       FROM public.course_offering co
       JOIN public.course_master cm ON co.course_id = cm.course_id
       JOIN public.semester_master sm ON co.semester_id = sm.semester_id
       JOIN public.academic_year ay ON sm.year_id = ay.year_id
-      LEFT JOIN public.coordinator_assignment ca ON co.offering_id = ca.offering_id
-      LEFT JOIN public.faculty f ON ca.faculty_id = f.faculty_id
       WHERE co.offering_id = $1
       LIMIT 1
     `, [offering_id]);
-    return rows[0] || null;
+
+    if (!rows[0]) return null;
+
+    const offering = rows[0];
+
+    // Fetch primary coordinator
+    const primaryCoordinator = await queryDb<{
+      faculty_id: number;
+      faculty_name: string;
+    }>(`
+      SELECT
+        ca.faculty_id,
+        f.faculty_name
+      FROM public.coordinator_assignment ca
+      JOIN public.faculty f ON ca.faculty_id = f.faculty_id
+      WHERE ca.offering_id = $1
+      LIMIT 1
+    `, [offering_id]);
+
+    // Fetch secondary coordinators
+    const secondaryCoordinators = await queryDb<{
+      faculty_id: number;
+      faculty_name: string;
+    }>(`
+      SELECT
+        sca.faculty_id,
+        f.faculty_name
+      FROM public.secondary_coordinator_assignment sca
+      JOIN public.faculty f ON sca.faculty_id = f.faculty_id
+      WHERE sca.offering_id = $1
+      ORDER BY sca.created_at
+    `, [offering_id]);
+
+    // Fetch audit professors
+    const auditProfessors = await queryDb<{
+      faculty_id: number;
+      faculty_name: string;
+    }>(`
+      SELECT
+        aa.faculty_id,
+        f.faculty_name
+      FROM public.audit_assignment aa
+      JOIN public.faculty f ON aa.faculty_id = f.faculty_id
+      WHERE aa.offering_id = $1
+      ORDER BY aa.created_at
+    `, [offering_id]);
+
+    return {
+      ...offering,
+      primary_coordinator: primaryCoordinator[0] || { faculty_id: null, faculty_name: null },
+      secondary_coordinators: secondaryCoordinators,
+      audit_professors: auditProfessors,
+    };
   } catch (error) {
     console.error("Failed to fetch course offering by id:", error);
     return null;
@@ -268,7 +436,9 @@ export async function updateCourseOffering(
   data: {
     course_id: string;
     semester_id: string;
-    coordinator_id?: number | null;
+    primary_coordinator_id?: number | null;
+    secondary_coordinator_ids?: number[];
+    audit_professor_ids?: number[];
   }
 ) {
   await executeDb(
@@ -276,12 +446,38 @@ export async function updateCourseOffering(
     [data.course_id, data.semester_id, offering_id]
   );
 
-  await executeDb("DELETE FROM public.coordinator_assignment WHERE offering_id = $1", [offering_id]);
-  if (data.coordinator_id) {
-    await executeDb(
-      "INSERT INTO public.coordinator_assignment (offering_id, faculty_id) VALUES ($1, $2)",
-      [offering_id, data.coordinator_id]
-    );
+  // Smart update primary coordinator
+  if (data.primary_coordinator_id) {
+    const existingPrimary = await queryDb("SELECT id FROM public.coordinator_assignment WHERE offering_id = $1", [offering_id]);
+    if (existingPrimary.length > 0) {
+      await executeDb("UPDATE public.coordinator_assignment SET faculty_id = $1 WHERE offering_id = $2", [data.primary_coordinator_id, offering_id]);
+    } else {
+      await executeDb("INSERT INTO public.coordinator_assignment (offering_id, faculty_id) VALUES ($1, $2)", [offering_id, data.primary_coordinator_id]);
+    }
+  } else {
+    await executeDb("DELETE FROM public.coordinator_assignment WHERE offering_id = $1", [offering_id]);
+  }
+
+  // Smart update secondary coordinators
+  const newSecIds = data.secondary_coordinator_ids || [];
+  if (newSecIds.length > 0) {
+    await executeDb(`DELETE FROM public.secondary_coordinator_assignment WHERE offering_id = $1 AND faculty_id != ALL($2::bigint[])`, [offering_id, `{${newSecIds.join(',')}}`]);
+    for (const fid of newSecIds) {
+      await executeDb(`INSERT INTO public.secondary_coordinator_assignment (offering_id, faculty_id) VALUES ($1, $2) ON CONFLICT (offering_id, faculty_id) DO NOTHING`, [offering_id, fid]);
+    }
+  } else {
+    await executeDb(`DELETE FROM public.secondary_coordinator_assignment WHERE offering_id = $1`, [offering_id]);
+  }
+
+  // Smart update audit professors
+  const newAuditIds = data.audit_professor_ids || [];
+  if (newAuditIds.length > 0) {
+    await executeDb(`DELETE FROM public.audit_assignment WHERE offering_id = $1 AND faculty_id != ALL($2::bigint[])`, [offering_id, `{${newAuditIds.join(',')}}`]);
+    for (const fid of newAuditIds) {
+      await executeDb(`INSERT INTO public.audit_assignment (offering_id, faculty_id) VALUES ($1, $2) ON CONFLICT (offering_id, faculty_id) DO NOTHING`, [offering_id, fid]);
+    }
+  } else {
+    await executeDb(`DELETE FROM public.audit_assignment WHERE offering_id = $1`, [offering_id]);
   }
 
   revalidatePath("/admin/offerings");
@@ -289,6 +485,8 @@ export async function updateCourseOffering(
 
 export async function deleteCourseOffering(offering_id: string) {
   await executeDb("DELETE FROM public.coordinator_assignment WHERE offering_id = $1", [offering_id]);
+  await executeDb("DELETE FROM public.secondary_coordinator_assignment WHERE offering_id = $1", [offering_id]);
+  await executeDb("DELETE FROM public.audit_assignment WHERE offering_id = $1", [offering_id]);
   await executeDb("DELETE FROM public.course_offering WHERE offering_id = $1", [offering_id]);
   revalidatePath("/admin/offerings");
 }

@@ -18,6 +18,47 @@ async function resolvePortalPath(faculty_id: number, role: "admin" | "hod" | "co
       [faculty_id]
     );
     if (Number(coordinatorRows[0]?.count ?? 0) > 0) return "/course-coordinator";
+    
+    try {
+      const secondaryCoordinatorRows = await queryDb<{ count: string }>(
+        `SELECT COUNT(*) AS count 
+         FROM public.secondary_coordinator_assignment sca
+         JOIN public.course_offering co ON sca.offering_id = co.offering_id
+         JOIN public.semester_master sm ON co.semester_id = sm.semester_id
+         WHERE sca.faculty_id = $1 AND sm.is_active = true`,
+        [faculty_id]
+      );
+      if (Number(secondaryCoordinatorRows[0]?.count ?? 0) > 0) return "/secondary-coordinator";
+    } catch (error) {
+      // Table doesn't exist yet, skip secondary coordinator check
+      console.warn("secondary_coordinator_assignment table not found, skipping check");
+    }
+    
+    try {
+      const auditRows = await queryDb<{ count: string }>(
+        `SELECT COUNT(*) AS count 
+         FROM public.audit_assignment aa
+         JOIN public.course_offering co ON aa.offering_id = co.offering_id
+         JOIN public.semester_master sm ON co.semester_id = sm.semester_id
+         WHERE aa.faculty_id = $1 AND sm.is_active = true`,
+        [faculty_id]
+      );
+      if (Number(auditRows[0]?.count ?? 0) > 0) return "/audit";
+    } catch (error) {
+      // Table doesn't exist yet, skip audit check
+      console.warn("audit_assignment table not found, skipping check");
+    }
+    
+    const facultyRows = await queryDb<{ count: string }>(
+      `SELECT COUNT(*) AS count 
+       FROM public.faculty_assignment fa
+       JOIN public.course_offering co ON fa.offering_id = co.offering_id
+       JOIN public.semester_master sm ON co.semester_id = sm.semester_id
+       WHERE fa.faculty_id = $1 AND sm.is_active = true`,
+      [faculty_id]
+    );
+    if (Number(facultyRows[0]?.count ?? 0) > 0) return "/faculty";
+    
     return "/faculty";
   }
   return getDashboardPathForRole(role);
