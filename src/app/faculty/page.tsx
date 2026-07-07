@@ -1,7 +1,7 @@
 // Faculty dashboard: shows all assigned courses and pending submissions.
 import { getFacultyCourses, getFacultySubmissions, getFacultyBroadcasts, type PendingSubmission, type FacultyCourseBroadcast } from "./actions";
 import { UploadModal } from "./UploadModal";
-import { ConfirmDownloadLink } from "@/components/ui/ConfirmDownloadLink";
+import { BroadcastCard } from "@/components/ui/BroadcastCard";
 import {
   BookOpen,
   CheckCircle2,
@@ -98,11 +98,6 @@ export default async function FacultyPage() {
           Review assigned courses and sections, upload PDFs, Excel sheets, Word files,
           images, or ZIP archives, and monitor every deadline from one portal.
         </p>
-        <div className="mt-5 flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.18em] text-white/70">
-          <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1">R2 storage</span>
-          <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1">Deadline tracking</span>
-          <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1">Version history</span>
-        </div>
       </div>
 
       {/* Stats - using the navigation card UI style */}
@@ -149,30 +144,15 @@ export default async function FacultyPage() {
                 : "Course Material";
               
               return (
-                <ConfirmDownloadLink
+                <BroadcastCard
                   key={b.broadcast_id}
-                  href={`${process.env.R2_PUBLIC_BASE_URL}/${b.r2_file_key}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="panel-card group flex flex-col justify-between p-4 hover:border-[var(--color-accent)] hover:shadow-md transition-all bg-white"
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="inline-flex items-center rounded-md bg-[var(--color-accent)]/10 px-2 py-0.5 text-[10px] font-bold text-[var(--color-accent)] ring-1 ring-inset ring-[var(--color-accent)]/20">
-                        {offeringStr}
-                      </span>
-                    </div>
-                    <h3 className="font-semibold text-gray-900 group-hover:text-[var(--color-accent)] transition-colors truncate" title={b.title}>
-                      {b.title}
-                    </h3>
-                    <p className="mt-1 text-[11px] text-gray-500">
-                      Uploaded by {b.uploaded_by_name ?? "System"} on {new Date(b.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="mt-4 flex items-center text-xs font-semibold text-[var(--color-accent)]">
-                    Download File &rarr;
-                  </div>
-                </ConfirmDownloadLink>
+                  broadcast={{
+                    ...b,
+                    course_code: offeringStr,
+                  }}
+                  baseUrl={process.env.R2_PUBLIC_BASE_URL!}
+                  currentFacultyId={session.faculty_id}
+                />
               );
             })}
           </div>

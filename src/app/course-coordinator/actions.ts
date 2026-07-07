@@ -2,8 +2,9 @@
 
 import { queryDb, executeDb } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { buildR2Key, uploadPdfToR2, deleteFromR2 } from "@/lib/r2";
+import * as ExcelJS from "exceljs";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import { buildR2Key, uploadPdfToR2 } from "@/lib/r2";
 
 export type CoordinatorOffering = {
   offering_id: string;
@@ -171,8 +172,8 @@ export async function getAllSections(): Promise<Section[]> {
 }
 
 export async function getAllFacultyForAssignment() {
-  return queryDb<{ faculty_id: number; faculty_name: string; designation: string; role: string }>(
-    "SELECT faculty_id, faculty_name, designation, role FROM public.faculty WHERE role != 'admin' ORDER BY faculty_name"
+  return queryDb<{ faculty_id: number; faculty_name: string; designation: string; role: string; email: string }>(
+    "SELECT faculty_id, faculty_name, designation, role, email FROM public.faculty WHERE role != 'admin' ORDER BY faculty_name"
   );
 }
 
@@ -387,7 +388,6 @@ export async function addFacultyAssignments(data: {
   section_ids: string[];
   student_count: number;
 }) {
-
   for (const section_id of data.section_ids) {
     await addFacultyAssignment({
       offering_id: data.offering_id,
@@ -396,6 +396,94 @@ export async function addFacultyAssignments(data: {
       student_count: data.student_count,
     });
   }
+}
+
+export async function bulkAddFacultyAssignments(data: {
+  offering_id: string;
+  assignments: { faculty_id: number; section_id: string; student_count: number }[];
+}) {
+  for (const a of data.assignments) {
+    await addFacultyAssignment({
+      offering_id: data.offering_id,
+      faculty_id: a.faculty_id,
+      section_id: a.section_id,
+      student_count: a.student_count,
+    });
+  }
+}
+
+export type ExcelParsedResult = {
+  faculty_id: number;
+  faculty_name: string;
+  email: string;
+  section_id?: string;
+  section_name?: string;
+  student_count?: number;
+  error?: string;
+};
+
+export async function parseAssignmentExcel(formData: FormData): Promise<ExcelParsedResult[]> {
+  const file = formData.get("file") as File;
+  if (!file) throw new Error("No file uploaded");
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer as any);
+  const worksheet = workbook.worksheets[0];
+  if (!worksheet) throw new Error("Excel file is empty");
+
+  const results: ExcelParsedResult[] = [];
+  const allFaculty = await getAllFacultyForAssignment();
+  const allSections = await getAllSections();
+
+  worksheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return; // Skip header
+
+    // Expecting: S.No (1), Faculty ID (2), Faculty Name (3), Email (4), Section (5)
+    const rawId = row.getCell(2).text?.trim();
+    const rawName = row.getCell(3).text?.trim();
+    const rawEmail = row.getCell(4).text?.trim();
+    const rawSection = row.getCell(5).text?.trim();
+
+    if (!rawEmail && !rawId) return;
+
+    const facultyMatch = allFaculty.find(f => 
+      (rawId && String(f.faculty_id) === rawId) || 
+      (rawEmail && f.email?.toLowerCase() === rawEmail.toLowerCase())
+    );
+
+    let sectionMatch = undefined;
+    if (rawSection) {
+      sectionMatch = allSections.find(s => s.section_name.toLowerCase() === rawSection.toLowerCase());
+    }
+
+    if (facultyMatch && sectionMatch) {
+      results.push({
+        faculty_id: facultyMatch.faculty_id,
+        faculty_name: facultyMatch.faculty_name,
+        email: facultyMatch.email,
+        section_id: sectionMatch.section_id,
+        section_name: sectionMatch.section_name,
+      });
+    } else if (!facultyMatch) {
+      results.push({
+        faculty_id: parseInt(rawId) || 0,
+        faculty_name: rawName || "Unknown",
+        email: rawEmail || "",
+        error: "Faculty not found in system.",
+      });
+    } else if (!sectionMatch) {
+      results.push({
+        faculty_id: facultyMatch.faculty_id,
+        faculty_name: facultyMatch.faculty_name,
+        email: facultyMatch.email,
+        section_name: rawSection || "None",
+        error: "Section not found.",
+      });
+    }
+  });
+
+  return results;
 }
 
 export async function generateConsolidatedReport(formData: FormData) {
@@ -568,7 +656,12 @@ export async function addCourseBroadcast(data: {
   revalidatePath(`/faculty`);
 }
 
-export async function deleteCourseBroadcast(broadcast_id: string, offering_id: string) {
+export async function deleteCourseBroadcast(broadcast_id: string, offering_id: string, r2_file_key: string) {
+  try {
+    await deleteFromR2(r2_file_key);
+  } catch (err) {
+    console.error("Failed to delete broadcast file from R2:", err);
+  }
   await executeDb(
     `DELETE FROM public.course_broadcast WHERE broadcast_id = $1 AND offering_id = $2`,
     [broadcast_id, offering_id]

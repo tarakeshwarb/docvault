@@ -158,6 +158,7 @@ export type FacultyCourseBroadcast = {
   title: string;
   r2_file_key: string;
   file_name: string;
+  uploaded_by: number | null;
   uploaded_by_name: string | null;
   created_at: string;
 };
@@ -170,6 +171,7 @@ export async function getFacultyBroadcasts(faculty_id: number): Promise<FacultyC
       cb.title,
       cb.r2_file_key,
       cb.file_name,
+      cb.uploaded_by,
       f.faculty_name AS uploaded_by_name,
       cb.created_at
     FROM public.course_broadcast cb
