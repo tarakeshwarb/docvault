@@ -4,6 +4,7 @@ import { queryDb, executeDb } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { buildR2Key, uploadPdfToR2, deleteFromR2 } from "@/lib/r2";
 import * as ExcelJS from "exceljs";
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 export type CoordinatorOffering = {
   offering_id: string;
