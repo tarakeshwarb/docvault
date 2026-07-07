@@ -1,6 +1,5 @@
 import { Users } from "lucide-react";
 import { getAllFaculty } from "../actions";
-import { AdminListExport } from "@/components/admin/AdminListExport";
 
 const roleBadge: Record<string, { label: string; classes: string }> = {
   admin: { label: "Admin", classes: "bg-slate-100 text-slate-700 ring-slate-700/10" },
@@ -23,7 +22,6 @@ export default async function FacultyDirectoryPage() {
             {faculty.length} faculty members loaded from the database.
           </p>
         </div>
-        <AdminListExport kind="faculty" rows={faculty} />
       </div>
 
       <div className="panel-card overflow-hidden">

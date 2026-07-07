@@ -1,11 +1,13 @@
 // Faculty dashboard: shows all assigned courses and pending submissions.
-import { getFacultyCourses, getFacultySubmissions, type PendingSubmission } from "./actions";
+import { getFacultyCourses, getFacultySubmissions, getFacultyBroadcasts, type PendingSubmission, type FacultyCourseBroadcast } from "./actions";
 import { UploadModal } from "./UploadModal";
+import { ConfirmDownloadLink } from "@/components/ui/ConfirmDownloadLink";
 import {
   BookOpen,
   CheckCircle2,
   Clock,
   AlertCircle,
+  Megaphone,
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { getFacultySession } from "@/lib/auth";
@@ -41,9 +43,10 @@ export default async function FacultyPage() {
     return null;
   }
 
-  const [courses, submissions] = await Promise.all([
+  const [courses, submissions, broadcasts] = await Promise.all([
     getFacultyCourses(session.faculty_id),
     getFacultySubmissions(session.faculty_id),
+    getFacultyBroadcasts(session.faculty_id),
   ]);
 
   const pending = submissions.filter((s: PendingSubmission) => s.status === "pending");
@@ -62,7 +65,9 @@ export default async function FacultyPage() {
           courseCode: s.course_code,
           courseName: s.course_name,
           sectionName: s.section_name,
+          offeringId: s.offering_id,
           items: [],
+          broadcasts: broadcasts.filter(b => b.offering_id === s.offering_id),
         });
       }
       acc.get(key)!.items.push(s);
@@ -74,7 +79,9 @@ export default async function FacultyPage() {
         courseCode: string;
         courseName: string;
         sectionName: string;
+        offeringId: string;
         items: PendingSubmission[];
+        broadcasts: FacultyCourseBroadcast[];
       }
     >()
   );
@@ -122,6 +129,55 @@ export default async function FacultyPage() {
       </div>
 
 
+
+      {/* Course Materials / Broadcasts */}
+      <div id="broadcasts" className="space-y-4">
+        <h2 className="text-lg font-semibold text-[var(--color-ink)] mb-4 flex items-center gap-2">
+          <Megaphone className="w-5 h-5 text-[var(--color-accent)]" />
+          Course Materials & Broadcasts
+        </h2>
+
+        {broadcasts.length === 0 ? (
+          <div className="panel-card border-dashed border-gray-300 p-5 text-center">
+            <p className="text-sm text-gray-500">No course materials have been broadcasted for your assigned courses.</p>
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {broadcasts.map((b) => {
+              const offeringStr = courses.find((c) => c.offering_id === b.offering_id)
+                ? `${courses.find((c) => c.offering_id === b.offering_id)?.course_code}`
+                : "Course Material";
+              
+              return (
+                <ConfirmDownloadLink
+                  key={b.broadcast_id}
+                  href={`${process.env.R2_PUBLIC_BASE_URL}/${b.r2_file_key}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="panel-card group flex flex-col justify-between p-4 hover:border-[var(--color-accent)] hover:shadow-md transition-all bg-white"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="inline-flex items-center rounded-md bg-[var(--color-accent)]/10 px-2 py-0.5 text-[10px] font-bold text-[var(--color-accent)] ring-1 ring-inset ring-[var(--color-accent)]/20">
+                        {offeringStr}
+                      </span>
+                    </div>
+                    <h3 className="font-semibold text-gray-900 group-hover:text-[var(--color-accent)] transition-colors truncate" title={b.title}>
+                      {b.title}
+                    </h3>
+                    <p className="mt-1 text-[11px] text-gray-500">
+                      Uploaded by {b.uploaded_by_name ?? "System"} on {new Date(b.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="mt-4 flex items-center text-xs font-semibold text-[var(--color-accent)]">
+                    Download File &rarr;
+                  </div>
+                </ConfirmDownloadLink>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Upcoming deadlines */}
       {pending.length > 0 && (
@@ -182,6 +238,9 @@ export default async function FacultyPage() {
                 <h2 className="font-semibold text-[var(--color-ink)]">{group.courseName}</h2>
                 <span className="text-xs text-gray-400">— Section {group.sectionName}</span>
               </div>
+              
+
+
               <div className="panel-card mt-4 overflow-hidden">
                 <table className="w-full text-sm text-left">
                   <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5">
@@ -225,6 +284,7 @@ export default async function FacultyPage() {
           ))
         )}
       </div>
+
     </div>
   );
 }

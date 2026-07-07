@@ -75,28 +75,54 @@ type OfferingSummary = {
 };
 
 export async function getCoordinatorOfferings(faculty_id: number): Promise<CoordinatorOffering[]> {
-  return queryDb<CoordinatorOffering>(`
-    WITH offering_ids AS (
-      SELECT ca.offering_id
+  try {
+    return await queryDb<CoordinatorOffering>(`
+      WITH offering_ids AS (
+        SELECT ca.offering_id
+        FROM public.coordinator_assignment ca
+        WHERE ca.faculty_id = $1
+        UNION
+        SELECT sca.offering_id
+        FROM public.secondary_coordinator_assignment sca
+        WHERE sca.faculty_id = $1
+      )
+      SELECT DISTINCT
+        co.offering_id,
+        cm.course_code,
+        cm.course_name,
+        cm.credits,
+        sm.semester_name,
+        ay.year_name,
+        ay.start_date
+      FROM offering_ids oi
+      JOIN public.course_offering co ON oi.offering_id = co.offering_id
+      JOIN public.course_master cm ON co.course_id = cm.course_id
+      JOIN public.semester_master sm ON co.semester_id = sm.semester_id
+      JOIN public.academic_year ay ON sm.year_id = ay.year_id
+      WHERE sm.is_active = true
+      ORDER BY ay.start_date DESC, sm.semester_name, cm.course_code
+    `, [faculty_id]);
+  } catch (error) {
+    // Fallback to query without secondary_coordinator_assignment if table doesn't exist
+    console.warn("secondary_coordinator_assignment table not found, using fallback query");
+    return queryDb<CoordinatorOffering>(`
+      SELECT DISTINCT
+        co.offering_id,
+        cm.course_code,
+        cm.course_name,
+        cm.credits,
+        sm.semester_name,
+        ay.year_name,
+        ay.start_date
       FROM public.coordinator_assignment ca
-      WHERE ca.faculty_id = $1
-    )
-    SELECT DISTINCT
-      co.offering_id,
-      cm.course_code,
-      cm.course_name,
-      cm.credits,
-      sm.semester_name,
-      ay.year_name,
-      ay.start_date
-    FROM offering_ids oi
-    JOIN public.course_offering co ON oi.offering_id = co.offering_id
-    JOIN public.course_master cm ON co.course_id = cm.course_id
-    JOIN public.semester_master sm ON co.semester_id = sm.semester_id
-    JOIN public.academic_year ay ON sm.year_id = ay.year_id
-    WHERE sm.is_active = true
-    ORDER BY ay.start_date DESC, sm.semester_name, cm.course_code
-  `, [faculty_id]);
+      JOIN public.course_offering co ON ca.offering_id = co.offering_id
+      JOIN public.course_master cm ON co.course_id = cm.course_id
+      JOIN public.semester_master sm ON co.semester_id = sm.semester_id
+      JOIN public.academic_year ay ON sm.year_id = ay.year_id
+      WHERE ca.faculty_id = $1 AND sm.is_active = true
+      ORDER BY ay.start_date DESC, sm.semester_name, cm.course_code
+    `, [faculty_id]);
+  }
 }
 
 export async function getFacultyAssignments(offering_id: string): Promise<FacultyAssignment[]> {
@@ -234,21 +260,24 @@ export async function addFacultyAssignment(data: {
   }
 
   revalidatePath(`/course-coordinator/${data.offering_id}`);
+  revalidatePath(`/secondary-coordinator/${data.offering_id}`);
 }
 
 export async function updateFacultyAssignment(data: {
   id: string;
   offering_id: string;
+  faculty_id: number;
   section_id: string;
   student_count: number;
 }) {
   await executeDb(
     `UPDATE public.faculty_assignment
-     SET section_id = $1, student_count = $2
-     WHERE id = $3 AND offering_id = $4`,
-    [data.section_id, data.student_count, data.id, data.offering_id]
+     SET section_id = $1, student_count = $2, faculty_id = $3
+     WHERE id = $4 AND offering_id = $5`,
+    [data.section_id, data.student_count, data.faculty_id, data.id, data.offering_id]
   );
   revalidatePath(`/course-coordinator/${data.offering_id}`);
+  revalidatePath(`/secondary-coordinator/${data.offering_id}`);
 }
 
 export async function deleteFacultyAssignment(data: {
@@ -264,6 +293,7 @@ export async function deleteFacultyAssignment(data: {
     [data.id, data.offering_id]
   );
   revalidatePath(`/course-coordinator/${data.offering_id}`);
+  revalidatePath(`/secondary-coordinator/${data.offering_id}`);
 }
 
 export async function addCourseComponent(data: {
@@ -291,6 +321,7 @@ export async function addCourseComponent(data: {
   }
 
   revalidatePath(`/course-coordinator/${data.offering_id}`);
+  revalidatePath(`/secondary-coordinator/${data.offering_id}`);
 }
 
 export async function updateCourseComponent(data: {
@@ -306,6 +337,7 @@ export async function updateCourseComponent(data: {
     [data.deadline, data.mandatory, data.id, data.offering_id]
   );
   revalidatePath(`/course-coordinator/${data.offering_id}`);
+  revalidatePath(`/secondary-coordinator/${data.offering_id}`);
 }
 
 export async function deleteCourseComponent(data: {
@@ -318,6 +350,7 @@ export async function deleteCourseComponent(data: {
     [data.id, data.offering_id]
   );
   revalidatePath(`/course-coordinator/${data.offering_id}`);
+  revalidatePath(`/secondary-coordinator/${data.offering_id}`);
 }
 
 export async function createSection(section_name: string): Promise<string> {
@@ -458,5 +491,89 @@ export async function generateConsolidatedReport(formData: FormData) {
   );
 
   revalidatePath(`/course-coordinator/${offering_id}`);
+  revalidatePath(`/secondary-coordinator/${offering_id}`);
   revalidatePath("/course-coordinator");
+  revalidatePath("/secondary-coordinator");
+}
+
+export type CourseBroadcast = {
+  broadcast_id: string;
+  offering_id: string;
+  title: string;
+  r2_file_key: string;
+  file_name: string;
+  uploaded_by: number | null;
+  uploaded_by_name: string | null;
+  created_at: string;
+};
+
+export async function getCourseBroadcasts(offering_id: string): Promise<CourseBroadcast[]> {
+  return queryDb<CourseBroadcast>(`
+    SELECT
+      cb.broadcast_id,
+      cb.offering_id,
+      cb.title,
+      cb.r2_file_key,
+      cb.file_name,
+      cb.uploaded_by,
+      f.faculty_name AS uploaded_by_name,
+      cb.created_at
+    FROM public.course_broadcast cb
+    LEFT JOIN public.faculty f ON cb.uploaded_by = f.faculty_id
+    WHERE cb.offering_id = $1
+    ORDER BY cb.created_at DESC
+  `, [offering_id]);
+}
+
+export type GlobalCourseBroadcast = CourseBroadcast & {
+  course_code: string;
+  course_name: string;
+};
+
+export async function getAllCourseBroadcasts(): Promise<GlobalCourseBroadcast[]> {
+  return queryDb<GlobalCourseBroadcast>(`
+    SELECT
+      cb.broadcast_id,
+      cb.offering_id,
+      cb.title,
+      cb.r2_file_key,
+      cb.file_name,
+      cb.uploaded_by,
+      f.faculty_name AS uploaded_by_name,
+      cb.created_at,
+      cm.course_code,
+      cm.course_name
+    FROM public.course_broadcast cb
+    LEFT JOIN public.faculty f ON cb.uploaded_by = f.faculty_id
+    JOIN public.course_offering co ON cb.offering_id = co.offering_id
+    JOIN public.course_master cm ON co.course_id = cm.course_id
+    ORDER BY cb.created_at DESC
+  `);
+}
+
+export async function addCourseBroadcast(data: {
+  offering_id: string;
+  title: string;
+  r2_file_key: string;
+  file_name: string;
+  uploaded_by: number;
+}) {
+  await executeDb(
+    `INSERT INTO public.course_broadcast (offering_id, title, r2_file_key, file_name, uploaded_by)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [data.offering_id, data.title, data.r2_file_key, data.file_name, data.uploaded_by]
+  );
+  revalidatePath(`/course-coordinator/${data.offering_id}`);
+  revalidatePath(`/secondary-coordinator/${data.offering_id}`);
+  revalidatePath(`/faculty`);
+}
+
+export async function deleteCourseBroadcast(broadcast_id: string, offering_id: string) {
+  await executeDb(
+    `DELETE FROM public.course_broadcast WHERE broadcast_id = $1 AND offering_id = $2`,
+    [broadcast_id, offering_id]
+  );
+  revalidatePath(`/course-coordinator/${offering_id}`);
+  revalidatePath(`/secondary-coordinator/${offering_id}`);
+  revalidatePath(`/faculty`);
 }

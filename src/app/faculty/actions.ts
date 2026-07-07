@@ -151,3 +151,31 @@ export async function deleteFileAction(file_id: string, submission_id: string, s
 
   revalidatePath("/faculty");
 }
+
+export type FacultyCourseBroadcast = {
+  broadcast_id: string;
+  offering_id: string;
+  title: string;
+  r2_file_key: string;
+  file_name: string;
+  uploaded_by_name: string | null;
+  created_at: string;
+};
+
+export async function getFacultyBroadcasts(faculty_id: number): Promise<FacultyCourseBroadcast[]> {
+  return queryDb<FacultyCourseBroadcast>(`
+    SELECT DISTINCT
+      cb.broadcast_id,
+      cb.offering_id,
+      cb.title,
+      cb.r2_file_key,
+      cb.file_name,
+      f.faculty_name AS uploaded_by_name,
+      cb.created_at
+    FROM public.course_broadcast cb
+    JOIN public.faculty_assignment fa ON cb.offering_id = fa.offering_id
+    LEFT JOIN public.faculty f ON cb.uploaded_by = f.faculty_id
+    WHERE fa.faculty_id = $1
+    ORDER BY cb.created_at DESC
+  `, [faculty_id]);
+}

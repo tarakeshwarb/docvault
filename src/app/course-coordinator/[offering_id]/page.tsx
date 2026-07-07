@@ -4,6 +4,7 @@ import { CoordinatorToolbar } from "@/components/coordinator/CoordinatorToolbar"
 import { CoordinatorExportButton } from "@/components/coordinator/CoordinatorExportButton";
 import { getFacultySession } from "@/lib/auth";
 import { SubmissionFilesModal } from "@/components/coordinator/SubmissionFilesModal";
+import { ConfirmDownloadLink } from "@/components/ui/ConfirmDownloadLink";
 import {
   getFacultyAssignments,
   getCourseComponents,
@@ -14,9 +15,11 @@ import {
   getAllSections,
   getAllFacultyForAssignment,
   getCoordinatorOfferings,
+  getAllCourseBroadcasts,
 } from "../actions";
 import { AddFacultyForm } from "./AddFacultyForm";
 import { AddComponentForm } from "./AddComponentForm";
+import { AddBroadcastForm } from "./AddBroadcastForm";
 import { EditableComponentRow } from "./EditableComponentRow";
 import { EditableFacultyRow } from "./EditableFacultyRow";
 import {
@@ -26,6 +29,7 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
+  Megaphone,
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
@@ -76,6 +80,7 @@ export default async function OfferingDetailPage({
     componentMasters,
     allSections,
     allFaculty,
+    broadcasts,
   ] =
     await Promise.all([
       getCoordinatorOfferings(session.faculty_id),
@@ -86,6 +91,7 @@ export default async function OfferingDetailPage({
       getComponentMasters(),
       getAllSections(),
       getAllFacultyForAssignment(),
+      getAllCourseBroadcasts(),
     ]);
 
   const offering = offerings.find((o) => o.offering_id === offering_id);
@@ -128,40 +134,40 @@ export default async function OfferingDetailPage({
           </div>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="panel-card h-fit self-center p-8">
-            <div className="grid gap-4 sm:grid-cols-3">
+        <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_3fr]">
+          <div className="panel-card h-fit self-center p-6">
+            <div className="grid gap-4 grid-cols-1">
               {[
                 { label: "Faculty Assigned", value: assignments.length },
                 { label: "Components Required", value: components.length },
                 { label: "Completion", value: `${completionPct}%` },
               ].map((item) => (
                 <div key={item.label} className="panel-card bg-slate-50/70 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)]">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)]">
                     {item.label}
                   </p>
-                  <p className="mt-2 text-2xl font-semibold text-[var(--color-ink)]">{item.value}</p>
+                  <p className="mt-1.5 text-2xl font-semibold text-[var(--color-ink)]">{item.value}</p>
                 </div>
               ))}
             </div>
           </div>
 
           <div className="rounded-3xl border border-black/5 bg-[var(--color-accent)] p-5 text-white shadow-[0_18px_45px_rgba(12,77,162,0.16)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-white/60">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/60">
               One-click reports
             </p>
-            <h2 className="mt-2 text-xl font-semibold">Generate consolidated academic files</h2>
+            <h2 className="mt-1.5 text-xl font-semibold">Generate consolidated academic files</h2>
             <form action={generateConsolidatedReport} className="mt-4 space-y-3">
               <input type="hidden" name="offering_id" value={offering_id} />
               <input type="hidden" name="generated_by" value={session.faculty_id} />
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.18em] text-white/70">
+                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70">
                   Report type
                 </label>
                 <select
                   name="report_type"
                   defaultValue="consolidated_marks_report"
-                  className="w-full rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-sm text-white outline-none backdrop-blur"
+                  className="w-full rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-sm text-white outline-none backdrop-blur"
                 >
                   <option value="consolidated_marks_report" className="text-[var(--color-ink)]">
                     Consolidated Marks Report
@@ -179,7 +185,7 @@ export default async function OfferingDetailPage({
               </div>
               <button
                 type="submit"
-                className="inline-flex w-full items-center justify-center rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-0.5"
+                className="inline-flex w-full items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-0.5"
               >
                 Generate and store in R2
               </button>
@@ -189,6 +195,51 @@ export default async function OfferingDetailPage({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Course Broadcasts */}
+      <div id="broadcasts" className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-[var(--color-ink)] flex items-center gap-2">
+            <Megaphone className="w-5 h-5 text-[var(--color-accent)]" />
+            Course Broadcasts
+          </h2>
+          <AddBroadcastForm offering_id={offering_id} faculty_id={session.faculty_id} />
+        </div>
+
+        {broadcasts.length === 0 ? (
+          <div className="panel-card border-dashed border-gray-200 p-5 text-center">
+            <p className="text-sm text-gray-500">No course materials broadcasted yet.</p>
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {broadcasts.map((b) => (
+              <ConfirmDownloadLink
+                key={b.broadcast_id}
+                href={`${process.env.R2_PUBLIC_BASE_URL}/${b.r2_file_key}`}
+                target="_blank"
+                className="panel-card group flex flex-col justify-between p-4 hover:border-[var(--color-accent)] hover:shadow-md transition-all bg-white"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="inline-flex items-center rounded-md bg-[var(--color-accent)]/10 px-2 py-0.5 text-[10px] font-bold text-[var(--color-accent)] ring-1 ring-inset ring-[var(--color-accent)]/20">
+                      {b.course_code}
+                    </span>
+                  </div>
+                  <h3 className="font-semibold text-gray-900 group-hover:text-[var(--color-accent)] transition-colors line-clamp-2" title={b.title}>
+                    {b.title}
+                  </h3>
+                  <p className="mt-2 text-[11px] text-gray-500">
+                    Uploaded by {b.uploaded_by_name ?? "System"} on {new Date(b.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="mt-4 flex items-center justify-between text-xs font-semibold text-[var(--color-accent)]">
+                  <span>Download File &rarr;</span>
+                </div>
+              </ConfirmDownloadLink>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Faculty Assignments */}
@@ -234,6 +285,7 @@ export default async function OfferingDetailPage({
                       key={fa.id}
                       fa={fa}
                       allSections={allSections}
+                      allFaculty={allFaculty}
                       submittedCount={submittedCount}
                       pendingCount={pendingCount}
                       offering_id={offering_id}
@@ -329,13 +381,13 @@ export default async function OfferingDetailPage({
                         {formatDate(report.generated_at)}
                       </td>
                       <td className="px-5 py-3 text-right">
-                        <Link
+                        <ConfirmDownloadLink
                           href={report.r2_report_path}
                           className="text-[var(--color-accent)] hover:underline"
                           target="_blank"
                         >
                           Download
-                        </Link>
+                        </ConfirmDownloadLink>
                       </td>
                     </tr>
                   ))
