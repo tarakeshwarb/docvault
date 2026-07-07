@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Download, AlertCircle } from "lucide-react";
 
 interface Props extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
@@ -10,6 +11,11 @@ interface Props extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
 
 export function ConfirmDownloadLink({ href, children, ...props }: Props) {
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <>
@@ -27,8 +33,8 @@ export function ConfirmDownloadLink({ href, children, ...props }: Props) {
         {children}
       </a>
 
-      {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      {mounted && isOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           <div 
             className="absolute inset-0 bg-black/40 backdrop-blur-sm" 
             onClick={() => setIsOpen(false)}
@@ -57,14 +63,15 @@ export function ConfirmDownloadLink({ href, children, ...props }: Props) {
                 href={href}
                 target={props.target}
                 rel={props.rel}
-                onClick={() => setIsOpen(false)}
+                onClick={() => setTimeout(() => setIsOpen(false), 100)}
                 className="px-4 py-2 text-sm font-medium text-white bg-[var(--color-accent)] hover:bg-[#0a3f85] rounded-lg transition-colors shadow-sm"
               >
                 Download
               </a>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
