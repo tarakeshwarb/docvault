@@ -427,7 +427,7 @@ export async function parseAssignmentExcel(formData: FormData): Promise<ExcelPar
 
   const buffer = Buffer.from(await file.arrayBuffer());
   const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(buffer);
+  await workbook.xlsx.load(buffer as any);
   const worksheet = workbook.worksheets[0];
   if (!worksheet) throw new Error("Excel file is empty");
 

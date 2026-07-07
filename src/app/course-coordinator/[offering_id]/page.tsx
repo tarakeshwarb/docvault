@@ -5,6 +5,7 @@ import { CoordinatorExportButton } from "@/components/coordinator/CoordinatorExp
 import { getFacultySession } from "@/lib/auth";
 import { SubmissionFilesModal } from "@/components/coordinator/SubmissionFilesModal";
 import { BroadcastCard } from "@/components/ui/BroadcastCard";
+import { ConfirmDownloadLink } from "@/components/ui/ConfirmDownloadLink";
 import {
   getFacultyAssignments,
   getCourseComponents,

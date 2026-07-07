@@ -6,7 +6,7 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { SearchableMultiSelect } from "@/components/ui/searchable-multi-select";
 import { UserPlus, Loader2, Upload, FileSpreadsheet, X, CheckCircle2, AlertCircle } from "lucide-react";
 
-type Faculty = { faculty_id: number; faculty_name: string; designation: string };
+type Faculty = { faculty_id: number; faculty_name: string; designation: string; role: string; email: string };
 type Section = { section_id: string; section_name: string };
 
 export function AddFacultyForm({
