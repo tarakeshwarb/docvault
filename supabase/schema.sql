@@ -128,8 +128,10 @@ create table if not exists public.submission (
   submission_id uuid primary key default gen_random_uuid(),
   faculty_assignment_id uuid not null references public.faculty_assignment(id) on delete cascade,
   course_component_id uuid not null references public.course_component(id) on delete cascade,
-  status text not null default 'pending', -- 'pending', 'submitted', 'late'
+  status text not null default 'pending', -- 'pending', 'submitted', 'approved', 'late'
   submitted_at timestamptz,
+  approved_by bigint references public.faculty(faculty_id) on delete set null,
+  approved_at timestamptz,
   remarks text,
   created_at timestamptz not null default now(),
   unique (faculty_assignment_id, course_component_id)

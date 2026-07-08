@@ -19,9 +19,15 @@ function StatusBadge({ status, deadline }: { status: string; deadline: string | 
   const isLate = deadline && new Date() > new Date(deadline) && status === "pending";
   const effectiveStatus = isLate ? "late" : status;
 
+  if (effectiveStatus === "approved")
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+        <CheckCircle2 className="w-3 h-3" /> Approved
+      </span>
+    );
   if (effectiveStatus === "submitted")
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
         <CheckCircle2 className="w-3 h-3" /> Submitted
       </span>
     );
@@ -51,7 +57,9 @@ export default async function FacultyPage() {
   ]);
 
   const pending = submissions.filter((s: PendingSubmission) => s.status === "pending");
-  const submitted = submissions.filter((s: PendingSubmission) => s.status === "submitted");
+  const submitted = submissions.filter(
+    (s: PendingSubmission) => s.status === "submitted" || s.status === "approved"
+  );
   const completionPct =
     submissions.length > 0
       ? Math.round((submitted.length / submissions.length) * 100)

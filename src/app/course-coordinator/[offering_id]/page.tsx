@@ -16,7 +16,7 @@ import {
   getAllSections,
   getAllFacultyForAssignment,
   getCoordinatorOfferings,
-  getAllCourseBroadcasts,
+  getCourseBroadcasts,
 } from "../actions";
 import { AddFacultyForm } from "./AddFacultyForm";
 import { AddComponentForm } from "./AddComponentForm";
@@ -92,14 +92,14 @@ export default async function OfferingDetailPage({
       getComponentMasters(),
       getAllSections(),
       getAllFacultyForAssignment(),
-      getAllCourseBroadcasts(),
+      getCourseBroadcasts(offering_id),
     ]);
 
   const offering = offerings.find((o) => o.offering_id === offering_id);
   if (!offering) notFound();
 
   const totalExpected = assignments.length * components.length;
-  const submitted = submissions.filter((s) => s.status === "submitted").length;
+  const submitted = submissions.filter((s) => s.status === "submitted" || s.status === "approved").length;
   const completionPct = totalExpected > 0 ? Math.round((submitted / totalExpected) * 100) : 0;
 
   const submissionMap = new Map(
@@ -217,7 +217,7 @@ export default async function OfferingDetailPage({
             {broadcasts.map((b) => (
               <BroadcastCard
                 key={b.broadcast_id}
-                broadcast={b}
+                broadcast={{ ...b, course_code: offering.course_code }}
                 baseUrl={process.env.R2_PUBLIC_BASE_URL!}
                 currentFacultyId={session.faculty_id}
               />
@@ -262,7 +262,7 @@ export default async function OfferingDetailPage({
                   const faSubmissions = submissions.filter(
                     (s) => s.faculty_assignment_id === fa.id
                   );
-                  const submittedCount = faSubmissions.filter((s) => s.status === "submitted").length;
+                  const submittedCount = faSubmissions.filter((s) => s.status === "submitted" || s.status === "approved").length;
                   const pendingCount = faSubmissions.filter((s) => s.status === "pending").length;
                   return (
                     <EditableFacultyRow
@@ -430,7 +430,7 @@ export default async function OfferingDetailPage({
               <tbody className="divide-y divide-black/5">
                 {assignments.map((fa) => {
                   const faSubmissions = submissions.filter((s) => s.faculty_assignment_id === fa.id);
-                  const submittedCount = faSubmissions.filter((s) => s.status === "submitted").length;
+                  const submittedCount = faSubmissions.filter((s) => s.status === "submitted" || s.status === "approved").length;
                   const totalFaExpected = components.length;
                   const progressPct = totalFaExpected > 0 ? Math.round((submittedCount / totalFaExpected) * 100) : 0;
 
@@ -468,6 +468,8 @@ export default async function OfferingDetailPage({
                            component_name={comp.component_name}
                            section_name={fa.section_name}
                            status={status}
+                           offering_id={offering_id}
+                           currentFacultyId={session.faculty_id}
                            />
                           </td>
                         );

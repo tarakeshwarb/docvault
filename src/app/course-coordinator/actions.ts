@@ -670,3 +670,38 @@ export async function deleteCourseBroadcast(broadcast_id: string, offering_id: s
   revalidatePath(`/secondary-coordinator/${offering_id}`);
   revalidatePath(`/faculty`);
 }
+
+/**
+ * Approval gate: a coordinator (main or secondary) approves a faculty's
+ * submitted document. Only then is it treated as finalised.
+ */
+export async function approveSubmission(
+  submission_id: string,
+  approver_id: number,
+  offering_id: string
+) {
+  if (!submission_id) throw new Error("Missing submission.");
+  await executeDb(
+    `UPDATE public.submission
+     SET status = 'approved', approved_by = $2, approved_at = now()
+     WHERE submission_id = $1`,
+    [submission_id, approver_id]
+  );
+  revalidatePath(`/course-coordinator/${offering_id}`);
+  revalidatePath(`/secondary-coordinator/${offering_id}`);
+  revalidatePath(`/faculty`);
+}
+
+/** Revert an approval back to 'submitted' (awaiting approval again). */
+export async function revokeApproval(submission_id: string, offering_id: string) {
+  if (!submission_id) throw new Error("Missing submission.");
+  await executeDb(
+    `UPDATE public.submission
+     SET status = 'submitted', approved_by = NULL, approved_at = NULL
+     WHERE submission_id = $1`,
+    [submission_id]
+  );
+  revalidatePath(`/course-coordinator/${offering_id}`);
+  revalidatePath(`/secondary-coordinator/${offering_id}`);
+  revalidatePath(`/faculty`);
+}
