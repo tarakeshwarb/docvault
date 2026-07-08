@@ -1,6 +1,7 @@
 // Faculty dashboard: shows all assigned courses and pending submissions.
 import { getFacultyCourses, getFacultySubmissions, getFacultyBroadcasts, type PendingSubmission, type FacultyCourseBroadcast } from "./actions";
 import { UploadModal } from "./UploadModal";
+import { ResultAnalysisModal } from "./ResultAnalysisModal";
 import { BroadcastCard } from "@/components/ui/BroadcastCard";
 import {
   BookOpen,
@@ -211,12 +212,23 @@ export default async function FacultyPage() {
         ) : (
           Array.from(grouped.entries()).map(([key, group]) => (
             <div key={key} className="panel-card space-y-3 p-5">
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700 ring-1 ring-inset ring-blue-700/10">
                   {group.courseCode}
                 </span>
                 <h2 className="font-semibold text-[var(--color-ink)]">{group.courseName}</h2>
                 <span className="text-xs text-gray-400">— Section {group.sectionName}</span>
+                {group.items[0] && (
+                  <div className="ml-auto">
+                    <ResultAnalysisModal
+                      offeringId={group.offeringId}
+                      facultyAssignmentId={group.items[0].faculty_assignment_id}
+                      sectionName={group.sectionName}
+                      courseCode={group.courseCode}
+                      courseName={group.courseName}
+                    />
+                  </div>
+                )}
               </div>
               
 
