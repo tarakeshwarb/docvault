@@ -120,6 +120,12 @@ create table if not exists public.course_component (
   deadline timestamptz,
   template_id uuid references public.template_master(template_id) on delete set null,
   mandatory boolean default true,
+  -- Common components: one shared file uploaded by the coordinator (no per-faculty copies).
+  is_common boolean not null default false,
+  common_file_key text,
+  common_file_name text,
+  common_uploaded_by bigint references public.faculty(faculty_id) on delete set null,
+  common_uploaded_at timestamptz,
   created_at timestamptz not null default now(),
   unique (offering_id, component_id)
 );

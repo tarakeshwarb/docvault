@@ -33,6 +33,9 @@ export type Component = {
   deadline: string | null;
   mandatory: boolean;
   offering_id: string;
+  is_common: boolean;
+  common_file_key: string | null;
+  common_file_name: string | null;
 };
 
 export type ComponentMaster = {
@@ -153,7 +156,10 @@ export async function getCourseComponents(offering_id: string): Promise<Componen
       cm.component_name,
       cc.deadline,
       cc.mandatory,
-      cc.offering_id
+      cc.offering_id,
+      cc.is_common,
+      cc.common_file_key,
+      cc.common_file_name
     FROM public.course_component cc
     JOIN public.component_master cm ON cc.component_id = cm.component_id
     WHERE cc.offering_id = $1
@@ -302,27 +308,91 @@ export async function addCourseComponent(data: {
   component_id: string;
   deadline: string | null;
   mandatory: boolean;
+  is_common?: boolean;
 }) {
+  const isCommon = data.is_common ?? false;
   const rows = await queryDb<{ id: string }>(
-    `INSERT INTO public.course_component (offering_id, component_id, deadline, mandatory)
-     VALUES ($1, $2, $3, $4) ON CONFLICT (offering_id, component_id) DO NOTHING RETURNING id`,
-    [data.offering_id, data.component_id, data.deadline, data.mandatory]
+    `INSERT INTO public.course_component (offering_id, component_id, deadline, mandatory, is_common)
+     VALUES ($1, $2, $3, $4, $5) ON CONFLICT (offering_id, component_id) DO NOTHING RETURNING id`,
+    [data.offering_id, data.component_id, data.deadline, data.mandatory, isCommon]
   );
 
   const comp_id = rows[0]?.id;
   if (!comp_id) throw new Error("Component already added to this offering.");
 
-  const assignments = await getFacultyAssignments(data.offering_id);
-  for (const fa of assignments) {
-    await executeDb(
-      `INSERT INTO public.submission (faculty_assignment_id, course_component_id, status)
-       VALUES ($1, $2, 'pending') ON CONFLICT DO NOTHING`,
-      [fa.id, comp_id]
-    );
+  // Common components have ONE shared file (uploaded by the coordinator), so we
+  // do not create a per-faculty submission for them.
+  if (!isCommon) {
+    const assignments = await getFacultyAssignments(data.offering_id);
+    for (const fa of assignments) {
+      await executeDb(
+        `INSERT INTO public.submission (faculty_assignment_id, course_component_id, status)
+         VALUES ($1, $2, 'pending') ON CONFLICT DO NOTHING`,
+        [fa.id, comp_id]
+      );
+    }
   }
 
   revalidatePath(`/course-coordinator/${data.offering_id}`);
   revalidatePath(`/secondary-coordinator/${data.offering_id}`);
+  revalidatePath(`/faculty`);
+}
+
+/** Coordinator uploads / replaces the single shared file for a common component. */
+export async function setCommonComponentFile(data: {
+  course_component_id: string;
+  offering_id: string;
+  r2_object_key: string;
+  file_name: string;
+  uploaded_by: number;
+}) {
+  // Remove the previous file from R2 if one is being replaced.
+  const prev = await queryDb<{ common_file_key: string | null }>(
+    `SELECT common_file_key FROM public.course_component WHERE id = $1`,
+    [data.course_component_id]
+  );
+  const oldKey = prev[0]?.common_file_key;
+  if (oldKey && oldKey !== data.r2_object_key) {
+    try {
+      await deleteFromR2(oldKey);
+    } catch (err) {
+      console.error("Failed to delete replaced common file from R2:", err);
+    }
+  }
+
+  await executeDb(
+    `UPDATE public.course_component
+     SET common_file_key = $2, common_file_name = $3,
+         common_uploaded_by = $4, common_uploaded_at = now()
+     WHERE id = $1`,
+    [data.course_component_id, data.r2_object_key, data.file_name, data.uploaded_by]
+  );
+  revalidatePath(`/course-coordinator/${data.offering_id}`);
+  revalidatePath(`/secondary-coordinator/${data.offering_id}`);
+  revalidatePath(`/faculty`);
+}
+
+/** Remove the shared file from a common component. */
+export async function removeCommonComponentFile(data: {
+  course_component_id: string;
+  offering_id: string;
+  r2_object_key: string;
+}) {
+  try {
+    await deleteFromR2(data.r2_object_key);
+  } catch (err) {
+    console.error("Failed to delete common file from R2:", err);
+  }
+  await executeDb(
+    `UPDATE public.course_component
+     SET common_file_key = NULL, common_file_name = NULL,
+         common_uploaded_by = NULL, common_uploaded_at = NULL
+     WHERE id = $1`,
+    [data.course_component_id]
+  );
+  revalidatePath(`/course-coordinator/${data.offering_id}`);
+  revalidatePath(`/secondary-coordinator/${data.offering_id}`);
+  revalidatePath(`/faculty`);
 }
 
 export async function updateCourseComponent(data: {
@@ -345,6 +415,20 @@ export async function deleteCourseComponent(data: {
   id: string;
   offering_id: string;
 }) {
+  // Clean up a common file from R2 if this component has one.
+  const rows = await queryDb<{ common_file_key: string | null }>(
+    `SELECT common_file_key FROM public.course_component WHERE id = $1`,
+    [data.id]
+  );
+  const key = rows[0]?.common_file_key;
+  if (key) {
+    try {
+      await deleteFromR2(key);
+    } catch (err) {
+      console.error("Failed to delete common file from R2:", err);
+    }
+  }
+
   await executeDb(
     `DELETE FROM public.course_component
      WHERE id = $1 AND offering_id = $2`,
@@ -352,6 +436,7 @@ export async function deleteCourseComponent(data: {
   );
   revalidatePath(`/course-coordinator/${data.offering_id}`);
   revalidatePath(`/secondary-coordinator/${data.offering_id}`);
+  revalidatePath(`/faculty`);
 }
 
 export async function createSection(section_name: string): Promise<string> {

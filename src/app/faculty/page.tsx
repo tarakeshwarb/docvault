@@ -1,5 +1,5 @@
 // Faculty dashboard: shows all assigned courses and pending submissions.
-import { getFacultyCourses, getFacultySubmissions, getFacultyBroadcasts, type PendingSubmission, type FacultyCourseBroadcast } from "./actions";
+import { getFacultyCourses, getFacultySubmissions, getFacultyBroadcasts, getFacultyCommonComponents, type PendingSubmission, type FacultyCourseBroadcast } from "./actions";
 import { UploadModal } from "./UploadModal";
 import { ResultAnalysisModal } from "./ResultAnalysisModal";
 import { BroadcastCard } from "@/components/ui/BroadcastCard";
@@ -50,10 +50,11 @@ export default async function FacultyPage() {
     return null;
   }
 
-  const [courses, submissions, broadcasts] = await Promise.all([
+  const [courses, submissions, broadcasts, commonComponents] = await Promise.all([
     getFacultyCourses(session.faculty_id),
     getFacultySubmissions(session.faculty_id),
     getFacultyBroadcasts(session.faculty_id),
+    getFacultyCommonComponents(session.faculty_id),
   ]);
 
   const pending = submissions.filter((s: PendingSubmission) => s.status === "pending");
@@ -167,6 +168,43 @@ export default async function FacultyPage() {
           </div>
         )}
       </div>
+
+      {/* Common Materials (coordinator-provided, view only) */}
+      {commonComponents.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-[var(--color-ink)] mb-4 flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-[var(--color-accent)]" />
+            Common Materials
+            <span className="text-xs font-normal text-gray-400">— shared by the coordinator</span>
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {commonComponents.map((c) => (
+              <div key={c.course_component_id} className="panel-card p-4">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+                    {c.course_code}
+                  </span>
+                  <p className="text-sm font-semibold text-[var(--color-ink)]">{c.component_name}</p>
+                </div>
+                <p className="mt-1 truncate text-xs text-gray-500" title={c.common_file_name}>
+                  {c.common_file_name}
+                </p>
+                <p className="mt-0.5 text-[11px] text-gray-400">
+                  {c.uploaded_by_name ? `Uploaded by ${c.uploaded_by_name}` : "Provided by coordinator"}
+                </p>
+                <a
+                  href={`${process.env.R2_PUBLIC_BASE_URL ?? ""}/${c.common_file_key}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[var(--color-accent)]/10 px-3 py-1.5 text-xs font-medium text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20"
+                >
+                  <CheckCircle2 className="w-3 h-3" /> View / Download
+                </a>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Upcoming deadlines */}
       {pending.length > 0 && (

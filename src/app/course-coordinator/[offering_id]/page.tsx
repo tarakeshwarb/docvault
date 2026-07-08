@@ -98,7 +98,10 @@ export default async function OfferingDetailPage({
   const offering = offerings.find((o) => o.offering_id === offering_id);
   if (!offering) notFound();
 
-  const totalExpected = assignments.length * components.length;
+  // Common components have one shared file (no per-faculty submissions), so they
+  // are excluded from the per-faculty submission tracking + completion metrics.
+  const trackedComponents = components.filter((c) => !c.is_common);
+  const totalExpected = assignments.length * trackedComponents.length;
   const submitted = submissions.filter((s) => s.status === "submitted" || s.status === "approved").length;
   const completionPct = totalExpected > 0 ? Math.round((submitted / totalExpected) * 100) : 0;
 
@@ -315,6 +318,8 @@ export default async function OfferingDetailPage({
                     key={comp.id}
                     comp={comp}
                     offering_id={offering_id}
+                    currentFacultyId={session.faculty_id}
+                    baseUrl={process.env.R2_PUBLIC_BASE_URL}
                   />
                 ))}
               </tbody>
@@ -383,7 +388,7 @@ export default async function OfferingDetailPage({
       </div>
 
       {/* Submission Tracking Matrix */}
-      {assignments.length > 0 && components.length > 0 && (
+      {assignments.length > 0 && trackedComponents.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-[var(--color-ink)] flex items-center gap-2">
@@ -414,7 +419,7 @@ export default async function OfferingDetailPage({
               <thead className="bg-gray-50/50 text-gray-500 font-medium border-b border-black/5">
                 <tr>
                   <th className="px-5 py-4 whitespace-nowrap min-w-[200px]">Faculty & Progress</th>
-                  {components.map((comp) => (
+                  {trackedComponents.map((comp) => (
                     <th
                       key={comp.id}
                       className="px-4 py-4 text-center whitespace-nowrap min-w-[120px]"
@@ -431,7 +436,7 @@ export default async function OfferingDetailPage({
                 {assignments.map((fa) => {
                   const faSubmissions = submissions.filter((s) => s.faculty_assignment_id === fa.id);
                   const submittedCount = faSubmissions.filter((s) => s.status === "submitted" || s.status === "approved").length;
-                  const totalFaExpected = components.length;
+                  const totalFaExpected = trackedComponents.length;
                   const progressPct = totalFaExpected > 0 ? Math.round((submittedCount / totalFaExpected) * 100) : 0;
 
                   return (
@@ -457,7 +462,7 @@ export default async function OfferingDetailPage({
                           </div>
                         </div>
                       </td>
-                      {components.map((comp) => {
+                      {trackedComponents.map((comp) => {
                         const sub = submissionMap.get(`${fa.id}::${comp.id}`);
                         const status = sub?.status ?? "pending";
                         return (
