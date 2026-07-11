@@ -24,11 +24,13 @@ function sanitize(name: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { file_name, content_type, submission_id } = await req.json();
+    const { file_name, content_type, submission_id, component_id } = await req.json();
 
-    if (!file_name || !content_type || !submission_id) {
+    // Either a per-faculty submission upload, or a coordinator's common-component upload.
+    const scopeId: string | undefined = submission_id || component_id;
+    if (!file_name || !content_type || !scopeId) {
       return NextResponse.json(
-        { error: "file_name, content_type and submission_id are required." },
+        { error: "file_name, content_type and submission_id (or component_id) are required." },
         { status: 400 }
       );
     }
@@ -37,17 +39,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "File type not allowed." }, { status: 400 });
     }
 
+    const folder = submission_id ? "submissions" : "common";
+
     if (!process.env.R2_ENDPOINT || !process.env.R2_BUCKET) {
       // Graceful dev fallback when R2 is not configured
       return NextResponse.json({
         upload_url: null,
-        r2_object_key: `dev/${submission_id}/${sanitize(file_name)}`,
+        r2_object_key: `dev/${folder}/${scopeId}/${sanitize(file_name)}`,
         dev_mode: true,
       });
     }
 
     const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const r2_object_key = `submissions/${submission_id}/${stamp}-${randomUUID()}-${sanitize(file_name)}`;
+    const r2_object_key = `${folder}/${scopeId}/${stamp}-${randomUUID()}-${sanitize(file_name)}`;
 
     const client = new S3Client({
       region: "auto",
