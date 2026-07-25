@@ -19,7 +19,22 @@ export type AuditLog = {
   file_url: string;
 };
 
-export async function getAuditLogs(): Promise<AuditLog[]> {
+/**
+ * Audit trail of uploaded files.
+ * An audit professor only sees files for the subject(s) they are assigned to
+ * (public.audit_assignment). Admins see everything.
+ */
+export async function getAuditLogs(params?: {
+  facultyId?: number;
+  isAdmin?: boolean;
+}): Promise<AuditLog[]> {
+  const scoped = !params?.isAdmin && params?.facultyId != null;
+  const whereClause = scoped
+    ? `WHERE fa.offering_id IN (
+         SELECT offering_id FROM public.audit_assignment WHERE faculty_id = $1
+       )`
+    : "";
+
   const query = `
     SELECT
       fm.s3_object_key as log_id,
@@ -45,10 +60,14 @@ export async function getAuditLogs(): Promise<AuditLog[]> {
     JOIN public.course_master cm ON co.course_id = cm.course_id
     JOIN public.semester_master sm ON co.semester_id = sm.semester_id
     JOIN public.academic_year ay ON sm.year_id = ay.year_id
+    ${whereClause}
     ORDER BY s.submitted_at DESC
   `;
-  
-  const rows = await queryDb<any>(query);
+
+  const rows = await queryDb<Omit<AuditLog, "file_url"> & { r2_object_key: string }>(
+    query,
+    scoped ? [params!.facultyId!] : []
+  );
   const baseUrl = (process.env.R2_PUBLIC_BASE_URL || "").replace(/\/+$/, "");
 
   return rows.map((row) => ({

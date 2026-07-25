@@ -42,6 +42,7 @@ yarn-error.log*
 # Database backups
 *.sql
 !supabase/schema.sql
+!supabase/*_migration.sql
 
 # vercel
 .vercel
