@@ -9,7 +9,6 @@ import { type SidebarItem } from "@/components/layout/Sidebar";
 
 const facultySidebarItems: SidebarItem[] = [
   { label: "My Dashboard", href: "/faculty", icon: LayoutDashboard, variant: "faculty" },
-  { label: "Course Materials", href: "#broadcasts", icon: Megaphone },
 ];
 
 const facultySidebarNote = {
