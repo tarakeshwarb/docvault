@@ -1,5 +1,5 @@
 import AppShell from "@/components/layout/AppShell";
-import { LayoutDashboard, ClipboardList, UserSquare2, Users, Megaphone } from "lucide-react";
+import { LayoutDashboard, ClipboardList, UserSquare2, Users, Megaphone, CheckCircle2 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getDashboardPathForRole, getFacultySession } from "@/lib/auth";
 import { getCoordinatorOfferings } from "./actions";
@@ -10,6 +10,7 @@ const coordinatorSidebarItems: SidebarItem[] = [
   { label: "My Courses", href: "/course-coordinator", icon: LayoutDashboard, variant: "coordinator" },
   { label: "Faculty Assign", href: "#faculty-assignments", icon: Users },
   { label: "Documents", href: "#document-requirements", icon: ClipboardList },
+  { label: "Submission Tracking", href: "#submission-tracking", icon: CheckCircle2 },
   { label: "Faculty Portal", href: "/faculty", icon: UserSquare2, variant: "faculty" },
 ];
 
