@@ -34,6 +34,8 @@ import {
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
+import { OfferingTabs } from "@/components/coordinator/OfferingTabs";
+
 export const dynamic = "force-dynamic";
 
 function StatusBadge({ status }: { status: string }) {
@@ -129,7 +131,7 @@ export default async function OfferingDetailPage({
                 {offering.course_code}
               </span>
               <span className="text-sm font-medium text-gray-400">
-                {offering.semester_name} · {offering.year_name}
+                {offering.semester_name} ┬╖ {offering.year_name}
               </span>
             </div>
             <h1 className="mt-3 text-4xl font-bold tracking-tight text-[var(--color-ink)]">
@@ -201,6 +203,9 @@ export default async function OfferingDetailPage({
         </div>
       </div>
 
+      <OfferingTabs
+        overviewContent={
+          <div className="space-y-8">
       {/* Course Broadcasts */}
       <div id="broadcasts" className="space-y-4">
         <div className="flex items-center justify-between">
@@ -225,62 +230,6 @@ export default async function OfferingDetailPage({
                 currentFacultyId={session.faculty_id}
               />
             ))}
-          </div>
-        )}
-      </div>
-
-      {/* Faculty Assignments */}
-      <div id="faculty-assignments" className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[var(--color-ink)] flex items-center gap-2">
-            <Users className="w-5 h-5 text-gray-400" />
-            Faculty & Sections
-          </h2>
-          <AddFacultyForm
-            offering_id={offering_id}
-            allFaculty={allFaculty}
-            allSections={allSections}
-          />
-        </div>
-
-        {assignments.length === 0 ? (
-          <div className="panel-card border-dashed border-gray-200 p-5 text-center">
-            <p className="text-sm text-gray-500">No faculty assigned yet.</p>
-          </div>
-        ) : (
-          <div className="panel-card overflow-hidden">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5">
-                <tr>
-                  <th className="px-5 py-3">Faculty</th>
-                  <th className="px-5 py-3">Section</th>
-                  <th className="px-5 py-3 text-center">Students</th>
-                  <th className="px-5 py-3 text-center">Submitted</th>
-                  <th className="px-5 py-3 text-center">Pending</th>
-                  <th className="px-5 py-3"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-black/5">
-                {assignments.map((fa) => {
-                  const faSubmissions = submissions.filter(
-                    (s) => s.faculty_assignment_id === fa.id
-                  );
-                  const submittedCount = faSubmissions.filter((s) => s.status === "submitted" || s.status === "approved").length;
-                  const pendingCount = faSubmissions.filter((s) => s.status === "pending").length;
-                  return (
-                    <EditableFacultyRow
-                      key={fa.id}
-                      fa={fa}
-                      allSections={allSections}
-                      allFaculty={allFaculty}
-                      submittedCount={submittedCount}
-                      pendingCount={pendingCount}
-                      offering_id={offering_id}
-                    />
-                  );
-                })}
-              </tbody>
-            </table>
           </div>
         )}
       </div>
@@ -387,106 +336,73 @@ export default async function OfferingDetailPage({
         )}
       </div>
 
-      {/* Submission Tracking Matrix */}
-      {assignments.length > 0 && trackedComponents.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-[var(--color-ink)] flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-[var(--color-accent)]" />
-              Submission Tracking
-            </h2>
-            <CoordinatorExportButton
-              offering={{
-                course_code: offering.course_code,
-                course_name: offering.course_name,
-                semester_name: offering.semester_name,
-                year_name: offering.year_name,
-              }}
-              assignments={assignments.map((fa) => ({
-                id: fa.id,
-                faculty_name: fa.faculty_name,
-                section_name: fa.section_name,
-              }))}
-              components={components.map((c) => ({
-                id: c.id,
-                component_name: c.component_name,
-              }))}
-              statuses={statusByKey}
-            />
           </div>
-          <div className="panel-card overflow-x-auto">
-            <table className="w-full text-sm text-left border-collapse">
-              <thead className="bg-gray-50/50 text-gray-500 font-medium border-b border-black/5">
+        }
+        facultyContent={
+          <div className="space-y-8">
+      {/* Faculty Assignments */}
+      <div id="faculty-assignments" className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-[var(--color-ink)] flex items-center gap-2">
+            <Users className="w-5 h-5 text-gray-400" />
+            Faculty & Sections
+          </h2>
+          <AddFacultyForm
+            offering_id={offering_id}
+            allFaculty={allFaculty}
+            allSections={allSections}
+          />
+        </div>
+
+        {assignments.length === 0 ? (
+          <div className="panel-card border-dashed border-gray-200 p-5 text-center">
+            <p className="text-sm text-gray-500">No faculty assigned yet.</p>
+          </div>
+        ) : (
+          <div className="panel-card overflow-hidden">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5">
                 <tr>
-                  <th className="px-5 py-4 whitespace-nowrap min-w-[200px]">Faculty & Progress</th>
-                  {trackedComponents.map((comp) => (
-                    <th
-                      key={comp.id}
-                      className="px-4 py-4 text-center whitespace-nowrap min-w-[120px]"
-                      title={comp.component_name}
-                    >
-                      {comp.component_name.length > 15
-                        ? comp.component_name.slice(0, 15) + "…"
-                        : comp.component_name}
-                    </th>
-                  ))}
+                  <th className="px-5 py-3">Faculty</th>
+                  <th className="px-5 py-3">Section</th>
+                  <th className="px-5 py-3 text-center">Students</th>
+                  <th className="px-5 py-3 text-center">Submitted</th>
+                  <th className="px-5 py-3 text-center">Pending</th>
+                  <th className="px-5 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-black/5">
                 {assignments.map((fa) => {
-                  const faSubmissions = submissions.filter((s) => s.faculty_assignment_id === fa.id);
+                  const faSubmissions = submissions.filter(
+                    (s) => s.faculty_assignment_id === fa.id
+                  );
                   const submittedCount = faSubmissions.filter((s) => s.status === "submitted" || s.status === "approved").length;
-                  const totalFaExpected = trackedComponents.length;
-                  const progressPct = totalFaExpected > 0 ? Math.round((submittedCount / totalFaExpected) * 100) : 0;
-
+                  const pendingCount = faSubmissions.filter((s) => s.status === "pending").length;
                   return (
-                    <tr key={fa.id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-5 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-accent)]/10 text-[var(--color-accent)] font-bold ring-1 ring-inset ring-[var(--color-accent)]/20">
-                            {fa.faculty_name.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="font-medium text-[var(--color-ink)]">{fa.faculty_name}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-[10px] font-semibold tracking-wider uppercase text-gray-400">
-                                SEC {fa.section_name}
-                              </span>
-                              <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-[var(--color-accent)] rounded-full transition-all duration-500"
-                                  style={{ width: `${progressPct}%` }}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      {trackedComponents.map((comp) => {
-                        const sub = submissionMap.get(`${fa.id}::${comp.id}`);
-                        const status = sub?.status ?? "pending";
-                        return (
-                          <td key={comp.id} className="px-4 py-4 text-center">
-                            <SubmissionFilesModal
-                            submission_id={sub?.submission_id ?? ""}
-                           faculty_name={fa.faculty_name}
-                           component_name={comp.component_name}
-                           section_name={fa.section_name}
-                           status={status}
-                           offering_id={offering_id}
-                           currentFacultyId={session.faculty_id}
-                           />
-                          </td>
-                        );
-                      })}
-                    </tr>
+                    <EditableFacultyRow
+                      key={fa.id}
+                      fa={fa}
+                      allSections={allSections}
+                      allFaculty={allFaculty}
+                      submittedCount={submittedCount}
+                      pendingCount={pendingCount}
+                      offering_id={offering_id}
+                    />
                   );
                 })}
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+
+          </div>
+        }
+        trackingContent={
+          <div className="space-y-8">
+          </div>
+        }
+      />
     </div>
   );
 }
