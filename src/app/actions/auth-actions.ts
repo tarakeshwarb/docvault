@@ -106,11 +106,12 @@ export async function loginFaculty(
 ): Promise<LoginState> {
   const email = readField(formData, "email").toLowerCase();
   const password = readField(formData, "password");
+  const requestedRole = readField(formData, "role") as FacultyAuthRow["role"];
 
-  if (!email || !password) {
+  if (!email || !password || !requestedRole) {
     return {
       ok: false,
-      message: "Enter your faculty email and password.",
+      message: "Enter your faculty email, password, and select a role.",
     };
   }
 
@@ -147,17 +148,70 @@ export async function loginFaculty(
     };
   }
 
+  // Validate if the user is allowed to assume the requested role
+  if (matched.role !== "admin") { // Admins can probably do anything or just stay admin, but let's be strict
+    if (requestedRole === "course_coordinator") {
+      const rows = await queryDb<{ count: string }>(
+        `SELECT COUNT(*) AS count FROM public.coordinator_assignment WHERE faculty_id = $1`,
+        [matched.faculty_id]
+      );
+      if (Number(rows[0]?.count ?? 0) === 0) {
+        return { ok: false, message: "You are not assigned as a Course Coordinator." };
+      }
+    } else if (requestedRole === "secondary_coordinator") {
+      try {
+        const rows = await queryDb<{ count: string }>(
+          `SELECT COUNT(*) AS count FROM public.secondary_coordinator_assignment WHERE faculty_id = $1`,
+          [matched.faculty_id]
+        );
+        if (Number(rows[0]?.count ?? 0) === 0) {
+          return { ok: false, message: "You are not assigned as a Secondary Coordinator." };
+        }
+      } catch (e) {
+        return { ok: false, message: "Secondary coordinator verification failed." };
+      }
+    } else if (requestedRole === "faculty") {
+      const rows = await queryDb<{ count: string }>(
+        `SELECT COUNT(*) AS count FROM public.faculty_assignment WHERE faculty_id = $1`,
+        [matched.faculty_id]
+      );
+      if (Number(rows[0]?.count ?? 0) === 0) {
+        return { ok: false, message: "You are not assigned to any courses as Faculty." };
+      }
+    } else if (requestedRole === "audit") {
+      if (matched.faculty_id !== 100174) { // Based on the hardcoded logic
+        try {
+          const rows = await queryDb<{ count: string }>(
+            `SELECT COUNT(*) AS count FROM public.audit_assignment WHERE faculty_id = $1`,
+            [matched.faculty_id]
+          );
+          if (Number(rows[0]?.count ?? 0) === 0) {
+            return { ok: false, message: "You do not have Audit privileges." };
+          }
+        } catch (e) {
+          return { ok: false, message: "Audit verification failed." };
+        }
+      }
+    } else if (requestedRole === "hod" && matched.role !== "hod") {
+      return { ok: false, message: "You are not assigned as HOD." };
+    } else if (requestedRole === "admin" && matched.role !== "admin") {
+      return { ok: false, message: "You do not have Admin privileges." };
+    }
+  }
+
+  // The actual role the session uses should be the requested one!
   const effectiveSession = {
     faculty_id: matched.faculty_id,
     faculty_name: matched.faculty_name,
     designation: matched.designation,
     email: matched.email,
-    role: matched.role,
+    role: requestedRole,
   };
 
   await setFacultySession(effectiveSession);
 
-  const redirectTo = await resolvePortalPath(effectiveSession.faculty_id, effectiveSession.role);
+  // Directly route to the role's dashboard (no guessing needed)
+  const redirectTo = getDashboardPathForRole(requestedRole);
 
   return {
     ok: true,

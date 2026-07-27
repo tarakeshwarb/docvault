@@ -36,9 +36,9 @@ export default function Footer() {
                 Platform
               </h3>
               <ul className="space-y-3 text-sm text-[var(--color-muted)]">
-                <li><a className="hover:text-[var(--color-accent)] transition-colors" href="/admin">Admin Control</a></li>
-                <li><a className="hover:text-[var(--color-accent)] transition-colors" href="/course-coordinator">Coordinator Hub</a></li>
-                <li><a className="hover:text-[var(--color-accent)] transition-colors" href="/faculty">Faculty Uploads</a></li>
+                <li>Admin Control</li>
+                <li>Coordinator Hub</li>
+                <li>Faculty Uploads</li>
               </ul>
             </div>
             <div className="space-y-4">

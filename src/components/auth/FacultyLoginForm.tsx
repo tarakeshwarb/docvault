@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { Loader2, Mail, Lock, Eye, EyeOff, AlertCircle, UserCheck } from "lucide-react";
 
 export default function FacultyLoginForm() {
   const [pending, setPending] = useState(false);
@@ -23,6 +23,7 @@ export default function FacultyLoginForm() {
         body: JSON.stringify({
           email: formData.get("email"),
           password: formData.get("password"),
+          role: formData.get("role"),
         }),
       });
 
@@ -53,6 +54,29 @@ export default function FacultyLoginForm() {
 
   return (
     <form className="space-y-5" onSubmit={handleSubmit}>
+      {/* Role Selection */}
+      <div>
+        <label className="mb-1.5 block text-[13px] font-semibold text-[var(--color-ink)]">
+          Select Role
+        </label>
+        <div className="relative">
+          <UserCheck className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-400" />
+          <select
+            name="role"
+            className={fieldClass}
+            required
+            defaultValue="faculty"
+          >
+            <option value="faculty">Faculty</option>
+            <option value="course_coordinator">Course Coordinator</option>
+            <option value="secondary_coordinator">Secondary Coordinator</option>
+            <option value="hod">Head of Department (HOD)</option>
+            <option value="audit">IQAC Audit</option>
+            <option value="admin">System Admin</option>
+          </select>
+        </div>
+      </div>
+
       {/* Email */}
       <div>
         <label className="mb-1.5 block text-[13px] font-semibold text-[var(--color-ink)]">
