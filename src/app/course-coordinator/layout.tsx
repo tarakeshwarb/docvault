@@ -27,6 +27,11 @@ export default async function CourseCoordinatorLayout({
     redirect("/");
   }
 
+  // Strict role isolation: only course_coordinator (and admin) can access this portal
+  if (session.role !== "course_coordinator" && session.role !== "admin") {
+    redirect("/");
+  }
+
   // Double-check they still have an active offering
   if (session.role !== "admin") {
     const offerings = await getCoordinatorOfferings(session.faculty_id);

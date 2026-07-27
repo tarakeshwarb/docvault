@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { buildR2Key, uploadPdfToR2, deleteFromR2 } from "@/lib/r2";
 import * as ExcelJS from "exceljs";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { sendEmail } from "@/lib/mailer";
 
 export type CoordinatorOffering = {
   offering_id: string;
@@ -789,4 +790,56 @@ export async function revokeApproval(submission_id: string, offering_id: string)
   revalidatePath(`/course-coordinator/${offering_id}`);
   revalidatePath(`/secondary-coordinator/${offering_id}`);
   revalidatePath(`/faculty`);
+}
+
+export async function sendReminderEmail(offering_id: string, faculty_assignment_id: string) {
+  const assignments = await getFacultyAssignments(offering_id);
+  const assignment = assignments.find((a) => a.id === faculty_assignment_id);
+  
+  if (!assignment) throw new Error("Faculty assignment not found");
+  if (!assignment.email) throw new Error("Faculty has no email address configured");
+
+  const components = await getCourseComponents(offering_id);
+  const trackedComponents = components.filter((c) => !c.is_common);
+  
+  const submissions = await getSubmissionStatus(offering_id);
+  const facultySubmissions = submissions.filter((s) => s.faculty_assignment_id === faculty_assignment_id);
+
+  const pendingComponents = trackedComponents.filter((comp) => {
+    const sub = facultySubmissions.find((s) => s.course_component_id === comp.id);
+    return !sub || sub.status === "pending" || sub.status === "late";
+  });
+
+  if (pendingComponents.length === 0) {
+    return { success: true, message: "No pending components to remind about." };
+  }
+
+  const componentNames = pendingComponents.map((c) => `- ${c.component_name}`).join("<br/>");
+
+  const offeringSummary = await getOfferingSummary(offering_id);
+  const courseName = offeringSummary ? offeringSummary.course_name : "your assigned course";
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+      <h2 style="color: #0c4da2;">Submission Reminder</h2>
+      <p>Dear ${assignment.faculty_name},</p>
+      <p>This is a gentle reminder that you have pending document submissions for <strong>${courseName}</strong> (Section: ${assignment.section_name}).</p>
+      <p>Please submit the following required documents as soon as possible:</p>
+      <div style="margin-left: 20px; color: #d32f2f;">
+        ${componentNames}
+      </div>
+      <br/>
+      <p>You can upload these documents by logging into the Faculty Portal.</p>
+      <p>Thank you,</p>
+      <p>Course Coordinator Team</p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: assignment.email,
+    subject: `Reminder: Pending Submissions for ${courseName}`,
+    html,
+  });
+
+  return { success: true, message: "Reminder email sent successfully." };
 }

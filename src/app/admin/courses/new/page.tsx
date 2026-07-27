@@ -86,6 +86,23 @@ export default function NewCoursePage() {
             className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:border-[var(--color-accent)] uppercase"
           />
         </div>
+        <div>
+          <label className="block text-sm font-medium text-[var(--color-ink)] mb-1">
+            Year of Study (Optional)
+          </label>
+          <select
+            name="year_of_study"
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:border-[var(--color-accent)] bg-white"
+            defaultValue=""
+          >
+            <option value="">N/A (Any Year)</option>
+            <option value="1">1st Year</option>
+            <option value="2">2nd Year</option>
+            <option value="3">3rd Year</option>
+            <option value="4">4th Year</option>
+            <option value="5">5th Year</option>
+          </select>
+        </div>
         {error && (
           <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
         )}

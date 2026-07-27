@@ -15,11 +15,13 @@ export default function EditCourseClient({ course }: { course: Course }) {
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
+    const yearStr = formData.get("year_of_study") as string;
     const data = {
       course_code: formData.get("course_code") as string,
       course_name: formData.get("course_name") as string,
       credits: parseInt(formData.get("credits") as string),
       course_type: formData.get("course_type") as string,
+      year_of_study: yearStr ? parseInt(yearStr, 10) : null,
     };
 
     if (!data.course_code || !data.course_name || isNaN(data.credits)) {
@@ -94,6 +96,21 @@ export default function EditCourseClient({ course }: { course: Course }) {
             placeholder="e.g. T, L, EL"
             className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm outline-none transition hover:border-black/20 focus:border-[var(--color-ink)] focus:ring-1 focus:ring-[var(--color-ink)] uppercase"
           />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-[var(--color-ink)]">Year of Study (Optional)</label>
+          <select
+            name="year_of_study"
+            className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm outline-none transition hover:border-black/20 focus:border-[var(--color-ink)] focus:ring-1 focus:ring-[var(--color-ink)] bg-white"
+            defaultValue={course.year_of_study ? String(course.year_of_study) : ""}
+          >
+            <option value="">N/A (Any Year)</option>
+            <option value="1">1st Year</option>
+            <option value="2">2nd Year</option>
+            <option value="3">3rd Year</option>
+            <option value="4">4th Year</option>
+            <option value="5">5th Year</option>
+          </select>
         </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}

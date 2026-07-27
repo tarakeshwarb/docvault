@@ -20,6 +20,11 @@ export default async function FacultyLayout({ children }: { children: React.Reac
     redirect("/");
   }
 
+  // Strict role isolation: only faculty (and admin) can access this portal
+  if (session.role !== "faculty" && session.role !== "admin") {
+    redirect("/");
+  }
+
   // Cross-portal navigation removed. Access is strictly isolated by selected role.
   const items = [...facultySidebarItems];
 

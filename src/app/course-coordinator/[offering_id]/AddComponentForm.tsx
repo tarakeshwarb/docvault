@@ -163,22 +163,6 @@ export function AddComponentForm({
             </div>
           </div>
 
-          <label className="flex items-start gap-2 rounded-lg bg-slate-50 p-3 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isCommon}
-              onChange={(e) => setIsCommon(e.target.checked)}
-              className="accent-[var(--color-accent)] w-4 h-4 mt-0.5"
-            />
-            <span>
-              <span className="font-medium">Common component</span>
-              <span className="block text-xs text-gray-500">
-                One shared file that you upload once (e.g. question paper, answer key). Faculty
-                can view it but don&apos;t upload their own copy — saves storage.
-              </span>
-            </span>
-          </label>
-
           {error && (
             <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
           )}

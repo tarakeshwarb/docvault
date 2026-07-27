@@ -23,6 +23,7 @@ import { AddComponentForm } from "./AddComponentForm";
 import { AddBroadcastForm } from "./AddBroadcastForm";
 import { EditableComponentRow } from "./EditableComponentRow";
 import { EditableFacultyRow } from "./EditableFacultyRow";
+import { SubmissionTrackingMatrix } from "./SubmissionTrackingMatrix";
 import {
   ArrowLeft,
   Users,
@@ -120,85 +121,64 @@ export default async function OfferingDetailPage({
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div>
-
-
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center rounded-md bg-[var(--color-accent)]/10 px-3 py-1.5 text-sm font-bold text-[var(--color-accent)] ring-1 ring-inset ring-[var(--color-accent)]/20">
-                {offering.course_code}
-              </span>
-              <span className="text-sm font-medium text-gray-400">
-                {offering.semester_name} ┬╖ {offering.year_name}
-              </span>
-            </div>
-            <h1 className="mt-3 text-4xl font-bold tracking-tight text-[var(--color-ink)]">
-              {offering.course_name}
-            </h1>
+      {/* Compact Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-[var(--color-accent)] p-5 sm:p-6 rounded-2xl shadow-lg shadow-[var(--color-accent)]/20">
+        {/* Left: Title & Stats */}
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="inline-flex items-center rounded-md bg-white/20 px-2 py-1 text-xs font-bold text-white ring-1 ring-inset ring-white/30 backdrop-blur-sm">
+              {offering.course_code}
+            </span>
+            <span className="text-xs font-medium text-white/70">
+              {offering.semester_name} • {offering.year_name}
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+            {offering.course_name}
+          </h1>
+          
+          <div className="mt-5 flex flex-wrap gap-8">
+            {[
+              { label: "Faculty Assigned", value: assignments.length },
+              { label: "Requirements", value: components.length },
+              { label: "Completion Rate", value: `${completionPct}%` },
+            ].map((item) => (
+              <div key={item.label}>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-white/60">{item.label}</p>
+                <p className="text-xl font-bold text-white leading-none mt-1.5">{item.value}</p>
+              </div>
+            ))}
           </div>
         </div>
 
-        <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_3fr]">
-          <div className="panel-card h-fit self-center p-6">
-            <div className="grid gap-4 grid-cols-1">
-              {[
-                { label: "Faculty Assigned", value: assignments.length },
-                { label: "Components Required", value: components.length },
-                { label: "Completion", value: `${completionPct}%` },
-              ].map((item) => (
-                <div key={item.label} className="panel-card bg-slate-50/70 p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)]">
-                    {item.label}
-                  </p>
-                  <p className="mt-1.5 text-2xl font-semibold text-[var(--color-ink)]">{item.value}</p>
-                </div>
-              ))}
-            </div>
+        {/* Right: Actions & Reports */}
+        <div className="flex flex-col gap-3 w-full lg:w-[320px] shrink-0">
+          <div className="flex items-center justify-start lg:justify-end">
+            <CoordinatorToolbar offering_id={offering_id} />
           </div>
-
-          <div className="rounded-3xl border border-black/5 bg-[var(--color-accent)] p-5 text-white shadow-[0_18px_45px_rgba(12,77,162,0.16)]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/60">
-              One-click reports
-            </p>
-            <h2 className="mt-1.5 text-xl font-semibold">Generate consolidated academic files</h2>
-            <form action={generateConsolidatedReport} className="mt-4 space-y-3">
+          
+          <div className="bg-white/10 p-4 rounded-xl border border-white/10 backdrop-blur-md">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-white/80 mb-2">Generate Reports</p>
+            <form action={generateConsolidatedReport} className="flex gap-2">
               <input type="hidden" name="offering_id" value={offering_id} />
               <input type="hidden" name="generated_by" value={session.faculty_id} />
-              <div>
-                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70">
-                  Report type
-                </label>
-                <select
-                  name="report_type"
-                  defaultValue="consolidated_marks_report"
-                  className="w-full rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-sm text-white outline-none backdrop-blur"
-                >
-                  <option value="consolidated_marks_report" className="text-[var(--color-ink)]">
-                    Consolidated Marks Report
-                  </option>
-                  <option value="result_analysis_report" className="text-[var(--color-ink)]">
-                    Result Analysis Report
-                  </option>
-                  <option value="course_outcome_analysis" className="text-[var(--color-ink)]">
-                    Course Outcome Analysis
-                  </option>
-                  <option value="attendance_report" className="text-[var(--color-ink)]">
-                    Attendance Report
-                  </option>
-                </select>
-              </div>
+              <select
+                name="report_type"
+                defaultValue="consolidated_marks_report"
+                className="flex-1 rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 text-xs text-white outline-none focus:border-white focus:ring-1 focus:ring-white"
+              >
+                <option value="consolidated_marks_report" className="text-[var(--color-ink)]">Consolidated Marks</option>
+                <option value="result_analysis_report" className="text-[var(--color-ink)]">Result Analysis</option>
+                <option value="course_outcome_analysis" className="text-[var(--color-ink)]">Outcome Analysis</option>
+                <option value="attendance_report" className="text-[var(--color-ink)]">Attendance Report</option>
+              </select>
               <button
                 type="submit"
-                className="inline-flex w-full items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-[var(--color-ink)] transition hover:-translate-y-0.5"
+                className="rounded-lg bg-white px-3.5 py-1.5 text-xs font-semibold text-[var(--color-accent)] transition hover:bg-white/90"
               >
-                Generate and store in R2
+                Create
               </button>
             </form>
-            <div className="mt-3">
-              <CoordinatorToolbar offering_id={offering_id} />
-            </div>
           </div>
         </div>
       </div>
@@ -400,6 +380,12 @@ export default async function OfferingDetailPage({
         }
         trackingContent={
           <div className="space-y-8">
+            <SubmissionTrackingMatrix
+              offering_id={offering_id}
+              assignments={assignments}
+              components={trackedComponents}
+              submissions={submissions}
+            />
           </div>
         }
       />

@@ -28,15 +28,15 @@ export default async function CoursesPage() {
               <th className="px-6 py-4">Course Code</th>
               <th className="px-6 py-4">Course Name</th>
               <th className="px-6 py-4">Type</th>
+              <th className="px-6 py-4">Year</th>
               <th className="px-6 py-4">Credits</th>
-              <th className="px-6 py-4">Created At</th>
               <th className="px-6 py-4 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-black/5">
             {courses.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                   No courses found.
                 </td>
               </tr>
@@ -54,8 +54,10 @@ export default async function CoursesPage() {
                       "-"
                     )}
                   </td>
+                  <td className="px-6 py-4 text-gray-500 font-medium">
+                    {course.year_of_study ? `${course.year_of_study}${course.year_of_study === 1 ? 'st' : course.year_of_study === 2 ? 'nd' : course.year_of_study === 3 ? 'rd' : 'th'} Year` : "-"}
+                  </td>
                   <td className="px-6 py-4 text-gray-500">{course.credits}</td>
-                  <td className="px-6 py-4 text-gray-500">{formatDate(course.created_at)}</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <a 
