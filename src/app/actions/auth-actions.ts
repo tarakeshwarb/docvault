@@ -7,6 +7,7 @@ import {
   clearFacultySession,
   getDashboardPathForRole,
   setFacultySession,
+  type FacultySession,
 } from "@/lib/auth";
 
 type FacultyAuthRow = {
@@ -106,7 +107,7 @@ export async function loginFaculty(
 ): Promise<LoginState> {
   const email = readField(formData, "email").toLowerCase();
   const password = readField(formData, "password");
-  const requestedRole = readField(formData, "role") as FacultyAuthRow["role"];
+  const requestedRole = readField(formData, "role") as FacultySession["role"];
 
   if (!email || !password || !requestedRole) {
     return {
@@ -148,9 +149,15 @@ export async function loginFaculty(
     };
   }
 
-  // Validate if the user is allowed to assume the requested role
-  if (matched.role !== "admin") { // Admins can probably do anything or just stay admin, but let's be strict
-    if (requestedRole === "course_coordinator") {
+  // Validate if the user is allowed to assume the requested role.
+  // Admins bypass all checks — anyone else must prove they have the role.
+  if (matched.role !== "admin") {
+    if (requestedRole === "admin") {
+      // Non-admin user trying to log in as admin — deny immediately.
+      return { ok: false, message: "You do not have Admin privileges." };
+    } else if (requestedRole === "hod" && matched.role !== "hod") {
+      return { ok: false, message: "You are not assigned as HOD." };
+    } else if (requestedRole === "course_coordinator") {
       const rows = await queryDb<{ count: string }>(
         `SELECT COUNT(*) AS count FROM public.coordinator_assignment WHERE faculty_id = $1`,
         [matched.faculty_id]
@@ -179,7 +186,7 @@ export async function loginFaculty(
         return { ok: false, message: "You are not assigned to any courses as Faculty." };
       }
     } else if (requestedRole === "audit") {
-      if (matched.faculty_id !== 100174) { // Based on the hardcoded logic
+      if (matched.faculty_id !== 100174) {
         try {
           const rows = await queryDb<{ count: string }>(
             `SELECT COUNT(*) AS count FROM public.audit_assignment WHERE faculty_id = $1`,
@@ -192,10 +199,6 @@ export async function loginFaculty(
           return { ok: false, message: "Audit verification failed." };
         }
       }
-    } else if (requestedRole === "hod" && matched.role !== "hod") {
-      return { ok: false, message: "You are not assigned as HOD." };
-    } else if (requestedRole === "admin" && matched.role !== "admin") {
-      return { ok: false, message: "You do not have Admin privileges." };
     }
   }
 
