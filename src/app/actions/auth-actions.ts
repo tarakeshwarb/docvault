@@ -7,6 +7,7 @@ import {
   clearFacultySession,
   getDashboardPathForRole,
   setFacultySession,
+  type FacultySession,
 } from "@/lib/auth";
 
 type FacultyAuthRow = {
@@ -106,7 +107,7 @@ export async function loginFaculty(
 ): Promise<LoginState> {
   const email = readField(formData, "email").toLowerCase();
   const password = readField(formData, "password");
-  const requestedRole = readField(formData, "role") as FacultyAuthRow["role"];
+  const requestedRole = readField(formData, "role") as FacultySession["role"];
 
   if (!email || !password || !requestedRole) {
     return {
