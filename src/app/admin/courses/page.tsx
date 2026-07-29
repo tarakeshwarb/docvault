@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { getCourses, deleteCourse } from "../actions";
-import { formatDate } from "@/lib/utils";
 import { DeleteButton } from "@/components/ui/DeleteButton";
+import { BulkCoursesUpload } from "./BulkCoursesUpload";
 
 export default async function CoursesPage() {
   const courses = await getCourses();
@@ -14,6 +14,7 @@ export default async function CoursesPage() {
           <p className="text-sm text-[var(--color-muted)]">Manage course catalog and syllabus details.</p>
         </div>
         <div className="flex items-center gap-3">
+          <BulkCoursesUpload />
           <a href="/admin/courses/new" className="inline-flex items-center gap-2 rounded-full bg-[var(--color-ink)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-ink)]/80 transition-colors">
             <Plus className="w-4 h-4" />
             Add Course

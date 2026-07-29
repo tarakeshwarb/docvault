@@ -2,6 +2,7 @@
 
 import { queryDb, executeDb } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import ExcelJS from "exceljs";
 
 export type Course = {
   course_id: string;
@@ -225,6 +226,79 @@ export async function createCourse(formData: FormData) {
     [code, name, credits, type || null, year_of_study]
   );
   revalidatePath("/admin/courses");
+}
+
+export type CourseExcelRow = {
+  course_code: string;
+  course_name: string;
+  course_type: string | null;
+  year_of_study: number | null;
+  credits: number | null;
+  error?: string;
+};
+
+/** Parse an uploaded courses Excel: columns Course Code | Course Name | Type | Year | Credits. */
+export async function parseCoursesExcel(formData: FormData): Promise<CourseExcelRow[]> {
+  const file = formData.get("file") as File;
+  if (!file) throw new Error("No file uploaded");
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer as unknown as ArrayBuffer);
+  const worksheet = workbook.worksheets[0];
+  if (!worksheet) throw new Error("Excel file is empty");
+
+  const results: CourseExcelRow[] = [];
+  worksheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return; // header
+    const code = row.getCell(1).text?.trim();
+    const name = row.getCell(2).text?.trim();
+    const type = row.getCell(3).text?.trim();
+    const yearRaw = row.getCell(4).text?.trim();
+    const creditsRaw = row.getCell(5).text?.trim();
+    if (!code && !name) return;
+
+    const yearMatch = yearRaw ? yearRaw.match(/\d+/) : null;
+    const year_of_study = yearMatch ? parseInt(yearMatch[0], 10) : null;
+    const credits = creditsRaw ? parseInt(creditsRaw, 10) : NaN;
+
+    let error: string | undefined;
+    if (!code) error = "Missing course code.";
+    else if (!name) error = "Missing course name.";
+    else if (isNaN(credits)) error = "Missing or invalid credits.";
+
+    results.push({
+      course_code: code || "",
+      course_name: name || "",
+      course_type: type || null,
+      year_of_study,
+      credits: isNaN(credits) ? null : credits,
+      error,
+    });
+  });
+  return results;
+}
+
+/** Insert/update the valid parsed course rows (upsert on course_code). */
+export async function bulkAddCourses(
+  rows: Array<{ course_code: string; course_name: string; course_type: string | null; year_of_study: number | null; credits: number }>
+): Promise<{ inserted: number }> {
+  let inserted = 0;
+  for (const c of rows) {
+    if (!c.course_code || !c.course_name || isNaN(c.credits)) continue;
+    await executeDb(
+      `INSERT INTO public.course_master (course_code, course_name, credits, course_type, year_of_study)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (course_code) DO UPDATE SET
+         course_name = EXCLUDED.course_name,
+         credits = EXCLUDED.credits,
+         course_type = EXCLUDED.course_type,
+         year_of_study = EXCLUDED.year_of_study`,
+      [c.course_code.trim(), c.course_name.trim(), c.credits, c.course_type, c.year_of_study]
+    );
+    inserted++;
+  }
+  revalidatePath("/admin/courses");
+  return { inserted };
 }
 
 export async function createCourseOffering(data: {
