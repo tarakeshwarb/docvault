@@ -148,7 +148,7 @@ export function ResultAnalysisModal({
     }
   }
 
-  async function download(scope: "section" | "consolidated", format: "xlsx" | "pdf") {
+  async function download(scope: "section" | "consolidated" | "register", format: "xlsx" | "pdf") {
     setDownloading(`${scope}-${format}`);
     setErrors([]);
     try {
@@ -409,6 +409,13 @@ export function ResultAnalysisModal({
                     busy={downloading === "consolidated-pdf"}
                     disabled={!componentId || !!downloading}
                     onClick={() => download("consolidated", "pdf")}
+                  />
+                  <DownloadBtn
+                    label="Register XLSX (all sections)"
+                    icon={<FileSpreadsheet className="h-4 w-4" />}
+                    busy={downloading === "register-xlsx"}
+                    disabled={!componentId || !!downloading}
+                    onClick={() => download("register", "xlsx")}
                   />
                 </div>
                 <button
