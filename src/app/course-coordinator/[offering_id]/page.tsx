@@ -153,10 +153,17 @@ export default async function OfferingDetailPage({
 
         {/* Right: Actions & Reports */}
         <div className="flex flex-col gap-3 w-full lg:w-[320px] shrink-0">
-          <div className="flex items-center justify-start lg:justify-end">
+          <div className="flex items-center justify-start lg:justify-end gap-2">
+            <Link
+              href={`/course-coordinator/${offering_id}/result-analysis`}
+              className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white ring-1 ring-inset ring-white/25 hover:bg-white/25 transition-colors"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Result Analysis
+            </Link>
             <CoordinatorToolbar offering_id={offering_id} />
           </div>
-          
+
           <div className="bg-white/10 p-4 rounded-xl border border-white/10 backdrop-blur-md">
             <p className="text-[10px] font-bold uppercase tracking-wider text-white/80 mb-2">Generate Reports</p>
             <form action={generateConsolidatedReport} className="flex gap-2">

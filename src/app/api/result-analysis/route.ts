@@ -6,6 +6,7 @@ import {
 import {
   generateResultAnalysisXlsx,
   generateResultAnalysisPdf,
+  generateResultAnalysisRegisterXlsx,
   consolidate,
   type ResultAnalysisInput,
 } from "@/lib/result-analysis";
@@ -14,12 +15,14 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type Body = {
-  scope: "section" | "consolidated";
+  scope: "section" | "consolidated" | "register";
   format: "xlsx" | "pdf";
   component_id: string;
   faculty_assignment_id?: string;
   offering_id?: string;
 };
+
+const XLSX_CT = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 function safeName(s: string): string {
   return (s || "result-analysis")
@@ -42,6 +45,46 @@ export async function POST(request: Request) {
       { error: "scope, format and component_id are required." },
       { status: 400 }
     );
+  }
+
+  // Consolidated register (mam's all-sections table). Always XLSX.
+  if (scope === "register") {
+    try {
+      if (!body.offering_id) {
+        return NextResponse.json({ error: "offering_id is required." }, { status: 400 });
+      }
+      const sections = await buildConsolidatedInputs(body.offering_id, component_id);
+      if (sections.length === 0) {
+        return NextResponse.json(
+          { error: "No section analyses have been entered yet for this component." },
+          { status: 404 }
+        );
+      }
+      const first = sections[0];
+      const buffer = await generateResultAnalysisRegisterXlsx(
+        {
+          courseCode: first.courseCode,
+          courseName: first.courseName,
+          component: first.component,
+          academicYear: first.academicYear,
+          semester: first.semester,
+        },
+        sections
+      );
+      const stamp = new Date().toISOString().split("T")[0];
+      const name = `${safeName(`${first.courseCode}_${first.component}_Register`)}_${stamp}`;
+      return new NextResponse(new Uint8Array(buffer), {
+        status: 200,
+        headers: {
+          "Content-Type": XLSX_CT,
+          "Content-Disposition": `attachment; filename="${name}.xlsx"`,
+          "Cache-Control": "no-store",
+        },
+      });
+    } catch (err) {
+      console.error("result-analysis register failed", err);
+      return NextResponse.json({ error: "Failed to build the register." }, { status: 500 });
+    }
   }
 
   // Assemble the inputs to render.
