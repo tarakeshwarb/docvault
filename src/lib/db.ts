@@ -2,15 +2,18 @@ import type { QueryResultRow } from "pg";
 import { Pool } from "pg";
 import { requireEnv } from "./env";
 
-let cachedPool: Pool | null = null;
+const globalForPg = globalThis as unknown as {
+  cachedPool: Pool | undefined;
+};
 
 export function getPool(): Pool {
-  if (!cachedPool) {
-    cachedPool = new Pool({
+  if (!globalForPg.cachedPool) {
+    globalForPg.cachedPool = new Pool({
       connectionString: requireEnv("DATABASE_URL"),
+      max: 10,
     });
   }
-  return cachedPool;
+  return globalForPg.cachedPool;
 }
 
 export async function queryDb<T extends QueryResultRow>(

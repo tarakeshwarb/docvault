@@ -230,3 +230,81 @@ export async function buildConsolidatedInputs(
   );
   return rows.map(rowToInput);
 }
+
+export type SavedAnalysisSummary = {
+  component_id: string;
+  component_name: string;
+  section_name: string;
+  faculty_assignment_id: string;
+  total_strength: number;
+  total_absentees: number;
+  ranges: number[];
+  pass_pct: number;
+  updated_at: string | null;
+};
+
+/** All saved result_analysis rows for a given faculty+offering, across all components. */
+export async function getAllSavedAnalysesForFaculty(
+  faculty_assignment_id: string
+): Promise<SavedAnalysisSummary[]> {
+  const rows = await queryDb<{
+    component_id: string;
+    component_name: string;
+    section_name: string;
+    faculty_assignment_id: string;
+    total_strength: number;
+    total_absentees: number;
+    range_0_49: number;
+    range_50_59: number;
+    range_60_69: number;
+    range_70_79: number;
+    range_80_89: number;
+    range_90_100: number;
+    updated_at: string | null;
+  }>(
+    `SELECT
+       ra.component_id,
+       cmp.component_name,
+       sec.section_name,
+       ra.faculty_assignment_id,
+       ra.total_strength,
+       ra.total_absentees,
+       ra.range_0_49, ra.range_50_59, ra.range_60_69,
+       ra.range_70_79, ra.range_80_89, ra.range_90_100,
+       ra.updated_at::text
+     FROM public.result_analysis ra
+     JOIN public.component_master cmp ON cmp.component_id = ra.component_id
+     JOIN public.faculty_assignment fa ON fa.id = ra.faculty_assignment_id
+     JOIN public.section_master sec ON sec.section_id = fa.section_id
+     WHERE ra.faculty_assignment_id = $1
+     ORDER BY cmp.component_name, sec.section_name`,
+    [faculty_assignment_id]
+  );
+
+  return rows.map((r) => {
+    const ranges = [
+      Number(r.range_0_49 ?? 0),
+      Number(r.range_50_59 ?? 0),
+      Number(r.range_60_69 ?? 0),
+      Number(r.range_70_79 ?? 0),
+      Number(r.range_80_89 ?? 0),
+      Number(r.range_90_100 ?? 0),
+    ];
+    const strength = Number(r.total_strength ?? 0);
+    const absentees = Number(r.total_absentees ?? 0);
+    const failures = ranges[0];
+    const present = strength - absentees;
+    const pass_pct = strength > 0 ? ((present - failures) / strength) * 100 : 0;
+    return {
+      component_id: r.component_id,
+      component_name: r.component_name,
+      section_name: r.section_name,
+      faculty_assignment_id: r.faculty_assignment_id,
+      total_strength: strength,
+      total_absentees: absentees,
+      ranges,
+      pass_pct,
+      updated_at: r.updated_at,
+    };
+  });
+}
