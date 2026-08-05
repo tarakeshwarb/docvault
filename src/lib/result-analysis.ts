@@ -241,6 +241,112 @@ export async function generateResultAnalysisXlsx(
 }
 
 // ---------------------------------------------------------------------------
+// XLSX — consolidated register (matches the SoC "Result Analysis" register:
+// one sheet listing every section as a row, with a totals row + bar chart)
+// ---------------------------------------------------------------------------
+
+export type RegisterHeader = {
+  courseCode: string;
+  courseName: string;
+  component: string;
+  academicYear: string;
+  semester: string;
+  maxMarks?: string;
+  batch?: string;
+};
+
+const COL = (i: number) => String.fromCharCode(65 + i); // 0->A ... 11->L
+
+export async function generateResultAnalysisRegisterXlsx(
+  header: RegisterHeader,
+  sections: ResultAnalysisInput[]
+): Promise<Buffer> {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "CourseFlow / DocVault";
+  wb.created = new Date();
+  const ws = wb.addWorksheet(safeSheetName(header.component), { views: [{ showGridLines: false }] });
+  ws.columns = [
+    { width: 6 }, { width: 26 }, { width: 8 }, { width: 8 }, { width: 8 }, { width: 8 },
+    { width: 8 }, { width: 8 }, { width: 8 }, { width: 14 }, { width: 22 }, { width: 12 },
+  ];
+  const center = { horizontal: "center" as const, vertical: "middle" as const };
+  const left = { horizontal: "left" as const, vertical: "middle" as const };
+
+  const titleRow = (row: number, text: string, size: number) => {
+    ws.mergeCells(`A${row}:L${row}`);
+    const c = ws.getCell(`A${row}`);
+    c.value = text;
+    c.font = { bold: true, size };
+    c.alignment = center;
+  };
+  titleRow(1, INSTITUTION, 12);
+  titleRow(2, "FACULTY OF ENGINEERING AND TECHNOLOGY", 10);
+  titleRow(3, "SCHOOL OF COMPUTING", 10);
+  titleRow(4, `(ACADEMIC YEAR ${header.academicYear})`, 10);
+  titleRow(5, `${header.semester} Semester - ${header.courseCode} - ${header.courseName} handled by SOC Faculty`, 10);
+  titleRow(6, `${header.component} RESULT ANALYSIS${header.maxMarks ? ` :  ${header.maxMarks} Marks` : ""}`, 11);
+
+  const grandStrength = sections.reduce((a, s) => a + (s.totalStrength || 0), 0);
+  ws.getCell("A7").value = `Total Strength : ${grandStrength}`;
+  ws.getCell("A7").font = { bold: true };
+  if (header.batch) {
+    ws.getCell("F7").value = `Batch : ${header.batch}`;
+    ws.getCell("F7").font = { bold: true };
+  }
+
+  const headers = ["SNo", "Staff Name", "SEC", ...RANGE_LABELS, "Total Strength", "No. of students Attended", "Absentees"];
+  headers.forEach((h, i) => {
+    const c = ws.getCell(`${COL(i)}9`);
+    c.value = h;
+    c.font = { bold: true };
+    c.alignment = center;
+    c.border = BORDER_ALL;
+  });
+
+  let r = 10;
+  const totals = new Array(RANGE_COUNT).fill(0);
+  let tStrength = 0, tAttended = 0, tAbsent = 0;
+  sections.forEach((s, idx) => {
+    const ranges = normalizeRanges(s.ranges);
+    const attended = Math.max(0, s.totalStrength - s.totalAbsentees);
+    const rowVals: (string | number)[] = [idx + 1, s.staffName, s.yearSection, ...ranges, s.totalStrength, attended, s.totalAbsentees];
+    rowVals.forEach((v, i) => {
+      const c = ws.getCell(`${COL(i)}${r}`);
+      c.value = v;
+      c.alignment = i === 1 ? left : center;
+      c.border = BORDER_ALL;
+    });
+    ranges.forEach((v, i) => (totals[i] += v));
+    tStrength += s.totalStrength;
+    tAttended += attended;
+    tAbsent += s.totalAbsentees;
+    r++;
+  });
+
+  const totalRow = r;
+  const trVals: (string | number)[] = ["", "TOTAL", "", ...totals, tStrength, tAttended, tAbsent];
+  trVals.forEach((v, i) => {
+    const c = ws.getCell(`${COL(i)}${totalRow}`);
+    c.value = v;
+    c.font = { bold: true };
+    c.alignment = i === 1 ? left : center;
+    c.border = BORDER_ALL;
+  });
+
+  const arr = await wb.xlsx.writeBuffer();
+  const spec: ChartSpec = {
+    sheetIndex: 1,
+    sheetName: safeSheetName(header.component),
+    catRange: "$D$9:$I$9",
+    valRange: `$D$${totalRow}:$I$${totalRow}`,
+    titleCell: `$B$${totalRow}`,
+    title: `${header.component} — Total vs. Range of Marks`,
+    anchor: [1, totalRow + 1, 9, totalRow + 22],
+  };
+  return injectBarCharts(Buffer.from(arr), [spec]);
+}
+
+// ---------------------------------------------------------------------------
 // PDF (with bar chart)
 // ---------------------------------------------------------------------------
 

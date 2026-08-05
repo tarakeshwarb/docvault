@@ -203,6 +203,20 @@ export async function buildSectionInput(
   return rows[0] ? rowToInput(rows[0]) : null;
 }
 
+/** Components that have at least one saved analysis for this offering. */
+export async function getComponentsWithAnalysis(
+  offering_id: string
+): Promise<Array<{ component_id: string; component_name: string }>> {
+  return queryDb<{ component_id: string; component_name: string }>(
+    `SELECT DISTINCT cmp.component_id, cmp.component_name
+     FROM public.result_analysis ra
+     JOIN public.component_master cmp ON ra.component_id = cmp.component_id
+     WHERE ra.offering_id = $1
+     ORDER BY cmp.component_name`,
+    [offering_id]
+  );
+}
+
 /** All sections (with saved data) for an offering+component, for the consolidated report. */
 export async function buildConsolidatedInputs(
   offering_id: string,
