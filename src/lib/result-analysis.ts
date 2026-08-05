@@ -56,13 +56,15 @@ export function computeDerived(input: ResultAnalysisInput): ResultAnalysisDerive
   const ranges = normalizeRanges(input.ranges);
   const totalFailures = ranges[0]; // students in 0-49 are the failures
   const strength = Math.max(0, input.totalStrength);
+  const totalPresent = strength - Math.max(0, input.totalAbsentees);
+  const totalPass = totalPresent - totalFailures;
   const passPercentage =
-    strength > 0 ? ((strength - totalFailures) / strength) * 100 : 0;
+    strength > 0 ? (totalPass / strength) * 100 : 0;
   return {
     totalFailures,
     passMarkPercent: PASS_MARK_PERCENT,
     passPercentage,
-    totalPresent: strength - Math.max(0, input.totalAbsentees),
+    totalPresent,
     sumRanges: ranges.reduce((a, b) => a + b, 0),
   };
 }
@@ -329,6 +331,124 @@ function niceStep(maxVal: number): number {
   if (maxVal <= 150) return 25;
   if (maxVal <= 300) return 50;
   return Math.ceil(maxVal / 6 / 100) * 100;
+}
+
+export async function generateConsolidatedResultAnalysisXlsx(
+  componentsSections: Record<string, ResultAnalysisInput[]>
+): Promise<Buffer> {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "CourseFlow / DocVault";
+  wb.created = new Date();
+
+  const center = { horizontal: "center" as const, vertical: "middle" as const };
+  const BORDER_ALL = {
+    top: { style: "thin" as const },
+    left: { style: "thin" as const },
+    bottom: { style: "thin" as const },
+    right: { style: "thin" as const },
+  };
+
+  for (const [componentName, sections] of Object.entries(componentsSections)) {
+    if (sections.length === 0) continue;
+
+    const ws = wb.addWorksheet(safeSheetName(componentName), {
+      views: [{ showGridLines: false }],
+    });
+
+    ws.columns = [
+      { width: 6 },
+      { width: 25 },
+      { width: 10 },
+      { width: 8 },
+      { width: 8 },
+      { width: 8 },
+      { width: 8 },
+      { width: 8 },
+      { width: 8 },
+      { width: 15 },
+      { width: 25 },
+      { width: 12 },
+      { width: 10 },
+      { width: 12 },
+      { width: 10 },
+    ];
+
+    const first = sections[0];
+
+    const titleRow = (row: number, text: string, bold = true) => {
+      ws.mergeCells(`A${row}:O${row}`);
+      const c = ws.getCell(`A${row}`);
+      c.value = text;
+      c.font = { bold, size: 11 };
+      c.alignment = center;
+    };
+
+    titleRow(1, INSTITUTION);
+    titleRow(2, COLLEGE);
+    titleRow(3, `(ACADEMIC YEAR ${first.academicYear})`);
+    titleRow(4, `${first.semester} Semester B.Tech - ${first.courseCode} - ${first.courseName} handled by SOC Faculty`);
+    titleRow(5, `${componentName} RESULT ANALYSIS`);
+
+    ws.getCell("A6").value = `Total Strength : ${sections.reduce((acc, s) => acc + s.totalStrength, 0)}`;
+    ws.getCell("A6").font = { bold: true };
+    ws.getCell("O6").value = `Batch : 1 & 2`;
+    ws.getCell("O6").font = { bold: true };
+    ws.getCell("O6").alignment = { horizontal: "right" };
+
+    const headers = [
+      "SNo", "Staff Name", "SEC", "0-49", "50-59", "60-69", "70-79", "80-89", "90-100",
+      "Total Strength", "No. of students Attended", "Absentees", "Failures", "Total pass", "Pass %"
+    ];
+
+    const headerRow = ws.getRow(8);
+    headers.forEach((h, i) => {
+      const c = headerRow.getCell(i + 1);
+      c.value = h;
+      c.font = { bold: true };
+      c.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+      c.border = BORDER_ALL;
+    });
+    headerRow.height = 30;
+
+    sections.forEach((sec, idx) => {
+      const rowNum = 9 + idx;
+      const r = ws.getRow(rowNum);
+
+      const ranges = normalizeRanges(sec.ranges);
+      const failures = ranges[0];
+      const attended = sec.totalStrength - sec.totalAbsentees;
+      const totalPass = attended - failures;
+      const passPct = attended > 0 ? (totalPass / attended) * 100 : 0;
+
+      const rowData = [
+        idx + 1,
+        sec.staffName,
+        sec.yearSection,
+        ...ranges,
+        sec.totalStrength,
+        attended,
+        sec.totalAbsentees,
+        failures,
+        totalPass,
+        passPct
+      ];
+
+      rowData.forEach((val, i) => {
+        const c = r.getCell(i + 1);
+        c.value = val;
+        c.border = BORDER_ALL;
+        if (i === headers.length - 1) {
+          c.numFmt = "0.00";
+        }
+        if (i !== 1) {
+          c.alignment = center;
+        }
+      });
+    });
+  }
+
+  const arr = await wb.xlsx.writeBuffer();
+  return Buffer.from(arr);
 }
 
 function addPdfPage(pdf: PDFDocument, font: PDFFont, fontBold: PDFFont, input: ResultAnalysisInput) {

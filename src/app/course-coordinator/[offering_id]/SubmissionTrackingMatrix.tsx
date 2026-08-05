@@ -4,17 +4,22 @@ import { useState } from "react";
 import { CheckCircle2, Clock, Mail, MailCheck, Loader2 } from "lucide-react";
 import { sendReminderEmail } from "../actions";
 import type { FacultyAssignment, Component, SubmissionStatus } from "../actions";
+import { SubmissionFilesModal } from "@/components/coordinator/SubmissionFilesModal";
 
 export function SubmissionTrackingMatrix({
   offering_id,
   assignments,
   components,
   submissions,
+  currentFacultyId,
+  baseUrl,
 }: {
   offering_id: string;
   assignments: FacultyAssignment[];
   components: Component[];
   submissions: SubmissionStatus[];
+  currentFacultyId: number;
+  baseUrl: string;
 }) {
   const [loadingIds, setLoadingIds] = useState<Record<string, boolean>>({});
   const [sentIds, setSentIds] = useState<Record<string, boolean>>({});
@@ -76,7 +81,7 @@ export function SubmissionTrackingMatrix({
                     </span>
                     {comp.deadline && (
                       <span className="text-[10px] font-normal mt-1">
-                        Due: {new Date(comp.deadline).toLocaleDateString()}
+                        Due: {new Date(comp.deadline).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                       </span>
                     )}
                   </div>
@@ -103,15 +108,16 @@ export function SubmissionTrackingMatrix({
 
                 return (
                   <td key={comp.id} className="px-5 py-3 text-center border-l border-black/5">
-                    {isDone ? (
-                      <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-green-100 text-green-600 ring-1 ring-inset ring-green-600/20" title="Submitted">
-                        <CheckCircle2 className="w-4 h-4" />
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-red-50 text-red-500 ring-1 ring-inset ring-red-500/20" title="Pending">
-                        <Clock className="w-4 h-4" />
-                      </span>
-                    )}
+                    <SubmissionFilesModal
+                      submission_id={sub?.submission_id ?? ""}
+                      faculty_name={fa.faculty_name}
+                      component_name={comp.component_name}
+                      section_name={fa.section_name}
+                      status={status}
+                      offering_id={offering_id}
+                      baseUrl={baseUrl}
+                      currentFacultyId={currentFacultyId}
+                    />
                   </td>
                 );
               });

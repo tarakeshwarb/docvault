@@ -39,7 +39,8 @@ export async function POST(request: Request) {
         [email]
       );
       matched = rows[0] ?? null;
-    } catch {
+    } catch (dbErr) {
+      console.error("DB Query Error:", dbErr);
       return NextResponse.json(
         { ok: false, message: "Unable to verify faculty record right now." },
         { status: 500 }

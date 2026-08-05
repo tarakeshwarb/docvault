@@ -3,7 +3,6 @@ import Image from "next/image";
 import { ShieldCheck, FileStack, BarChart3 } from "lucide-react";
 import FacultyLoginForm from "@/components/auth/FacultyLoginForm";
 import { getDashboardPathForRole, getFacultySession } from "@/lib/auth";
-import { queryDb } from "@/lib/db";
 
 export default async function LoginPage() {
   const session = await getFacultySession();
@@ -71,6 +70,10 @@ export default async function LoginPage() {
         {/* Brand gradient wash */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#0b1f47] via-[#0b1f47]/85 to-[var(--color-accent)]/70" />
 
+        {/* Decorative floating dots */}
+        <div className="absolute top-16 right-16 h-32 w-32 rounded-full bg-white/[0.03] blur-xl" />
+        <div className="absolute bottom-24 left-10 h-48 w-48 rounded-full bg-[var(--color-accent)]/10 blur-2xl" />
+
         <div className="relative z-10 flex flex-col justify-center px-14 py-16 text-white xl:px-20">
           <h2 className="max-w-md text-4xl font-semibold leading-tight tracking-tight xl:text-[2.75rem]">
             Academic course file management, simplified.
@@ -98,8 +101,8 @@ export default async function LoginPage() {
                 body: "Generate print-ready Excel registers and accreditation reports in one click.",
               },
             ].map(({ icon: Icon, title, body }) => (
-              <div key={title} className="flex gap-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15">
+              <div key={title} className="group flex gap-4">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15 transition-colors group-hover:bg-white/15">
                   <Icon className="h-5 w-5 text-white" />
                 </div>
                 <div>
@@ -108,6 +111,28 @@ export default async function LoginPage() {
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Trust bar */}
+          <div className="mt-16 border-t border-white/10 pt-6">
+            <p className="text-xs font-medium uppercase tracking-widest text-white/40">
+              Trusted by SRM departments
+            </p>
+            <div className="mt-3 flex items-center gap-3">
+              <div className="flex -space-x-2">
+                {[...Array(4)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#0b1f47] bg-white/15 text-[10px] font-bold text-white"
+                  >
+                    {["CS", "IT", "EC", "ME"][i]}
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-white/50">
+                & more departments across the university
+              </p>
+            </div>
           </div>
         </div>
       </div>

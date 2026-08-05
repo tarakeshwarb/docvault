@@ -24,6 +24,7 @@ import { AddBroadcastForm } from "./AddBroadcastForm";
 import { EditableComponentRow } from "./EditableComponentRow";
 import { EditableFacultyRow } from "./EditableFacultyRow";
 import { SubmissionTrackingMatrix } from "./SubmissionTrackingMatrix";
+import { CoordinatorResultAnalysis } from "./CoordinatorResultAnalysis";
 import {
   ArrowLeft,
   Users,
@@ -385,6 +386,17 @@ export default async function OfferingDetailPage({
               assignments={assignments}
               components={trackedComponents}
               submissions={submissions}
+              currentFacultyId={session.faculty_id}
+              baseUrl={process.env.R2_PUBLIC_BASE_URL ?? ""}
+            />
+          </div>
+        }
+        resultAnalysisContent={
+          <div className="space-y-8">
+            <CoordinatorResultAnalysis
+              offeringId={offering_id}
+              courseCode={offering.course_code}
+              components={components}
             />
           </div>
         }
