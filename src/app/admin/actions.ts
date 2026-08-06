@@ -130,6 +130,10 @@ export async function getCourseOfferings(): Promise<CourseOffering[]> {
       ORDER BY ay.start_date DESC, sm.semester_name, cm.course_code
     `);
 
+    if (offerings.length === 0) {
+      return [];
+    }
+
     // Fetch primary coordinators for all offerings
     const primaryCoordinators = await queryDb<{
       offering_id: string;

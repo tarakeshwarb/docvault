@@ -23,6 +23,12 @@ export type ChartSpec = {
   title?: string;
   /** Anchor: [fromCol, fromRow, toCol, toRow] (0-based). Default [1,17,9,39]. */
   anchor?: [number, number, number, number];
+  /** Optional array of series for multi-series clustered charts. */
+  series?: Array<{
+    titleCell?: string;
+    valRange: string;
+    color?: string;
+  }>;
 };
 
 const BAR_COLOR = "2F6FB0";
@@ -36,9 +42,39 @@ function quoteSheet(name: string): string {
 function chartXml(spec: ChartSpec): string {
   const ref = quoteSheet(spec.sheetName);
   const catRange = spec.catRange ?? "$H$11:$H$16";
-  const valRange = spec.valRange ?? "$I$11:$I$16";
-  const titleCell = spec.titleCell ?? "$I$10";
   const title = spec.title ?? "Total vs. Range of Marks";
+
+  let seriesXml = "";
+  if (spec.series && spec.series.length > 0) {
+    seriesXml = spec.series.map((s, i) => {
+      const tCell = s.titleCell ? `<c:tx><c:strRef><c:f>${ref}!${s.titleCell}</c:f></c:strRef></c:tx>` : "";
+      const color = s.color ?? BAR_COLOR;
+      return `
+<c:ser>
+<c:idx val="${i}"/>
+<c:order val="${i}"/>
+${tCell}
+<c:spPr><a:solidFill><a:srgbClr val="${color}"/></a:solidFill></c:spPr>
+<c:dLbls><c:showLegendKey val="0"/><c:showVal val="1"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/><c:showBubbleSize val="0"/></c:dLbls>
+<c:cat><c:strRef><c:f>${ref}!${catRange}</c:f></c:strRef></c:cat>
+<c:val><c:numRef><c:f>${ref}!${s.valRange}</c:f></c:numRef></c:val>
+</c:ser>`;
+    }).join("");
+  } else {
+    const valRange = spec.valRange ?? "$I$11:$I$16";
+    const titleCell = spec.titleCell ?? "$I$10";
+    seriesXml = `
+<c:ser>
+<c:idx val="0"/>
+<c:order val="0"/>
+<c:tx><c:strRef><c:f>${ref}!${titleCell}</c:f></c:strRef></c:tx>
+<c:spPr><a:solidFill><a:srgbClr val="${BAR_COLOR}"/></a:solidFill></c:spPr>
+<c:dLbls><c:showLegendKey val="0"/><c:showVal val="1"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/><c:showBubbleSize val="0"/></c:dLbls>
+<c:cat><c:strRef><c:f>${ref}!${catRange}</c:f></c:strRef></c:cat>
+<c:val><c:numRef><c:f>${ref}!${valRange}</c:f></c:numRef></c:val>
+</c:ser>`;
+  }
+
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
 <c:chart>
@@ -50,16 +86,8 @@ function chartXml(spec: ChartSpec): string {
 <c:barDir val="col"/>
 <c:grouping val="clustered"/>
 <c:varyColors val="0"/>
-<c:ser>
-<c:idx val="0"/>
-<c:order val="0"/>
-<c:tx><c:strRef><c:f>${ref}!${titleCell}</c:f></c:strRef></c:tx>
-<c:spPr><a:solidFill><a:srgbClr val="${BAR_COLOR}"/></a:solidFill></c:spPr>
-<c:dLbls><c:showLegendKey val="0"/><c:showVal val="1"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/><c:showBubbleSize val="0"/></c:dLbls>
-<c:cat><c:strRef><c:f>${ref}!${catRange}</c:f></c:strRef></c:cat>
-<c:val><c:numRef><c:f>${ref}!${valRange}</c:f></c:numRef></c:val>
-</c:ser>
-<c:gapWidth val="60"/>
+${seriesXml}
+<c:gapWidth val="150"/>
 <c:axId val="${CAT_AXIS_ID}"/>
 <c:axId val="${VAL_AXIS_ID}"/>
 </c:barChart>

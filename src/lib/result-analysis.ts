@@ -441,7 +441,7 @@ function niceStep(maxVal: number): number {
 
 export async function generateConsolidatedResultAnalysisXlsx(
   componentsSections: Record<string, ResultAnalysisInput[]>
-): Promise<Buffer> {
+): Promise<any> {
   const wb = new ExcelJS.Workbook();
   wb.creator = "CourseFlow / DocVault";
   wb.created = new Date();
@@ -454,12 +454,12 @@ export async function generateConsolidatedResultAnalysisXlsx(
     right: { style: "thin" as const },
   };
 
+  const specs: ChartSpec[] = [];
+
   for (const [componentName, sections] of Object.entries(componentsSections)) {
     if (sections.length === 0) continue;
 
-    const ws = wb.addWorksheet(safeSheetName(componentName), {
-      views: [{ showGridLines: false }],
-    });
+    const ws = wb.addWorksheet(safeSheetName(componentName)); // removed views: showGridLines: false
 
     ws.columns = [
       { width: 6 },
@@ -551,10 +551,32 @@ export async function generateConsolidatedResultAnalysisXlsx(
         }
       });
     });
+
+    const lastRow = 8 + sections.length;
+    const chartEndCol = Math.max(12, 1 + Math.ceil(sections.length * 0.8)); // Expand width if many faculties
+    specs.push({
+      sheetIndex: specs.length + 1,
+      sheetName: safeSheetName(componentName),
+      title: `${componentName} Result Analysis`,
+      catRange: `$B$9:$B$${lastRow}`,
+      series: [
+        { titleCell: "$D$8", valRange: `$D$9:$D$${lastRow}`, color: "4F81BD" },
+        { titleCell: "$E$8", valRange: `$E$9:$E$${lastRow}`, color: "C0504D" },
+        { titleCell: "$F$8", valRange: `$F$9:$F$${lastRow}`, color: "9BBB59" },
+        { titleCell: "$G$8", valRange: `$G$9:$G$${lastRow}`, color: "8064A2" },
+        { titleCell: "$H$8", valRange: `$H$9:$H$${lastRow}`, color: "4BACC6" },
+        { titleCell: "$I$8", valRange: `$I$9:$I$${lastRow}`, color: "F79646" },
+      ],
+      anchor: [1, lastRow + 2, chartEndCol, lastRow + 22],
+    });
   }
 
   const arr = await wb.xlsx.writeBuffer();
-  return Buffer.from(arr);
+  let buf: any = Buffer.from(arr as ArrayBuffer);
+  if (specs.length > 0) {
+    buf = await injectBarCharts(buf, specs);
+  }
+  return buf;
 }
 
 function addPdfPage(pdf: PDFDocument, font: PDFFont, fontBold: PDFFont, input: ResultAnalysisInput) {
