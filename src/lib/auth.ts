@@ -7,6 +7,7 @@ export type FacultySession = {
   email: string;
   designation: string;
   role: "admin" | "hod" | "course_coordinator" | "secondary_coordinator" | "faculty" | "audit";
+  must_change_password?: boolean;
 };
 
 const SESSION_COOKIE_NAME = "courseflow_session";

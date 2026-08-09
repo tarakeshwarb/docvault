@@ -148,6 +148,7 @@ export async function POST(request: Request) {
       designation: matched.designation,
       email: matched.email,
       role: selectedRole,
+      must_change_password: matched.must_change_password,
     };
 
     await setFacultySession(session);
