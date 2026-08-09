@@ -30,7 +30,7 @@ export default async function EditOfferingPage({
     getSemesters(),
   ]);
 
-  const coordinators = allFaculty.filter((f) => f.role !== "admin");
+  const coordinators = allFaculty;
 
   return (
     <EditOfferingClient

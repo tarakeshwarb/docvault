@@ -1,6 +1,8 @@
 import { Users } from "lucide-react";
 import { getAllFaculty } from "../actions";
 
+import { getFacultySession } from "@/lib/auth";
+
 const roleBadge: Record<string, { label: string; classes: string }> = {
   admin: { label: "Admin", classes: "bg-slate-100 text-slate-700 ring-slate-700/10" },
   hod: { label: "HOD", classes: "bg-[var(--color-accent)]/10 text-[var(--color-accent)] ring-[var(--color-accent)]/20" },
@@ -9,7 +11,13 @@ const roleBadge: Record<string, { label: string; classes: string }> = {
 };
 
 export default async function FacultyDirectoryPage() {
-  const faculty = await getAllFaculty();
+  const session = await getFacultySession();
+  const isDev = session?.email === 'saiishita@gmail.com' || session?.email === 'shizuu1727@gmail.com';
+
+  let faculty = await getAllFaculty();
+  if (!isDev) {
+    faculty = faculty.filter(f => f.email !== 'saiishita@gmail.com' && f.email !== 'shizuu1727@gmail.com');
+  }
 
   return (
     <div className="space-y-6">

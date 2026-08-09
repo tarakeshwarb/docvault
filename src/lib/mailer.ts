@@ -1,29 +1,5 @@
 import nodemailer from "nodemailer";
 
-// For local testing, we'll configure a mock transporter.
-// In production, you would use actual SMTP credentials like SendGrid, AWS SES, or a generic SMTP server.
-
-let transporter: nodemailer.Transporter | null = null;
-
-async function getTransporter() {
-  if (transporter) return transporter;
-
-  // Generate a test account on Ethereal (https://ethereal.email) for catching test emails.
-  const testAccount = await nodemailer.createTestAccount();
-
-  transporter = nodemailer.createTransport({
-    host: "smtp.ethereal.email",
-    port: 587,
-    secure: false, // true for 465, false for other ports
-    auth: {
-      user: testAccount.user, // generated ethereal user
-      pass: testAccount.pass, // generated ethereal password
-    },
-  });
-
-  return transporter;
-}
-
 export async function sendEmail({
   to,
   subject,
@@ -33,18 +9,35 @@ export async function sendEmail({
   subject: string;
   html: string;
 }) {
-  const mailer = await getTransporter();
+  const apiKey = process.env.BREVO_API_KEY;
+  
+  if (!apiKey) {
+    console.warn("BREVO_API_KEY is not set. Skipping email send.");
+    return null;
+  }
 
-  const info = await mailer.sendMail({
-    from: '"Course Coordinator Portal" <noreply@college-system.local>', // sender address
-    to, // list of receivers
-    subject, // Subject line
-    html, // html body
+  const payload = {
+    sender: { name: "Course Coordinator Portal", email: "yourboyy1727@gmail.com" },
+    to: [{ email: to }],
+    subject: subject,
+    htmlContent: html,
+  };
+
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "accept": "application/json",
+      "api-key": apiKey,
+      "content-type": "application/json"
+    },
+    body: JSON.stringify(payload)
   });
 
-  console.log("Message sent: %s", info.messageId);
-  // Preview only available when sending through an Ethereal account
-  console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.error("Brevo API error:", errorBody);
+    throw new Error(`Failed to send email: ${response.statusText}`);
+  }
 
-  return info;
+  return await response.json();
 }
