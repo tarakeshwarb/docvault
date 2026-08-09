@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { queryDb, executeDb } from "@/lib/db";
-import { getFacultySession } from "@/lib/auth";
+import { getFacultySession, setFacultySession } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 
 export async function POST(request: Request) {
@@ -63,6 +63,10 @@ export async function POST(request: Request) {
     "UPDATE public.faculty SET password_hash = $1, must_change_password = FALSE WHERE faculty_id = $2",
     [newHash, session.faculty_id]
   );
+
+  // Re-issue session cookie with must_change_password cleared
+  // so the middleware stops blocking portal routes immediately
+  await setFacultySession({ ...session, must_change_password: false });
 
   return NextResponse.json({ ok: true, message: "Password updated successfully." });
 }

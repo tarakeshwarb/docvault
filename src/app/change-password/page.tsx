@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Image from "next/image";
-import { Lock, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, ShieldCheck } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Lock, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, ShieldCheck, TriangleAlert } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function ChangePasswordPage() {
+function ChangePasswordForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isForced = searchParams.get("forced") === "1";
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -105,6 +107,16 @@ export default function ChangePasswordPage() {
             <h1 className="text-3xl font-bold tracking-tight text-[var(--color-ink)]">
               Set your password
             </h1>
+            {/* Forced redirect warning */}
+            {isForced && (
+              <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800">
+                <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                <span>
+                  <strong>Access restricted.</strong> You must set a new password before you can access your portal.
+                </span>
+              </div>
+            )}
+
             <p className="mt-3 text-[15px] leading-relaxed text-[var(--color-muted)]">
               For your security, please change your default password before continuing. Your current password is your registered email address.
             </p>
@@ -234,5 +246,13 @@ export default function ChangePasswordPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ChangePasswordPage() {
+  return (
+    <Suspense>
+      <ChangePasswordForm />
+    </Suspense>
   );
 }
