@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { queryDb } from "@/lib/db";
 import { getDashboardPathForRole, setFacultySession } from "@/lib/auth";
+import bcrypt from "bcryptjs";
 
 type FacultyAuthRow = {
   faculty_id: number;
@@ -8,6 +9,8 @@ type FacultyAuthRow = {
   designation: string;
   email: string;
   role: "admin" | "hod" | "course_coordinator" | "secondary_coordinator" | "faculty" | "audit";
+  password_hash: string | null;
+  must_change_password: boolean;
 };
 
 function readText(value: unknown): string {
@@ -32,7 +35,7 @@ export async function POST(request: Request) {
 
     try {
       const rows = await queryDb<FacultyAuthRow>(
-        `SELECT faculty_id, faculty_name, designation, email, role
+        `SELECT faculty_id, faculty_name, designation, email, role, password_hash, must_change_password
          FROM public.faculty
          WHERE lower(email) = $1
          LIMIT 1`,
@@ -54,8 +57,17 @@ export async function POST(request: Request) {
       );
     }
 
-    // Password verification: password must match the faculty email
-    if (password.toLowerCase() !== matched.email.toLowerCase()) {
+    // Password verification using bcrypt
+    const passwordHash = matched.password_hash;
+    let passwordValid = false;
+    if (passwordHash) {
+      passwordValid = await bcrypt.compare(password, passwordHash);
+    } else {
+      // Fallback: email === password (legacy)
+      passwordValid = password.toLowerCase() === matched.email.toLowerCase();
+    }
+
+    if (!passwordValid) {
       return NextResponse.json(
         { ok: false, message: "Invalid password. Please try again." },
         { status: 401 }
@@ -64,11 +76,10 @@ export async function POST(request: Request) {
 
     const faculty_id = matched.faculty_id;
 
-    // Verify if the user actually holds the selected role
+    // Verify the selected role
     let hasRole = false;
 
     if (selectedRole === "admin" || selectedRole === "hod") {
-      // These are determined by the 'role' column in the faculty table
       hasRole = matched.role === selectedRole;
     } else if (selectedRole === "course_coordinator") {
       const rows = await queryDb<{ count: string }>(
@@ -136,16 +147,23 @@ export async function POST(request: Request) {
       faculty_name: matched.faculty_name,
       designation: matched.designation,
       email: matched.email,
-      role: selectedRole, // Set the selected role as their active role
+      role: selectedRole,
     };
 
     await setFacultySession(session);
 
-    const dashboardPath = getDashboardPathForRole(session.role);
+    // First-time login → redirect to change password page
+    if (matched.must_change_password) {
+      return NextResponse.json({
+        ok: true,
+        redirectTo: "/change-password",
+        message: "Login successful. Please set a new password.",
+      });
+    }
 
     return NextResponse.json({
       ok: true,
-      redirectTo: dashboardPath,
+      redirectTo: getDashboardPathForRole(session.role),
       message: "Login successful.",
     });
   } catch (error) {

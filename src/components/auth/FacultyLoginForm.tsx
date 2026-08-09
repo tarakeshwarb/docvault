@@ -171,7 +171,7 @@ export default function FacultyLoginForm() {
             Password
           </label>
           <a
-            href="#"
+            href="/forgot-password"
             className="text-[13px] font-medium text-[var(--color-accent)] hover:underline"
           >
             Forgot password?
