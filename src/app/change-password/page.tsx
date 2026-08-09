@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import Image from "next/image";
 import { Lock, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, ShieldCheck, TriangleAlert } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -18,6 +18,22 @@ function ChangePasswordForm() {
   const [pending, setPending] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+
+  // When user presses browser back button → log out and go to login
+  useEffect(() => {
+    // Push a duplicate entry so the back button fires popstate instead of leaving
+    window.history.pushState(null, "", window.location.href);
+
+    const handleBackButton = () => {
+      // Call the logout API then redirect to login
+      fetch("/api/auth/logout", { method: "POST" }).finally(() => {
+        window.location.replace("/");
+      });
+    };
+
+    window.addEventListener("popstate", handleBackButton);
+    return () => window.removeEventListener("popstate", handleBackButton);
+  }, []);
 
   const fieldBase =
     "block w-full rounded-xl border border-gray-200 bg-gray-50/60 py-3 pl-11 pr-11 text-sm text-[var(--color-ink)] placeholder-gray-400 transition-all duration-200 focus:border-[var(--color-accent)] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[var(--color-accent)]/10";
