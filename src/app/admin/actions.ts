@@ -2,6 +2,7 @@
 
 import { queryDb, executeDb } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { getFacultySession } from "@/lib/auth";
 import ExcelJS from "exceljs";
 
 export type Course = {
@@ -48,9 +49,14 @@ export type CourseOffering = {
 
 export async function getCourses(): Promise<Course[]> {
   try {
-    return await queryDb<Course>(
-      "SELECT * FROM public.course_master ORDER BY course_code ASC"
-    );
+    const session = await getFacultySession();
+    const isDev = session?.email === 'saiishita@gmail.com' || session?.email === 'shizuu1727@gmail.com';
+    
+    const query = isDev 
+      ? "SELECT * FROM public.course_master WHERE course_code LIKE 'DEV%' ORDER BY course_code ASC"
+      : "SELECT * FROM public.course_master WHERE course_code NOT LIKE 'DEV%' ORDER BY course_code ASC";
+
+    return await queryDb<Course>(query);
   } catch (error) {
     console.error("Failed to fetch courses:", error);
     return [];
@@ -105,6 +111,10 @@ export async function getAllFaculty(): Promise<Faculty[]> {
 
 export async function getCourseOfferings(): Promise<CourseOffering[]> {
   try {
+    const session = await getFacultySession();
+    const isDev = session?.email === 'saiishita@gmail.com' || session?.email === 'shizuu1727@gmail.com';
+    const devFilter = isDev ? "AND cm.course_code LIKE 'DEV%'" : "AND cm.course_code NOT LIKE 'DEV%'";
+
     const offerings = await queryDb<{
       offering_id: string;
       course_id: string;
@@ -126,7 +136,7 @@ export async function getCourseOfferings(): Promise<CourseOffering[]> {
       JOIN public.course_master cm ON co.course_id = cm.course_id
       JOIN public.semester_master sm ON co.semester_id = sm.semester_id
       JOIN public.academic_year ay ON sm.year_id = ay.year_id
-      WHERE sm.is_active = true
+      WHERE sm.is_active = true ${devFilter}
       ORDER BY ay.start_date DESC, sm.semester_name, cm.course_code
     `);
 

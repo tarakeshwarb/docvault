@@ -18,9 +18,9 @@ export default async function NewOfferingPage() {
     getSemesters(),
   ]);
 
-  // All faculty except admin are eligible to be assigned as coordinator.
+  // All faculty are eligible to be assigned as coordinator.
   // The createCourseOffering action automatically upgrades their role on assignment.
-  const coordinators = allFaculty.filter((f) => f.role !== "admin");
+  const coordinators = allFaculty;
 
   return (
     <NewOfferingClient

@@ -1,4 +1,5 @@
-import { type LucideIcon } from "lucide-react";
+import { type LucideIcon, KeyRound } from "lucide-react";
+import Link from "next/link";
 import SidebarLink from "./SidebarLink";
 
 export type SidebarItem = {
@@ -47,6 +48,15 @@ export default function Sidebar({
                   </div>
                 );
               })}
+
+              {/* Change Password — always appended under nav items */}
+              <Link
+                href="/change-password"
+                className="flex w-full items-center gap-3 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink)] transition-colors hover:bg-gray-50"
+              >
+                <KeyRound className="h-4 w-4 shrink-0 text-[var(--color-muted)]" />
+                Change Password
+              </Link>
             </div>
           </div>
         )}
@@ -58,6 +68,7 @@ export default function Sidebar({
             {note.body}
           </p>
         </div>
+
       </div>
     </aside>
   );

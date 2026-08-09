@@ -25,6 +25,8 @@ export type FacultyAssignment = {
   section_id: string;
   section_name: string;
   student_count: number;
+  last_reminder_sent_at: string | null;
+  daily_reminder_count: number;
 };
 
 export type Component = {
@@ -140,7 +142,9 @@ export async function getFacultyAssignments(offering_id: string): Promise<Facult
       f.email,
       fa.section_id,
       sec.section_name,
-      fa.student_count
+      fa.student_count,
+      fa.last_reminder_sent_at,
+      fa.daily_reminder_count
     FROM public.faculty_assignment fa
     JOIN public.faculty f ON fa.faculty_id = f.faculty_id
     JOIN public.section_master sec ON fa.section_id = sec.section_id
@@ -796,8 +800,19 @@ export async function sendReminderEmail(offering_id: string, faculty_assignment_
   const assignments = await getFacultyAssignments(offering_id);
   const assignment = assignments.find((a) => a.id === faculty_assignment_id);
   
-  if (!assignment) throw new Error("Faculty assignment not found");
+if (!assignment) throw new Error("Faculty assignment not found");
   if (!assignment.email) throw new Error("Faculty has no email address configured");
+
+  let diffHours = 999;
+  if (assignment.last_reminder_sent_at) {
+    const lastSent = new Date(assignment.last_reminder_sent_at);
+    const now = new Date();
+    diffHours = (now.getTime() - lastSent.getTime()) / (1000 * 60 * 60);
+    
+    if (diffHours < 24 && (assignment.daily_reminder_count || 0) >= 2) {
+      return { success: false, message: "Rate limit: 2 reminders already sent within the last 24 hours.", skipped: true };
+    }
+  }
 
   const components = await getCourseComponents(offering_id);
   const trackedComponents = components.filter((c) => !c.is_common);
@@ -814,7 +829,10 @@ export async function sendReminderEmail(offering_id: string, faculty_assignment_
     return { success: true, message: "No pending components to remind about." };
   }
 
-  const componentNames = pendingComponents.map((c) => `- ${c.component_name}`).join("<br/>");
+  const componentNames = pendingComponents.map((c) => {
+    const deadlineStr = c.deadline ? new Date(c.deadline).toLocaleDateString() : 'No deadline';
+    return `- ${c.component_name} (Deadline: ${deadlineStr})`;
+  }).join("<br/>");
 
   const offeringSummary = await getOfferingSummary(offering_id);
   const courseName = offeringSummary ? offeringSummary.course_name : "your assigned course";
@@ -835,11 +853,48 @@ export async function sendReminderEmail(offering_id: string, faculty_assignment_
     </div>
   `;
 
-  await sendEmail({
+await sendEmail({
     to: assignment.email,
     subject: `Reminder: Pending Submissions for ${courseName}`,
     html,
   });
 
+  if (diffHours < 24) {
+    await executeDb(
+      `UPDATE public.faculty_assignment SET last_reminder_sent_at = NOW(), daily_reminder_count = COALESCE(daily_reminder_count, 0) + 1 WHERE id = $1`,
+      [faculty_assignment_id]
+    );
+  } else {
+    await executeDb(
+      `UPDATE public.faculty_assignment SET last_reminder_sent_at = NOW(), daily_reminder_count = 1 WHERE id = $1`,
+      [faculty_assignment_id]
+    );
+  }
+
   return { success: true, message: "Reminder email sent successfully." };
+}
+
+
+export async function sendRemindersToAllPending(offering_id: string) {
+  const assignments = await getFacultyAssignments(offering_id);
+  let sentCount = 0;
+  let skippedCount = 0;
+  for (const assignment of assignments) {
+    if (!assignment.email) continue;
+    try {
+      const res = await sendReminderEmail(offering_id, assignment.id);
+      if (res.success && res.message !== "No pending components to remind about.") {
+        sentCount++;
+      } else if (res.skipped) {
+        skippedCount++;
+      }
+    } catch (err) {
+      console.error(`Failed to send to ${assignment.email}`, err);
+    }
+  }
+  let msg = `Sent ${sentCount} reminders successfully.`;
+  if (skippedCount > 0) {
+    msg += ` (${skippedCount} skipped - already reminded today)`;
+  }
+  return { success: true, message: msg };
 }

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { CoordinatorToolbar } from "@/components/coordinator/CoordinatorToolbar";
-import { CoordinatorExportButton } from "@/components/coordinator/CoordinatorExportButton";
+import { SendRemindersButton } from "@/components/coordinator/SendRemindersButton";
+
 import { getFacultySession } from "@/lib/auth";
 import { SubmissionFilesModal } from "@/components/coordinator/SubmissionFilesModal";
 import { BroadcastCard } from "@/components/ui/BroadcastCard";
@@ -11,7 +11,6 @@ import {
   getCourseComponents,
   getSubmissionStatus,
   getGeneratedReports,
-  generateConsolidatedReport,
   getComponentMasters,
   getAllSections,
   getAllFacultyForAssignment,
@@ -152,42 +151,9 @@ export default async function OfferingDetailPage({
           </div>
         </div>
 
-        {/* Right: Actions & Reports */}
-        <div className="flex flex-col gap-3 w-full lg:w-[320px] shrink-0">
-          <div className="flex items-center justify-start lg:justify-end gap-2">
-            <Link
-              href={`/course-coordinator/${offering_id}/result-analysis`}
-              className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white ring-1 ring-inset ring-white/25 hover:bg-white/25 transition-colors"
-            >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              Result Analysis
-            </Link>
-            <CoordinatorToolbar offering_id={offering_id} />
-          </div>
+        <div className="flex flex-col items-start lg:items-end gap-3">
 
-          <div className="bg-white/10 p-4 rounded-xl border border-white/10 backdrop-blur-md">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-white/80 mb-2">Generate Reports</p>
-            <form action={generateConsolidatedReport} className="flex gap-2">
-              <input type="hidden" name="offering_id" value={offering_id} />
-              <input type="hidden" name="generated_by" value={session.faculty_id} />
-              <select
-                name="report_type"
-                defaultValue="consolidated_marks_report"
-                className="flex-1 rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 text-xs text-white outline-none focus:border-white focus:ring-1 focus:ring-white"
-              >
-                <option value="consolidated_marks_report" className="text-[var(--color-ink)]">Consolidated Marks</option>
-                <option value="result_analysis_report" className="text-[var(--color-ink)]">Result Analysis</option>
-                <option value="course_outcome_analysis" className="text-[var(--color-ink)]">Outcome Analysis</option>
-                <option value="attendance_report" className="text-[var(--color-ink)]">Attendance Report</option>
-              </select>
-              <button
-                type="submit"
-                className="rounded-lg bg-white px-3.5 py-1.5 text-xs font-semibold text-[var(--color-accent)] transition hover:bg-white/90"
-              >
-                Create
-              </button>
-            </form>
-          </div>
+          <SendRemindersButton offering_id={offering_id} />
         </div>
       </div>
 
