@@ -6,7 +6,8 @@ export type FacultySession = {
   faculty_name: string;
   email: string;
   designation: string;
-  role: "admin" | "hod" | "course_coordinator" | "secondary_coordinator" | "faculty";
+  role: "admin" | "hod" | "course_coordinator" | "secondary_coordinator" | "faculty" | "audit";
+  must_change_password?: boolean;
 };
 
 const SESSION_COOKIE_NAME = "courseflow_session";
@@ -39,7 +40,7 @@ function decodeSession(token: string): FacultySession | null {
       typeof parsed.faculty_name !== "string" ||
       typeof parsed.email !== "string" ||
       typeof parsed.designation !== "string" ||
-      !["admin", "hod", "course_coordinator", "secondary_coordinator", "faculty"].includes(parsed.role)
+      !["admin", "hod", "course_coordinator", "secondary_coordinator", "faculty", "audit"].includes(parsed.role)
     ) {
       return null;
     }
@@ -54,6 +55,7 @@ export function getDashboardPathForRole(role: FacultySession["role"]): string {
   if (role === "hod") return "/hod";
   if (role === "course_coordinator") return "/course-coordinator";
   if (role === "secondary_coordinator") return "/secondary-coordinator";
+  if (role === "audit") return "/audit";
   return "/faculty";
 }
 

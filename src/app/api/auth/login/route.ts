@@ -1,100 +1,20 @@
 import { NextResponse } from "next/server";
 import { queryDb } from "@/lib/db";
 import { getDashboardPathForRole, setFacultySession } from "@/lib/auth";
+import bcrypt from "bcryptjs";
 
 type FacultyAuthRow = {
   faculty_id: number;
   faculty_name: string;
   designation: string;
   email: string;
-  role: "admin" | "hod" | "course_coordinator" | "secondary_coordinator" | "faculty";
+  role: "admin" | "hod" | "course_coordinator" | "secondary_coordinator" | "faculty" | "audit";
+  password_hash: string | null;
+  must_change_password: boolean;
 };
 
 function readText(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
-}
-
-async function resolvePortalPath(faculty_id: number, role: FacultyAuthRow["role"]): Promise<string> {
-  // Special hardcoded override
-  if (Number(faculty_id) === 100174) {
-    return "/audit";
-  }
-
-  // Admin always goes directly to the admin portal based on the role column
-  if (role === "admin") {
-    return "/admin";
-  }
-
-  // For faculty role, check assignment tables to decide the correct portal
-  if (role === "faculty") {
-    // Check coordinator_assignment first — if assigned as coordinator, open coordinator portal
-    const coordinatorRows = await queryDb<{ count: string }>(
-      `SELECT COUNT(*) AS count 
-       FROM public.coordinator_assignment ca
-       JOIN public.course_offering co ON ca.offering_id = co.offering_id
-       JOIN public.semester_master sm ON co.semester_id = sm.semester_id
-       WHERE ca.faculty_id = $1 AND sm.is_active = true`,
-      [faculty_id]
-    );
-    if (Number(coordinatorRows[0]?.count ?? 0) > 0) {
-      return "/course-coordinator";
-    }
-
-    // Check secondary_coordinator_assignment — if assigned as secondary coordinator, open secondary coordinator portal
-    try {
-      const secondaryCoordinatorRows = await queryDb<{ count: string }>(
-        `SELECT COUNT(*) AS count 
-         FROM public.secondary_coordinator_assignment sca
-         JOIN public.course_offering co ON sca.offering_id = co.offering_id
-         JOIN public.semester_master sm ON co.semester_id = sm.semester_id
-         WHERE sca.faculty_id = $1 AND sm.is_active = true`,
-        [faculty_id]
-      );
-      if (Number(secondaryCoordinatorRows[0]?.count ?? 0) > 0) {
-        return "/secondary-coordinator";
-      }
-    } catch (error) {
-      // Table doesn't exist yet, skip secondary coordinator check
-      console.warn("secondary_coordinator_assignment table not found, skipping check");
-    }
-
-    // Check audit_assignment — if assigned as audit professor, open audit portal
-    try {
-      const auditRows = await queryDb<{ count: string }>(
-        `SELECT COUNT(*) AS count 
-         FROM public.audit_assignment aa
-         JOIN public.course_offering co ON aa.offering_id = co.offering_id
-         JOIN public.semester_master sm ON co.semester_id = sm.semester_id
-         WHERE aa.faculty_id = $1 AND sm.is_active = true`,
-        [faculty_id]
-      );
-      if (Number(auditRows[0]?.count ?? 0) > 0) {
-        return "/audit";
-      }
-    } catch (error) {
-      // Table doesn't exist yet, skip audit check
-      console.warn("audit_assignment table not found, skipping check");
-    }
-
-    // Check faculty_assignment — if assigned as faculty, open faculty portal
-    const facultyRows = await queryDb<{ count: string }>(
-      `SELECT COUNT(*) AS count 
-       FROM public.faculty_assignment fa
-       JOIN public.course_offering co ON fa.offering_id = co.offering_id
-       JOIN public.semester_master sm ON co.semester_id = sm.semester_id
-       WHERE fa.faculty_id = $1 AND sm.is_active = true`,
-      [faculty_id]
-    );
-    if (Number(facultyRows[0]?.count ?? 0) > 0) {
-      return "/faculty";
-    }
-
-    // Fallback: no assignment found yet, still open faculty portal
-    return "/faculty";
-  }
-
-  // For all other roles (hod, course_coordinator) use the standard mapping
-  return getDashboardPathForRole(role);
 }
 
 export async function POST(request: Request) {
@@ -102,10 +22,11 @@ export async function POST(request: Request) {
     const body = await request.json();
     const email = readText(body?.email).toLowerCase();
     const password = readText(body?.password);
+    const selectedRole = readText(body?.role) as FacultyAuthRow["role"];
 
-    if (!email || !password) {
+    if (!email || !password || !selectedRole) {
       return NextResponse.json(
-        { ok: false, message: "Enter your faculty email and password." },
+        { ok: false, message: "Enter your email, password, and select a role." },
         { status: 400 }
       );
     }
@@ -113,16 +34,16 @@ export async function POST(request: Request) {
     let matched: FacultyAuthRow | null = null;
 
     try {
-      // Verify faculty by email only — password column check to be done against DB value
       const rows = await queryDb<FacultyAuthRow>(
-        `SELECT faculty_id, faculty_name, designation, email, role
+        `SELECT faculty_id, faculty_name, designation, email, role, password_hash, must_change_password
          FROM public.faculty
          WHERE lower(email) = $1
          LIMIT 1`,
         [email]
       );
       matched = rows[0] ?? null;
-    } catch {
+    } catch (dbErr) {
+      console.error("DB Query Error:", dbErr);
       return NextResponse.json(
         { ok: false, message: "Unable to verify faculty record right now." },
         { status: 500 }
@@ -136,11 +57,88 @@ export async function POST(request: Request) {
       );
     }
 
-    // Password verification: password must match the faculty email
-    if (password.toLowerCase() !== matched.email.toLowerCase()) {
+    // Password verification using bcrypt
+    const passwordHash = matched.password_hash;
+    let passwordValid = false;
+    if (passwordHash) {
+      passwordValid = await bcrypt.compare(password, passwordHash);
+    } else {
+      // Fallback: email === password (legacy)
+      passwordValid = password.toLowerCase() === matched.email.toLowerCase();
+    }
+
+    if (!passwordValid) {
       return NextResponse.json(
         { ok: false, message: "Invalid password. Please try again." },
         { status: 401 }
+      );
+    }
+
+    const faculty_id = matched.faculty_id;
+
+    // Verify the selected role
+    let hasRole = false;
+
+    if (selectedRole === "admin" || selectedRole === "hod") {
+      hasRole = matched.role === selectedRole;
+    } else if (selectedRole === "course_coordinator") {
+      const rows = await queryDb<{ count: string }>(
+        `SELECT COUNT(*) AS count 
+         FROM public.coordinator_assignment ca
+         JOIN public.course_offering co ON ca.offering_id = co.offering_id
+         JOIN public.semester_master sm ON co.semester_id = sm.semester_id
+         WHERE ca.faculty_id = $1 AND sm.is_active = true`,
+        [faculty_id]
+      );
+      hasRole = Number(rows[0]?.count ?? 0) > 0;
+    } else if (selectedRole === "secondary_coordinator") {
+      try {
+        const rows = await queryDb<{ count: string }>(
+          `SELECT COUNT(*) AS count 
+           FROM public.secondary_coordinator_assignment sca
+           JOIN public.course_offering co ON sca.offering_id = co.offering_id
+           JOIN public.semester_master sm ON co.semester_id = sm.semester_id
+           WHERE sca.faculty_id = $1 AND sm.is_active = true`,
+          [faculty_id]
+        );
+        hasRole = Number(rows[0]?.count ?? 0) > 0;
+      } catch {
+        hasRole = false;
+      }
+    } else if (selectedRole === "audit") {
+      if (faculty_id === 100174) {
+        hasRole = true;
+      } else {
+        try {
+          const rows = await queryDb<{ count: string }>(
+            `SELECT COUNT(*) AS count 
+             FROM public.audit_assignment aa
+             JOIN public.course_offering co ON aa.offering_id = co.offering_id
+             JOIN public.semester_master sm ON co.semester_id = sm.semester_id
+             WHERE aa.faculty_id = $1 AND sm.is_active = true`,
+            [faculty_id]
+          );
+          hasRole = Number(rows[0]?.count ?? 0) > 0;
+        } catch {
+          hasRole = false;
+        }
+      }
+    } else if (selectedRole === "faculty") {
+      const rows = await queryDb<{ count: string }>(
+        `SELECT COUNT(*) AS count 
+         FROM public.faculty_assignment fa
+         JOIN public.course_offering co ON fa.offering_id = co.offering_id
+         JOIN public.semester_master sm ON co.semester_id = sm.semester_id
+         WHERE fa.faculty_id = $1 AND sm.is_active = true`,
+        [faculty_id]
+      );
+      hasRole = Number(rows[0]?.count ?? 0) > 0;
+    }
+
+    if (!hasRole) {
+      return NextResponse.json(
+        { ok: false, message: `Access denied. You are not assigned to the ${selectedRole.replace("_", " ")} role for any active semester.` },
+        { status: 403 }
       );
     }
 
@@ -149,16 +147,24 @@ export async function POST(request: Request) {
       faculty_name: matched.faculty_name,
       designation: matched.designation,
       email: matched.email,
-      role: matched.role,
+      role: selectedRole,
+      must_change_password: matched.must_change_password,
     };
 
     await setFacultySession(session);
 
-    const dashboardPath = await resolvePortalPath(session.faculty_id, session.role);
+    // First-time login → redirect to change password page
+    if (matched.must_change_password) {
+      return NextResponse.json({
+        ok: true,
+        redirectTo: "/change-password",
+        message: "Login successful. Please set a new password.",
+      });
+    }
 
     return NextResponse.json({
       ok: true,
-      redirectTo: dashboardPath,
+      redirectTo: getDashboardPathForRole(session.role),
       message: "Login successful.",
     });
   } catch (error) {

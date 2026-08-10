@@ -13,6 +13,8 @@ import { BookOpen, CheckCircle2, Clock, AlertCircle, Megaphone, ArrowLeft } from
 import { formatDate } from "@/lib/utils";
 import { getFacultySession } from "@/lib/auth";
 import Link from "next/link";
+import { FacultyTabs } from "@/components/faculty/FacultyTabs";
+import { ResultAnalysisSummary } from "../ResultAnalysisSummary";
 
 export const dynamic = "force-dynamic";
 
@@ -158,176 +160,215 @@ export default async function FacultyCoursePage({
       </div>
 
 
-      {/* Course Materials / Broadcasts */}
-      <div id="broadcasts" className="space-y-4">
-        <h2 className="text-lg font-semibold text-[var(--color-ink)] mb-4 flex items-center gap-2">
-          <Megaphone className="w-5 h-5 text-[var(--color-accent)]" />
-          Course Materials & Broadcasts
-        </h2>
+        {/* Faculty Tabs Structure */}
+        <div className="mt-8">
+          <FacultyTabs
+            overviewContent={
+              <div className="space-y-8">
+                {/* Course Materials / Broadcasts */}
+                <div id="broadcasts" className="space-y-4">
+                  <h2 className="text-lg font-semibold text-[var(--color-ink)] mb-4 flex items-center gap-2">
+                    <Megaphone className="w-5 h-5 text-[var(--color-accent)]" />
+                    Course Materials & Broadcasts
+                  </h2>
 
-        {broadcasts.length === 0 ? (
-          <div className="panel-card border-dashed border-gray-300 p-5 text-center">
-            <p className="text-sm text-gray-500">No course materials have been broadcasted for this course.</p>
-          </div>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {broadcasts.map((b) => (
-              <BroadcastCard
-                key={b.broadcast_id}
-                broadcast={{
-                  ...b,
-                  course_code: course.course_code,
-                }}
-                baseUrl={process.env.R2_PUBLIC_BASE_URL!}
-                currentFacultyId={session.faculty_id}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Common Materials */}
-      {commonComponents.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-[var(--color-ink)] mb-4 flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-[var(--color-accent)]" />
-            Common Materials
-            <span className="text-xs font-normal text-gray-400">— shared by the coordinator</span>
-          </h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {commonComponents.map((c) => (
-              <div key={c.course_component_id} className="panel-card p-4">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700">
-                    {c.course_code}
-                  </span>
-                  <p className="text-sm font-semibold text-[var(--color-ink)]">{c.component_name}</p>
+                  {broadcasts.length === 0 ? (
+                    <div className="panel-card border-dashed border-gray-300 p-5 text-center">
+                      <p className="text-sm text-gray-500">No course materials have been broadcasted for this course.</p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      {broadcasts.map((b) => (
+                        <BroadcastCard
+                          key={b.broadcast_id}
+                          broadcast={{
+                            ...b,
+                            course_code: course.course_code,
+                          }}
+                          baseUrl={process.env.R2_PUBLIC_BASE_URL!}
+                          currentFacultyId={session.faculty_id}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <p className="mt-1 truncate text-xs text-gray-500" title={c.common_file_name}>
-                  {c.common_file_name}
-                </p>
-                <p className="mt-0.5 text-[11px] text-gray-400">
-                  {c.uploaded_by_name ? `Uploaded by ${c.uploaded_by_name}` : "Provided by coordinator"}
-                </p>
-                <a
-                  href={`${process.env.R2_PUBLIC_BASE_URL ?? ""}/${c.common_file_key}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[var(--color-accent)]/10 px-3 py-1.5 text-xs font-medium text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20"
-                >
-                  <CheckCircle2 className="w-3 h-3" /> View / Download
-                </a>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
-      {/* Upcoming deadlines */}
-      {pending.length > 0 && (
-        <div className="panel-card p-5">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-muted)]">
-                Priority queue
-              </p>
-              <h2 className="mt-1 text-lg font-semibold text-[var(--color-ink)]">Upcoming submissions</h2>
-            </div>
-            <p className="text-xs text-gray-400">Sorted by deadline</p>
-          </div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {pending.slice(0, 6).map((submission) => (
-              <div key={submission.submission_id} className="panel-card bg-slate-50/70 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-[var(--color-ink)]">{submission.component_name}</p>
-                  <StatusBadge status={submission.status} deadline={submission.deadline} />
-                </div>
-                <p className="mt-2 text-xs text-gray-500">
-                  Section {submission.section_name}
-                </p>
-                <p className="mt-1 text-xs text-gray-400">
-                  Deadline: {submission.deadline ? formatDate(submission.deadline) : "No deadline set"}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+                {/* Common Materials */}
+                {commonComponents.length > 0 && (
+                  <div className="space-y-4">
+                    <h2 className="text-lg font-semibold text-[var(--color-ink)] mb-4 flex items-center gap-2">
+                      <BookOpen className="w-5 h-5 text-[var(--color-accent)]" />
+                      Common Materials
+                      <span className="text-xs font-normal text-gray-400">— shared by the coordinator</span>
+                    </h2>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {commonComponents.map((c) => (
+                        <div key={c.course_component_id} className="panel-card p-4">
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+                              {c.course_code}
+                            </span>
+                            <p className="text-sm font-semibold text-[var(--color-ink)]">{c.component_name}</p>
+                          </div>
+                          <p className="mt-1 truncate text-xs text-gray-500" title={c.common_file_name}>
+                            {c.common_file_name}
+                          </p>
+                          <p className="mt-0.5 text-[11px] text-gray-400">
+                            {c.uploaded_by_name ? `Uploaded by ${c.uploaded_by_name}` : "Provided by coordinator"}
+                          </p>
+                          <a
+                            href={`${process.env.R2_PUBLIC_BASE_URL ?? ""}/${c.common_file_key}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[var(--color-accent)]/10 px-3 py-1.5 text-xs font-medium text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20"
+                          >
+                            <CheckCircle2 className="w-3 h-3" /> View / Download
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-      {/* Submissions by Section */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-[var(--color-ink)] mb-4">Course Sections</h2>
-        
-        {grouped.size === 0 ? (
-          <div className="panel-card p-5 text-center">
-            <p className="text-sm text-gray-500">
-              No document requirements have been set for this course yet.
-            </p>
-          </div>
-        ) : (
-          Array.from(grouped.entries()).map(([sectionName, group]) => (
-            <div key={sectionName} className="panel-card space-y-3 p-5">
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="inline-flex items-center rounded-md bg-[var(--color-accent)]/10 px-2 py-1 text-xs font-bold text-[var(--color-accent)] ring-1 ring-inset ring-[var(--color-accent)]/20">
-                  Section {sectionName}
-                </span>
-                {group.items[0] && (
-                  <div className="ml-auto">
-                    <ResultAnalysisModal
-                      offeringId={group.offeringId}
-                      facultyAssignmentId={group.items[0].faculty_assignment_id}
-                      sectionName={sectionName}
-                      courseCode={group.courseCode}
-                      courseName={group.courseName}
-                    />
+                {/* Upcoming deadlines */}
+                {pending.length > 0 && (
+                  <div className="panel-card p-5">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-muted)]">
+                          Priority queue
+                        </p>
+                        <h2 className="mt-1 text-lg font-semibold text-[var(--color-ink)]">Upcoming submissions</h2>
+                      </div>
+                      <p className="text-xs text-gray-400">Sorted by deadline</p>
+                    </div>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                      {pending.slice(0, 6).map((submission) => (
+                        <div key={submission.submission_id} className="panel-card bg-slate-50/70 p-4">
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-sm font-semibold text-[var(--color-ink)]">{submission.component_name}</p>
+                            <StatusBadge status={submission.status} deadline={submission.deadline} />
+                          </div>
+                          <p className="mt-2 text-xs text-gray-500">
+                            Section {submission.section_name}
+                          </p>
+                          <p className="mt-1 text-xs text-gray-400">
+                            Deadline: {submission.deadline ? formatDate(submission.deadline) : "No deadline set"}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
-
-              <div className="panel-card mt-4 overflow-hidden">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5">
-                    <tr>
-                      <th className="px-5 py-3">Document Required</th>
-                      <th className="px-5 py-3">Deadline</th>
-                      <th className="px-5 py-3">Status</th>
-                      <th className="px-5 py-3">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-black/5">
-                    {group.items.map((sub: PendingSubmission) => (
-                      <tr key={sub.submission_id} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="px-5 py-3 font-medium text-[var(--color-ink)]">
-                          {sub.component_name}
-                          {sub.mandatory && (
-                            <span className="ml-2 text-[10px] font-semibold text-orange-500 uppercase">
-                              Required
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-5 py-3 text-xs text-gray-500">
-                          {sub.deadline ? formatDate(sub.deadline) : "No deadline"}
-                        </td>
-                        <td className="px-5 py-3">
-                          <StatusBadge status={sub.status} deadline={sub.deadline} />
-                        </td>
-                        <td className="px-5 py-3">
-                          <UploadModal
-                            submission_id={sub.submission_id}
-                            component_name={sub.component_name}
-                            isSubmitted={sub.status === "submitted" || sub.status === "late"}
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            }
+            submissionsContent={
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold text-[var(--color-ink)] mb-4">Course Sections</h2>
+                {grouped.size === 0 ? (
+                  <div className="panel-card p-5 text-center">
+                    <p className="text-sm text-gray-500">
+                      No document requirements have been set for this course yet.
+                    </p>
+                  </div>
+                ) : (
+                  Array.from(grouped.entries()).map(([sectionName, group]) => (
+                    <div key={sectionName} className="panel-card space-y-3 p-5">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="inline-flex items-center rounded-md bg-[var(--color-accent)]/10 px-2 py-1 text-xs font-bold text-[var(--color-accent)] ring-1 ring-inset ring-[var(--color-accent)]/20">
+                          Section {sectionName}
+                        </span>
+                      </div>
+                      <div className="panel-card mt-4 overflow-hidden">
+                        <table className="w-full text-sm text-left">
+                          <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5">
+                            <tr>
+                              <th className="px-5 py-3">Document Required</th>
+                              <th className="px-5 py-3">Deadline</th>
+                              <th className="px-5 py-3">Status</th>
+                              <th className="px-5 py-3">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-black/5">
+                            {group.items.map((sub: PendingSubmission) => (
+                              <tr key={sub.submission_id} className="hover:bg-gray-50/50 transition-colors">
+                                <td className="px-5 py-3 font-medium text-[var(--color-ink)]">
+                                  {sub.component_name}
+                                  {sub.mandatory && (
+                                    <span className="ml-2 text-[10px] font-semibold text-orange-500 uppercase">
+                                      Required
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-5 py-3 text-xs text-gray-500">
+                                  {sub.deadline ? formatDate(sub.deadline) : "No deadline"}
+                                </td>
+                                <td className="px-5 py-3">
+                                  <StatusBadge status={sub.status} deadline={sub.deadline} />
+                                </td>
+                                <td className="px-5 py-3">
+                                  <UploadModal
+                                    submission_id={sub.submission_id}
+                                    component_name={sub.component_name}
+                                    isSubmitted={sub.status === "submitted" || sub.status === "late"}
+                                  />
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
-            </div>
-          ))
-        )}
-      </div>
-
+            }
+            resultsContent={
+              <div className="space-y-6">
+                <h2 className="text-lg font-semibold text-[var(--color-ink)]">Result Upload & Analysis</h2>
+                {grouped.size === 0 ? (
+                  <div className="panel-card p-5 text-center">
+                    <p className="text-sm text-gray-500">
+                      No sections are available for result analysis yet.
+                    </p>
+                  </div>
+                ) : (
+                  Array.from(grouped.entries()).map(([sectionName, group]) => {
+                    if (!group.items[0]) return null;
+                    const assignmentId = group.items[0].faculty_assignment_id;
+                    return (
+                      <div key={sectionName} className="panel-card p-5 space-y-5">
+                        {/* Section header + open modal button */}
+                        <div className="flex flex-wrap items-center gap-3">
+                          <span className="inline-flex items-center rounded-md bg-[var(--color-accent)]/10 px-2 py-1 text-xs font-bold text-[var(--color-accent)] ring-1 ring-inset ring-[var(--color-accent)]/20">
+                            Section {sectionName}
+                          </span>
+                          <div className="ml-auto">
+                            <ResultAnalysisModal
+                              offeringId={group.offeringId}
+                              facultyAssignmentId={assignmentId}
+                              sectionName={sectionName}
+                              courseCode={group.courseCode}
+                              courseName={group.courseName}
+                            />
+                          </div>
+                        </div>
+                        {/* Saved data summary table */}
+                        <ResultAnalysisSummary
+                          offeringId={group.offeringId}
+                          facultyAssignmentId={assignmentId}
+                          courseCode={group.courseCode}
+                          courseName={group.courseName}
+                          sectionName={sectionName}
+                        />
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            }
+          />
+        </div>
     </div>
   );
 }

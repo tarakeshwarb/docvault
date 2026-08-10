@@ -13,8 +13,6 @@ import {
   Loader2,
   X,
   Save,
-  FileSpreadsheet,
-  FileText,
   CheckCircle2,
   AlertCircle,
   Plus,
@@ -42,7 +40,6 @@ export function ResultAnalysisModal({
   const [componentId, setComponentId] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [downloading, setDownloading] = useState<string | null>(null);
   const [savedOk, setSavedOk] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
 
@@ -73,24 +70,14 @@ export function ResultAnalysisModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
-  // Load saved figures when the chosen component changes.
+  // Reset fields to 0 when the chosen component changes.
   useEffect(() => {
     if (!isOpen || !componentId) return;
-    (async () => {
-      setLoading(true);
-      setSavedOk(false);
-      setErrors([]);
-      try {
-        const data = await getResultAnalysisAction(facultyAssignmentId, componentId);
-        if (data) {
-          setStrength(data.total_strength);
-          setAbsentees(data.total_absentees);
-          setRanges(data.ranges.length === 6 ? data.ranges : [0, 0, 0, 0, 0, 0]);
-        }
-      } finally {
-        setLoading(false);
-      }
-    })();
+    setStrength(0);
+    setAbsentees(0);
+    setRanges([0, 0, 0, 0, 0, 0]);
+    setSavedOk(false);
+    setErrors([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [componentId, isOpen]);
 
@@ -98,7 +85,7 @@ export function ResultAnalysisModal({
     const failures = ranges[0] || 0;
     const present = strength - absentees;
     const sum = ranges.reduce((a, b) => a + (Number(b) || 0), 0);
-    const passPct = strength > 0 ? ((strength - failures) / strength) * 100 : 0;
+    const passPct = strength > 0 ? ((present - failures) / strength) * 100 : 0;
     return { failures, present, sum, passPct, balanced: sum === present };
   }, [ranges, strength, absentees]);
 
@@ -148,47 +135,7 @@ export function ResultAnalysisModal({
     }
   }
 
-  async function download(scope: "section" | "consolidated", format: "xlsx" | "pdf") {
-    setDownloading(`${scope}-${format}`);
-    setErrors([]);
-    try {
-      const res = await fetch("/api/result-analysis", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          scope,
-          format,
-          component_id: componentId,
-          faculty_assignment_id: facultyAssignmentId,
-          offering_id: offeringId,
-        }),
-      });
-      if (!res.ok) {
-        let msg = "Download failed.";
-        try {
-          const d = await res.json();
-          if (d?.error) msg = d.error;
-        } catch {
-          /* ignore */
-        }
-        throw new Error(msg);
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      const stamp = new Date().toISOString().split("T")[0];
-      link.download = `${courseCode}_${scope}_RA_${stamp}.${format}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      setErrors([e instanceof Error ? e.message : "Download failed."]);
-    } finally {
-      setDownloading(null);
-    }
-  }
+
 
   return (
     <>
@@ -388,29 +335,6 @@ export function ResultAnalysisModal({
 
               {/* Footer */}
               <div className="flex flex-wrap items-center justify-end gap-2 border-t border-black/5 bg-gray-50/80 px-6 py-4">
-                <div className="mr-auto flex flex-wrap gap-2">
-                  <DownloadBtn
-                    label="Section XLSX"
-                    icon={<FileSpreadsheet className="h-4 w-4" />}
-                    busy={downloading === "section-xlsx"}
-                    disabled={!componentId || !!downloading}
-                    onClick={() => download("section", "xlsx")}
-                  />
-                  <DownloadBtn
-                    label="Section PDF"
-                    icon={<FileText className="h-4 w-4" />}
-                    busy={downloading === "section-pdf"}
-                    disabled={!componentId || !!downloading}
-                    onClick={() => download("section", "pdf")}
-                  />
-                  <DownloadBtn
-                    label="Consolidated PDF"
-                    icon={<FileText className="h-4 w-4" />}
-                    busy={downloading === "consolidated-pdf"}
-                    disabled={!componentId || !!downloading}
-                    onClick={() => download("consolidated", "pdf")}
-                  />
-                </div>
                 <button
                   onClick={handleSave}
                   disabled={saving || !componentId || !derived.balanced}
@@ -428,27 +352,4 @@ export function ResultAnalysisModal({
   );
 }
 
-function DownloadBtn({
-  label,
-  icon,
-  busy,
-  disabled,
-  onClick,
-}: {
-  label: string;
-  icon: React.ReactNode;
-  busy: boolean;
-  disabled: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-100 disabled:opacity-50"
-    >
-      {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
-      {label}
-    </button>
-  );
-}
+

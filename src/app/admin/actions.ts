@@ -2,6 +2,8 @@
 
 import { queryDb, executeDb } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { getFacultySession } from "@/lib/auth";
+import ExcelJS from "exceljs";
 
 export type Course = {
   course_id: string;
@@ -9,6 +11,7 @@ export type Course = {
   course_name: string;
   credits: number;
   course_type: string | null;
+  year_of_study: number | null;
   created_at: string;
 };
 
@@ -46,9 +49,14 @@ export type CourseOffering = {
 
 export async function getCourses(): Promise<Course[]> {
   try {
-    return await queryDb<Course>(
-      "SELECT * FROM public.course_master ORDER BY course_code ASC"
-    );
+    const session = await getFacultySession();
+    const isDev = session?.email === 'saiishita@gmail.com' || session?.email === 'shizuu1727@gmail.com';
+    
+    const query = isDev 
+      ? "SELECT * FROM public.course_master WHERE course_code LIKE 'DEV%' ORDER BY course_code ASC"
+      : "SELECT * FROM public.course_master WHERE course_code NOT LIKE 'DEV%' ORDER BY course_code ASC";
+
+    return await queryDb<Course>(query);
   } catch (error) {
     console.error("Failed to fetch courses:", error);
     return [];
@@ -70,13 +78,13 @@ export async function getCourseById(course_id: string): Promise<Course | null> {
 
 export async function updateCourse(
   course_id: string,
-  data: { course_code: string; course_name: string; credits: number; course_type: string }
+  data: { course_code: string; course_name: string; credits: number; course_type: string; year_of_study?: number | null }
 ) {
   await executeDb(
     `UPDATE public.course_master 
-     SET course_code = $1, course_name = $2, credits = $3, course_type = $4 
+     SET course_code = $1, course_name = $2, credits = $3, course_type = $4, year_of_study = $6 
      WHERE course_id = $5`,
-    [data.course_code, data.course_name, data.credits, data.course_type, course_id]
+    [data.course_code, data.course_name, data.credits, data.course_type, course_id, data.year_of_study || null]
   );
   revalidatePath("/admin/courses");
 }
@@ -103,6 +111,10 @@ export async function getAllFaculty(): Promise<Faculty[]> {
 
 export async function getCourseOfferings(): Promise<CourseOffering[]> {
   try {
+    const session = await getFacultySession();
+    const isDev = session?.email === 'saiishita@gmail.com' || session?.email === 'shizuu1727@gmail.com';
+    const devFilter = isDev ? "AND cm.course_code LIKE 'DEV%'" : "AND cm.course_code NOT LIKE 'DEV%'";
+
     const offerings = await queryDb<{
       offering_id: string;
       course_id: string;
@@ -124,9 +136,13 @@ export async function getCourseOfferings(): Promise<CourseOffering[]> {
       JOIN public.course_master cm ON co.course_id = cm.course_id
       JOIN public.semester_master sm ON co.semester_id = sm.semester_id
       JOIN public.academic_year ay ON sm.year_id = ay.year_id
-      WHERE sm.is_active = true
+      WHERE sm.is_active = true ${devFilter}
       ORDER BY ay.start_date DESC, sm.semester_name, cm.course_code
     `);
+
+    if (offerings.length === 0) {
+      return [];
+    }
 
     // Fetch primary coordinators for all offerings
     const primaryCoordinators = await queryDb<{
@@ -212,16 +228,91 @@ export async function createCourse(formData: FormData) {
   const name = (formData.get("course_name") as string)?.trim();
   const credits = parseInt(formData.get("credits") as string, 10);
   const type = (formData.get("course_type") as string)?.trim();
+  const yearStr = formData.get("year_of_study") as string;
+  const year_of_study = yearStr ? parseInt(yearStr, 10) : null;
 
   if (!code || !name || isNaN(credits)) {
     throw new Error("All fields are required.");
   }
 
   await executeDb(
-    "INSERT INTO public.course_master (course_code, course_name, credits, course_type) VALUES ($1, $2, $3, $4)",
-    [code, name, credits, type || null]
+    "INSERT INTO public.course_master (course_code, course_name, credits, course_type, year_of_study) VALUES ($1, $2, $3, $4, $5)",
+    [code, name, credits, type || null, year_of_study]
   );
   revalidatePath("/admin/courses");
+}
+
+export type CourseExcelRow = {
+  course_code: string;
+  course_name: string;
+  course_type: string | null;
+  year_of_study: number | null;
+  credits: number | null;
+  error?: string;
+};
+
+/** Parse an uploaded courses Excel: columns Course Code | Course Name | Type | Year | Credits. */
+export async function parseCoursesExcel(formData: FormData): Promise<CourseExcelRow[]> {
+  const file = formData.get("file") as File;
+  if (!file) throw new Error("No file uploaded");
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer as unknown as ArrayBuffer);
+  const worksheet = workbook.worksheets[0];
+  if (!worksheet) throw new Error("Excel file is empty");
+
+  const results: CourseExcelRow[] = [];
+  worksheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return; // header
+    const code = row.getCell(1).text?.trim();
+    const name = row.getCell(2).text?.trim();
+    const type = row.getCell(3).text?.trim();
+    const yearRaw = row.getCell(4).text?.trim();
+    const creditsRaw = row.getCell(5).text?.trim();
+    if (!code && !name) return;
+
+    const yearMatch = yearRaw ? yearRaw.match(/\d+/) : null;
+    const year_of_study = yearMatch ? parseInt(yearMatch[0], 10) : null;
+    const credits = creditsRaw ? parseInt(creditsRaw, 10) : NaN;
+
+    let error: string | undefined;
+    if (!code) error = "Missing course code.";
+    else if (!name) error = "Missing course name.";
+    else if (isNaN(credits)) error = "Missing or invalid credits.";
+
+    results.push({
+      course_code: code || "",
+      course_name: name || "",
+      course_type: type || null,
+      year_of_study,
+      credits: isNaN(credits) ? null : credits,
+      error,
+    });
+  });
+  return results;
+}
+
+/** Insert/update the valid parsed course rows (upsert on course_code). */
+export async function bulkAddCourses(
+  rows: Array<{ course_code: string; course_name: string; course_type: string | null; year_of_study: number | null; credits: number }>
+): Promise<{ inserted: number }> {
+  let inserted = 0;
+  for (const c of rows) {
+    if (!c.course_code || !c.course_name || isNaN(c.credits)) continue;
+    await executeDb(
+      `INSERT INTO public.course_master (course_code, course_name, credits, course_type, year_of_study)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (course_code) DO UPDATE SET
+         course_name = EXCLUDED.course_name,
+         credits = EXCLUDED.credits,
+         course_type = EXCLUDED.course_type,
+         year_of_study = EXCLUDED.year_of_study`,
+      [c.course_code.trim(), c.course_name.trim(), c.credits, c.course_type, c.year_of_study]
+    );
+    inserted++;
+  }
+  revalidatePath("/admin/courses");
+  return { inserted };
 }
 
 export async function createCourseOffering(data: {

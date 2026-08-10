@@ -6,6 +6,7 @@ import {
   upsertAnalysis,
   getComponentsForOffering,
   createOfferingComponent,
+  getAllSavedAnalysesForFaculty,
 } from "@/lib/result-analysis-data";
 import { validateInput, type ResultAnalysisInput } from "@/lib/result-analysis";
 
@@ -15,6 +16,11 @@ export async function getResultAnalysisAction(
   component_id: string
 ) {
   return getSavedAnalysis(faculty_assignment_id, component_id);
+}
+
+/** All saved analyses for a faculty assignment (for the results summary table). */
+export async function getAllSavedAnalysesAction(faculty_assignment_id: string) {
+  return getAllSavedAnalysesForFaculty(faculty_assignment_id);
 }
 
 /** Components the faculty can run analysis on for a given offering. */

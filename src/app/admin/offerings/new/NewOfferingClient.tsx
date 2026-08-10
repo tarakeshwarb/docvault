@@ -6,7 +6,7 @@ import { createCourseOffering } from "../../actions";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Plus, X } from "lucide-react";
 
-type Course = { course_id: string; course_code: string; course_name: string };
+type Course = { course_id: string; course_code: string; course_name: string; year_of_study: number | null };
 type Semester = { semester_id: string; semester_name: string; year_name: string };
 type Faculty = { faculty_id: number; faculty_name: string; designation: string; role: string };
 
@@ -27,8 +27,13 @@ export default function NewOfferingClient({
   const [auditProfessorRows, setAuditProfessorRows] = useState<{id: string}[]>([{id: ""}]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [yearFilter, setYearFilter] = useState<string>("all");
 
-  const courseOptions = courses.map((c) => ({
+  const filteredCourses = yearFilter === "all" 
+    ? courses 
+    : courses.filter(c => c.year_of_study === parseInt(yearFilter, 10));
+
+  const courseOptions = filteredCourses.map((c) => ({
     value: c.course_id,
     label: `${c.course_code} — ${c.course_name}`,
   }));
@@ -125,16 +130,35 @@ export default function NewOfferingClient({
         onSubmit={handleSubmit}
         className="panel-card space-y-5 p-5"
       >
-        <div>
-          <label className="block text-sm font-medium text-[var(--color-ink)] mb-2">
-            Select Course
-          </label>
-          <SearchableSelect
-            options={courseOptions}
-            value={courseId}
-            onChange={setCourseId}
-            placeholder="Search by course code or name..."
-          />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-4">
+          <div className="w-full sm:w-1/3">
+            <label className="block text-sm font-medium text-[var(--color-ink)] mb-2">
+              Filter by Year
+            </label>
+            <select
+              value={yearFilter}
+              onChange={(e) => setYearFilter(e.target.value)}
+              className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm outline-none transition hover:border-black/20 focus:border-[var(--color-ink)] focus:ring-1 focus:ring-[var(--color-ink)] bg-white h-10"
+            >
+              <option value="all">All Years</option>
+              <option value="1">1st Year</option>
+              <option value="2">2nd Year</option>
+              <option value="3">3rd Year</option>
+              <option value="4">4th Year</option>
+              <option value="5">5th Year</option>
+            </select>
+          </div>
+          <div className="w-full sm:w-2/3">
+            <label className="block text-sm font-medium text-[var(--color-ink)] mb-2">
+              Select Course
+            </label>
+            <SearchableSelect
+              options={courseOptions}
+              value={courseId}
+              onChange={setCourseId}
+              placeholder="Search by course code or name..."
+            />
+          </div>
         </div>
 
         <div>

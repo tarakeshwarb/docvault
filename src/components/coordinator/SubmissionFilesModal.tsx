@@ -22,8 +22,24 @@ type Props = {
   section_name: string;
   status: string;
   offering_id: string;
+  baseUrl: string;
   currentFacultyId?: number;
 };
+
+function getPreviewData(fileKey: string, baseUrl: string) {
+  const ext = fileKey.split('.').pop()?.toLowerCase() || '';
+  const isPdf = ext === 'pdf';
+  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
+  const isOffice = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(ext);
+  
+  const fileUrl = `${baseUrl}/${fileKey}`;
+  let previewSrc = fileUrl;
+  if (isOffice) {
+    previewSrc = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
+  }
+  
+  return { isPdf, isImage, isOffice, isPreviewable: isPdf || isImage || isOffice, fileUrl, previewSrc };
+}
 
 export function SubmissionFilesModal({
   submission_id,
@@ -32,6 +48,7 @@ export function SubmissionFilesModal({
   section_name,
   status,
   offering_id,
+  baseUrl,
   currentFacultyId,
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
@@ -40,8 +57,6 @@ export function SubmissionFilesModal({
   const [localStatus, setLocalStatus] = useState(status);
   const [acting, setActing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-
-  const baseUrl = process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL ?? "";
 
   const isSubmitted = localStatus === "submitted";
   const isApproved = localStatus === "approved";
@@ -121,7 +136,7 @@ export function SubmissionFilesModal({
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => !acting && setIsOpen(false)}
           />
-          <div className="relative z-10 w-full max-w-md rounded-2xl bg-white shadow-2xl flex flex-col max-h-[80vh]">
+          <div className="relative z-10 w-full max-w-5xl rounded-2xl bg-white shadow-2xl flex flex-col h-[90vh]">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-black/5 px-6 py-4">
               <div>
@@ -132,97 +147,93 @@ export function SubmissionFilesModal({
                   {faculty_name} · Section {section_name}
                 </p>
               </div>
-              <button
-                onClick={() => !acting && setIsOpen(false)}
-                className="rounded-full p-2 text-gray-400 hover:bg-gray-100 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {loading ? (
-                <div className="flex items-center justify-center py-10">
-                  <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-                </div>
-              ) : files.length === 0 ? (
-                <p className="text-center text-sm text-gray-500 py-10">
-                  No files found for this submission.
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                    {files.length} file{files.length !== 1 ? "s" : ""} uploaded
-                  </p>
-                  {files.map((file) => {
-                    const fileUrl = `${baseUrl}/${file.s3_object_key}`;
-                    return (
-                      <div
-                        key={file.file_id}
-                        className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 p-3"
-                      >
-                        <div className="flex items-center gap-3 overflow-hidden">
-                          <div className="rounded-full bg-[var(--color-accent)]/10 p-2 shrink-0">
-                            <FileText className="w-4 h-4 text-[var(--color-accent)]" />
-                          </div>
-                          <div className="truncate">
-                            <p className="truncate text-sm font-medium text-gray-900" title={file.file_name}>
-                              {file.file_name}
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              {formatBytes(file.file_size)} · v{file.version} · {new Date(file.uploaded_at).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                        <a
-                          href={fileUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          download={file.file_name}
-                          className="ml-3 shrink-0 inline-flex items-center gap-1.5 rounded-full bg-[var(--color-accent)] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[var(--color-accent)]/90 transition-colors"
-                        >
-                          <Download className="w-3 h-3" />
-                          Download
-                        </a>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Footer: approval controls */}
-            <div className="border-t border-black/5 px-6 py-4">
-              {actionError && (
-                <p className="mb-2 rounded bg-red-50 p-2 text-xs font-medium text-red-600">{actionError}</p>
-              )}
-              {isApproved ? (
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1.5 text-sm font-medium text-green-700">
-                    <ShieldCheck className="w-4 h-4" /> Approved
-                  </span>
+              <div className="flex items-center gap-3">
+                {actionError && (
+                  <p className="rounded bg-red-50 p-1.5 px-2.5 text-xs font-medium text-red-600">{actionError}</p>
+                )}
+                {files.length > 0 && (
+                  <a
+                    href={`${baseUrl}/${files[files.length - 1].s3_object_key}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    download={files[files.length - 1].file_name}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download
+                  </a>
+                )}
+                {isApproved ? (
                   <button
                     onClick={handleRevoke}
                     disabled={acting}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
                   >
                     {acting ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
-                    Revoke approval
+                    Revoke Approval
                   </button>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500">Verify the files, then approve.</span>
+                ) : (
                   <button
                     onClick={handleApprove}
                     disabled={acting || files.length === 0}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50 transition-colors"
                   >
                     {acting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
                     Approve
                   </button>
+                )}
+                <div className="w-px h-6 bg-black/10 mx-2" />
+                <button
+                  onClick={() => !acting && setIsOpen(false)}
+                  className="rounded-full p-2 text-gray-400 hover:bg-gray-100 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Body: Direct Preview */}
+            <div className="flex-1 overflow-hidden bg-gray-100/50 rounded-b-2xl flex flex-col relative">
+              {loading ? (
+                <div className="flex h-full items-center justify-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
                 </div>
+              ) : files.length === 0 ? (
+                <div className="flex h-full items-center justify-center">
+                  <p className="text-sm text-gray-500">No files found for this submission.</p>
+                </div>
+              ) : (
+                (() => {
+                  const latestFile = files[files.length - 1];
+                  const { isImage, isPreviewable, previewSrc } = getPreviewData(latestFile.s3_object_key, baseUrl);
+                  
+                  if (!isPreviewable) {
+                    return (
+                      <div className="flex h-full flex-col items-center justify-center gap-2">
+                        <FileText className="w-10 h-10 text-gray-300" />
+                        <p className="text-sm text-gray-500">Preview not available for this file type.</p>
+                        <p className="text-xs text-gray-400">Please download the file to view it.</p>
+                      </div>
+                    );
+                  }
+                  
+                  if (isImage) {
+                    return (
+                      <div className="flex-1 flex items-center justify-center w-full h-full overflow-hidden p-4">
+                        <img src={previewSrc} alt={latestFile.file_name} className="max-w-full max-h-full object-contain rounded-lg shadow-sm" />
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <iframe
+                      src={previewSrc}
+                      className="w-full h-full border-0 bg-white"
+                      title="Document Preview"
+                      allowFullScreen
+                    />
+                  );
+                })()
               )}
             </div>
           </div>

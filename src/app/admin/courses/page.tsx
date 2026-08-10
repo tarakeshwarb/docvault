@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { getCourses, deleteCourse } from "../actions";
-import { formatDate } from "@/lib/utils";
 import { DeleteButton } from "@/components/ui/DeleteButton";
+import { BulkCoursesUpload } from "./BulkCoursesUpload";
 
 export default async function CoursesPage() {
   const courses = await getCourses();
@@ -14,6 +14,7 @@ export default async function CoursesPage() {
           <p className="text-sm text-[var(--color-muted)]">Manage course catalog and syllabus details.</p>
         </div>
         <div className="flex items-center gap-3">
+          <BulkCoursesUpload />
           <a href="/admin/courses/new" className="inline-flex items-center gap-2 rounded-full bg-[var(--color-ink)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-ink)]/80 transition-colors">
             <Plus className="w-4 h-4" />
             Add Course
@@ -28,15 +29,15 @@ export default async function CoursesPage() {
               <th className="px-6 py-4">Course Code</th>
               <th className="px-6 py-4">Course Name</th>
               <th className="px-6 py-4">Type</th>
+              <th className="px-6 py-4">Year</th>
               <th className="px-6 py-4">Credits</th>
-              <th className="px-6 py-4">Created At</th>
               <th className="px-6 py-4 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-black/5">
             {courses.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                   No courses found.
                 </td>
               </tr>
@@ -54,8 +55,10 @@ export default async function CoursesPage() {
                       "-"
                     )}
                   </td>
+                  <td className="px-6 py-4 text-gray-500 font-medium">
+                    {course.year_of_study ? `${course.year_of_study}${course.year_of_study === 1 ? 'st' : course.year_of_study === 2 ? 'nd' : course.year_of_study === 3 ? 'rd' : 'th'} Year` : "-"}
+                  </td>
                   <td className="px-6 py-4 text-gray-500">{course.credits}</td>
-                  <td className="px-6 py-4 text-gray-500">{formatDate(course.created_at)}</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <a 

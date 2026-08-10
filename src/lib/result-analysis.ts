@@ -56,13 +56,15 @@ export function computeDerived(input: ResultAnalysisInput): ResultAnalysisDerive
   const ranges = normalizeRanges(input.ranges);
   const totalFailures = ranges[0]; // students in 0-49 are the failures
   const strength = Math.max(0, input.totalStrength);
+  const totalPresent = strength - Math.max(0, input.totalAbsentees);
+  const totalPass = totalPresent - totalFailures;
   const passPercentage =
-    strength > 0 ? ((strength - totalFailures) / strength) * 100 : 0;
+    strength > 0 ? (totalPass / strength) * 100 : 0;
   return {
     totalFailures,
     passMarkPercent: PASS_MARK_PERCENT,
     passPercentage,
-    totalPresent: strength - Math.max(0, input.totalAbsentees),
+    totalPresent,
     sumRanges: ranges.reduce((a, b) => a + b, 0),
   };
 }
@@ -239,6 +241,112 @@ export async function generateResultAnalysisXlsx(
 }
 
 // ---------------------------------------------------------------------------
+// XLSX — consolidated register (matches the SoC "Result Analysis" register:
+// one sheet listing every section as a row, with a totals row + bar chart)
+// ---------------------------------------------------------------------------
+
+export type RegisterHeader = {
+  courseCode: string;
+  courseName: string;
+  component: string;
+  academicYear: string;
+  semester: string;
+  maxMarks?: string;
+  batch?: string;
+};
+
+const COL = (i: number) => String.fromCharCode(65 + i); // 0->A ... 11->L
+
+export async function generateResultAnalysisRegisterXlsx(
+  header: RegisterHeader,
+  sections: ResultAnalysisInput[]
+): Promise<Buffer> {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "CourseFlow / DocVault";
+  wb.created = new Date();
+  const ws = wb.addWorksheet(safeSheetName(header.component), { views: [{ showGridLines: false }] });
+  ws.columns = [
+    { width: 6 }, { width: 26 }, { width: 8 }, { width: 8 }, { width: 8 }, { width: 8 },
+    { width: 8 }, { width: 8 }, { width: 8 }, { width: 14 }, { width: 22 }, { width: 12 },
+  ];
+  const center = { horizontal: "center" as const, vertical: "middle" as const };
+  const left = { horizontal: "left" as const, vertical: "middle" as const };
+
+  const titleRow = (row: number, text: string, size: number) => {
+    ws.mergeCells(`A${row}:L${row}`);
+    const c = ws.getCell(`A${row}`);
+    c.value = text;
+    c.font = { bold: true, size };
+    c.alignment = center;
+  };
+  titleRow(1, INSTITUTION, 12);
+  titleRow(2, "FACULTY OF ENGINEERING AND TECHNOLOGY", 10);
+  titleRow(3, "SCHOOL OF COMPUTING", 10);
+  titleRow(4, `(ACADEMIC YEAR ${header.academicYear})`, 10);
+  titleRow(5, `${header.semester} Semester - ${header.courseCode} - ${header.courseName} handled by SOC Faculty`, 10);
+  titleRow(6, `${header.component} RESULT ANALYSIS${header.maxMarks ? ` :  ${header.maxMarks} Marks` : ""}`, 11);
+
+  const grandStrength = sections.reduce((a, s) => a + (s.totalStrength || 0), 0);
+  ws.getCell("A7").value = `Total Strength : ${grandStrength}`;
+  ws.getCell("A7").font = { bold: true };
+  if (header.batch) {
+    ws.getCell("F7").value = `Batch : ${header.batch}`;
+    ws.getCell("F7").font = { bold: true };
+  }
+
+  const headers = ["SNo", "Staff Name", "SEC", ...RANGE_LABELS, "Total Strength", "No. of students Attended", "Absentees"];
+  headers.forEach((h, i) => {
+    const c = ws.getCell(`${COL(i)}9`);
+    c.value = h;
+    c.font = { bold: true };
+    c.alignment = center;
+    c.border = BORDER_ALL;
+  });
+
+  let r = 10;
+  const totals = new Array(RANGE_COUNT).fill(0);
+  let tStrength = 0, tAttended = 0, tAbsent = 0;
+  sections.forEach((s, idx) => {
+    const ranges = normalizeRanges(s.ranges);
+    const attended = Math.max(0, s.totalStrength - s.totalAbsentees);
+    const rowVals: (string | number)[] = [idx + 1, s.staffName, s.yearSection, ...ranges, s.totalStrength, attended, s.totalAbsentees];
+    rowVals.forEach((v, i) => {
+      const c = ws.getCell(`${COL(i)}${r}`);
+      c.value = v;
+      c.alignment = i === 1 ? left : center;
+      c.border = BORDER_ALL;
+    });
+    ranges.forEach((v, i) => (totals[i] += v));
+    tStrength += s.totalStrength;
+    tAttended += attended;
+    tAbsent += s.totalAbsentees;
+    r++;
+  });
+
+  const totalRow = r;
+  const trVals: (string | number)[] = ["", "TOTAL", "", ...totals, tStrength, tAttended, tAbsent];
+  trVals.forEach((v, i) => {
+    const c = ws.getCell(`${COL(i)}${totalRow}`);
+    c.value = v;
+    c.font = { bold: true };
+    c.alignment = i === 1 ? left : center;
+    c.border = BORDER_ALL;
+  });
+
+  const arr = await wb.xlsx.writeBuffer();
+  const spec: ChartSpec = {
+    sheetIndex: 1,
+    sheetName: safeSheetName(header.component),
+    catRange: "$D$9:$I$9",
+    valRange: `$D$${totalRow}:$I$${totalRow}`,
+    titleCell: `$B$${totalRow}`,
+    title: `${header.component} — Total vs. Range of Marks`,
+    anchor: [1, totalRow + 1, 9, totalRow + 22],
+  };
+  return injectBarCharts(Buffer.from(arr), [spec]);
+}
+
+// ---------------------------------------------------------------------------
 // PDF (with bar chart)
 // ---------------------------------------------------------------------------
 
@@ -329,6 +437,146 @@ function niceStep(maxVal: number): number {
   if (maxVal <= 150) return 25;
   if (maxVal <= 300) return 50;
   return Math.ceil(maxVal / 6 / 100) * 100;
+}
+
+export async function generateConsolidatedResultAnalysisXlsx(
+  componentsSections: Record<string, ResultAnalysisInput[]>
+): Promise<any> {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "CourseFlow / DocVault";
+  wb.created = new Date();
+
+  const center = { horizontal: "center" as const, vertical: "middle" as const };
+  const BORDER_ALL = {
+    top: { style: "thin" as const },
+    left: { style: "thin" as const },
+    bottom: { style: "thin" as const },
+    right: { style: "thin" as const },
+  };
+
+  const specs: ChartSpec[] = [];
+
+  for (const [componentName, sections] of Object.entries(componentsSections)) {
+    if (sections.length === 0) continue;
+
+    const ws = wb.addWorksheet(safeSheetName(componentName)); // removed views: showGridLines: false
+
+    ws.columns = [
+      { width: 6 },
+      { width: 25 },
+      { width: 10 },
+      { width: 8 },
+      { width: 8 },
+      { width: 8 },
+      { width: 8 },
+      { width: 8 },
+      { width: 8 },
+      { width: 15 },
+      { width: 25 },
+      { width: 12 },
+      { width: 10 },
+      { width: 12 },
+      { width: 10 },
+    ];
+
+    const first = sections[0];
+
+    const titleRow = (row: number, text: string, bold = true) => {
+      ws.mergeCells(`A${row}:O${row}`);
+      const c = ws.getCell(`A${row}`);
+      c.value = text;
+      c.font = { bold, size: 11 };
+      c.alignment = center;
+    };
+
+    titleRow(1, INSTITUTION);
+    titleRow(2, COLLEGE);
+    titleRow(3, `(ACADEMIC YEAR ${first.academicYear})`);
+    titleRow(4, `${first.semester} Semester B.Tech - ${first.courseCode} - ${first.courseName} handled by SOC Faculty`);
+    titleRow(5, `${componentName} RESULT ANALYSIS`);
+
+    ws.getCell("A6").value = `Total Strength : ${sections.reduce((acc, s) => acc + s.totalStrength, 0)}`;
+    ws.getCell("A6").font = { bold: true };
+    ws.getCell("O6").value = `Batch : 1 & 2`;
+    ws.getCell("O6").font = { bold: true };
+    ws.getCell("O6").alignment = { horizontal: "right" };
+
+    const headers = [
+      "SNo", "Staff Name", "SEC", "0-49", "50-59", "60-69", "70-79", "80-89", "90-100",
+      "Total Strength", "No. of students Attended", "Absentees", "Failures", "Total pass", "Pass %"
+    ];
+
+    const headerRow = ws.getRow(8);
+    headers.forEach((h, i) => {
+      const c = headerRow.getCell(i + 1);
+      c.value = h;
+      c.font = { bold: true };
+      c.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+      c.border = BORDER_ALL;
+    });
+    headerRow.height = 30;
+
+    sections.forEach((sec, idx) => {
+      const rowNum = 9 + idx;
+      const r = ws.getRow(rowNum);
+
+      const ranges = normalizeRanges(sec.ranges);
+      const failures = ranges[0];
+      const attended = sec.totalStrength - sec.totalAbsentees;
+      const totalPass = attended - failures;
+      const passPct = attended > 0 ? (totalPass / attended) * 100 : 0;
+
+      const rowData = [
+        idx + 1,
+        sec.staffName,
+        sec.yearSection,
+        ...ranges,
+        sec.totalStrength,
+        attended,
+        sec.totalAbsentees,
+        failures,
+        totalPass,
+        passPct
+      ];
+
+      rowData.forEach((val, i) => {
+        const c = r.getCell(i + 1);
+        c.value = val;
+        c.border = BORDER_ALL;
+        if (i === headers.length - 1) {
+          c.numFmt = "0.00";
+        }
+        if (i !== 1) {
+          c.alignment = center;
+        }
+      });
+    });
+
+    const lastRow = 8 + sections.length;
+    const chartEndCol = Math.max(12, 1 + Math.ceil(sections.length * 0.8)); // Expand width if many faculties
+    specs.push({
+      sheetIndex: specs.length + 1,
+      sheetName: safeSheetName(componentName),
+      title: `${componentName} Result Analysis`,
+      catRange: `$B$9:$B$${lastRow}`,
+      series: [
+        { titleCell: "$D$8", valRange: `$D$9:$D$${lastRow}`, color: "4F81BD" },
+        { titleCell: "$E$8", valRange: `$E$9:$E$${lastRow}`, color: "C0504D" },
+        { titleCell: "$F$8", valRange: `$F$9:$F$${lastRow}`, color: "9BBB59" },
+        { titleCell: "$G$8", valRange: `$G$9:$G$${lastRow}`, color: "8064A2" },
+        { titleCell: "$H$8", valRange: `$H$9:$H$${lastRow}`, color: "4BACC6" },
+        { titleCell: "$I$8", valRange: `$I$9:$I$${lastRow}`, color: "F79646" },
+      ],
+      anchor: [1, lastRow + 2, chartEndCol, lastRow + 22],
+    });
+  }
+
+  const arr = await wb.xlsx.writeBuffer();
+  let buf: any = Buffer.from(arr as ArrayBuffer);
+  if (specs.length > 0) {
+    buf = await injectBarCharts(buf, specs);
+  }
+  return buf;
 }
 
 function addPdfPage(pdf: PDFDocument, font: PDFFont, fontBold: PDFFont, input: ResultAnalysisInput) {

@@ -1,7 +1,7 @@
 import AppShell from "@/components/layout/AppShell";
-import { LayoutDashboard, ClipboardList, UserSquare2, Users, Megaphone } from "lucide-react";
+import { LayoutDashboard, ClipboardList, Users } from "lucide-react";
 import { redirect } from "next/navigation";
-import { getDashboardPathForRole, getFacultySession } from "@/lib/auth";
+import { getFacultySession } from "@/lib/auth";
 import { queryDb } from "@/lib/db";
 
 import { type SidebarItem } from "@/components/layout/Sidebar";
@@ -10,7 +10,6 @@ const secondaryCoordinatorSidebarItems: SidebarItem[] = [
   { label: "My Assigned Courses", href: "/secondary-coordinator", icon: LayoutDashboard, variant: "coordinator" },
   { label: "Faculty Assign", href: "#faculty-assignments", icon: Users },
   { label: "Documents", href: "#document-requirements", icon: ClipboardList },
-  { label: "Faculty Portal", href: "/faculty", icon: UserSquare2, variant: "faculty" },
 ];
 
 const coordinatorSidebarNote = {
@@ -40,11 +39,10 @@ export default async function SecondaryCoordinatorLayout({
         [session.faculty_id]
       );
       if (Number(secondaryRows[0]?.count ?? 0) === 0) {
-        redirect("/faculty");
+        redirect("/"); // Send back to login if they lost access
       }
     } catch (error) {
-      // Table doesn't exist, redirect to faculty
-      redirect("/faculty");
+      redirect("/"); // Table doesn't exist, send back to login
     }
   }
 

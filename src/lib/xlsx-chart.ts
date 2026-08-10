@@ -13,6 +13,22 @@ export type ChartSpec = {
   sheetIndex: number;
   /** The worksheet's display name, used in the chart's cell references. */
   sheetName: string;
+  /** Category cells (range labels). Default "$H$11:$H$16". */
+  catRange?: string;
+  /** Value cells (counts). Default "$I$11:$I$16". */
+  valRange?: string;
+  /** Cell holding the series title. Default "$I$10". */
+  titleCell?: string;
+  /** Chart title text. */
+  title?: string;
+  /** Anchor: [fromCol, fromRow, toCol, toRow] (0-based). Default [1,17,9,39]. */
+  anchor?: [number, number, number, number];
+  /** Optional array of series for multi-series clustered charts. */
+  series?: Array<{
+    titleCell?: string;
+    valRange: string;
+    color?: string;
+  }>;
 };
 
 const BAR_COLOR = "2F6FB0";
@@ -23,12 +39,46 @@ function quoteSheet(name: string): string {
   return `'${name.replace(/'/g, "''")}'`;
 }
 
-function chartXml(sheetName: string): string {
-  const ref = quoteSheet(sheetName);
+function chartXml(spec: ChartSpec): string {
+  const ref = quoteSheet(spec.sheetName);
+  const catRange = spec.catRange ?? "$H$11:$H$16";
+  const title = spec.title ?? "Total vs. Range of Marks";
+
+  let seriesXml = "";
+  if (spec.series && spec.series.length > 0) {
+    seriesXml = spec.series.map((s, i) => {
+      const tCell = s.titleCell ? `<c:tx><c:strRef><c:f>${ref}!${s.titleCell}</c:f></c:strRef></c:tx>` : "";
+      const color = s.color ?? BAR_COLOR;
+      return `
+<c:ser>
+<c:idx val="${i}"/>
+<c:order val="${i}"/>
+${tCell}
+<c:spPr><a:solidFill><a:srgbClr val="${color}"/></a:solidFill></c:spPr>
+<c:dLbls><c:showLegendKey val="0"/><c:showVal val="1"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/><c:showBubbleSize val="0"/></c:dLbls>
+<c:cat><c:strRef><c:f>${ref}!${catRange}</c:f></c:strRef></c:cat>
+<c:val><c:numRef><c:f>${ref}!${s.valRange}</c:f></c:numRef></c:val>
+</c:ser>`;
+    }).join("");
+  } else {
+    const valRange = spec.valRange ?? "$I$11:$I$16";
+    const titleCell = spec.titleCell ?? "$I$10";
+    seriesXml = `
+<c:ser>
+<c:idx val="0"/>
+<c:order val="0"/>
+<c:tx><c:strRef><c:f>${ref}!${titleCell}</c:f></c:strRef></c:tx>
+<c:spPr><a:solidFill><a:srgbClr val="${BAR_COLOR}"/></a:solidFill></c:spPr>
+<c:dLbls><c:showLegendKey val="0"/><c:showVal val="1"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/><c:showBubbleSize val="0"/></c:dLbls>
+<c:cat><c:strRef><c:f>${ref}!${catRange}</c:f></c:strRef></c:cat>
+<c:val><c:numRef><c:f>${ref}!${valRange}</c:f></c:numRef></c:val>
+</c:ser>`;
+  }
+
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
 <c:chart>
-<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr b="1" sz="1100"/></a:pPr><a:r><a:rPr lang="en-US" b="1" sz="1100"/><a:t>Total vs. Range of Marks</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title>
+<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr b="1" sz="1100"/></a:pPr><a:r><a:rPr lang="en-US" b="1" sz="1100"/><a:t>${title}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title>
 <c:autoTitleDeleted val="0"/>
 <c:plotArea>
 <c:layout/>
@@ -36,16 +86,8 @@ function chartXml(sheetName: string): string {
 <c:barDir val="col"/>
 <c:grouping val="clustered"/>
 <c:varyColors val="0"/>
-<c:ser>
-<c:idx val="0"/>
-<c:order val="0"/>
-<c:tx><c:strRef><c:f>${ref}!$I$10</c:f></c:strRef></c:tx>
-<c:spPr><a:solidFill><a:srgbClr val="${BAR_COLOR}"/></a:solidFill></c:spPr>
-<c:dLbls><c:showLegendKey val="0"/><c:showVal val="1"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/><c:showBubbleSize val="0"/></c:dLbls>
-<c:cat><c:strRef><c:f>${ref}!$H$11:$H$16</c:f></c:strRef></c:cat>
-<c:val><c:numRef><c:f>${ref}!$I$11:$I$16</c:f></c:numRef></c:val>
-</c:ser>
-<c:gapWidth val="60"/>
+${seriesXml}
+<c:gapWidth val="150"/>
 <c:axId val="${CAT_AXIS_ID}"/>
 <c:axId val="${VAL_AXIS_ID}"/>
 </c:barChart>
@@ -72,12 +114,13 @@ function chartXml(sheetName: string): string {
 </c:chartSpace>`;
 }
 
-function drawingXml(): string {
+function drawingXml(anchor?: [number, number, number, number]): string {
+  const [fc, fr, tc, tr] = anchor ?? [1, 17, 9, 39];
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
 <xdr:twoCellAnchor>
-<xdr:from><xdr:col>1</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>17</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from>
-<xdr:to><xdr:col>9</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>39</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:to>
+<xdr:from><xdr:col>${fc}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>${fr}</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from>
+<xdr:to><xdr:col>${tc}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>${tr}</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:to>
 <xdr:graphicFrame macro="">
 <xdr:nvGraphicFramePr><xdr:cNvPr id="2" name="Chart 1"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr>
 <xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm>
@@ -116,8 +159,8 @@ export async function injectBarCharts(xlsxBuffer: Buffer, specs: ChartSpec[]): P
     const sheetFile = zip.file(sheetPath);
     if (!sheetFile) continue;
 
-    zip.file(`xl/charts/chart${n}.xml`, chartXml(spec.sheetName));
-    zip.file(`xl/drawings/drawing${n}.xml`, drawingXml());
+    zip.file(`xl/charts/chart${n}.xml`, chartXml(spec));
+    zip.file(`xl/drawings/drawing${n}.xml`, drawingXml(spec.anchor));
     zip.file(`xl/drawings/_rels/drawing${n}.xml.rels`, drawingRels(n));
     zip.file(`xl/worksheets/_rels/sheet${n}.xml.rels`, sheetRels(n));
 
