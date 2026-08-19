@@ -173,7 +173,7 @@ export default async function FacultyCoursePage({
                   </h2>
 
                   {broadcasts.length === 0 ? (
-                    <div className="panel-card border-dashed border-gray-300 p-5 text-center">
+                    <div className="panel-card border-dashed border-gray-300 py-[30px] px-5 text-center">
                       <p className="text-sm text-gray-500">No course materials have been broadcasted for this course.</p>
                     </div>
                   ) : (
