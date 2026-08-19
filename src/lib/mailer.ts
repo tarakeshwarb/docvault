@@ -9,35 +9,36 @@ export async function sendEmail({
   subject: string;
   html: string;
 }) {
-  const apiKey = process.env.BREVO_API_KEY;
-  
-  if (!apiKey) {
-    console.warn("BREVO_API_KEY is not set. Skipping email send.");
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+
+  if (!user || !pass) {
+    console.warn("SMTP_USER or SMTP_PASS is not set in environment variables. Skipping email send.");
     return null;
   }
 
-  const payload = {
-    sender: { name: "Course Coordinator Portal", email: "yourboyy1727@gmail.com" },
-    to: [{ email: to }],
-    subject: subject,
-    htmlContent: html,
-  };
-
-  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-    method: "POST",
-    headers: {
-      "accept": "application/json",
-      "api-key": apiKey,
-      "content-type": "application/json"
+  // Configure transporter for Google Workspace (Gmail)
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: user,
+      pass: pass,
     },
-    body: JSON.stringify(payload)
   });
 
-  if (!response.ok) {
-    const errorBody = await response.text();
-    console.error("Brevo API error:", errorBody);
-    throw new Error(`Failed to send email: ${response.statusText}`);
-  }
+  const mailOptions = {
+    from: `"Course Coordinator Portal" <${user}>`,
+    to: to,
+    subject: subject,
+    html: html,
+  };
 
-  return await response.json();
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Email sent successfully:", info.messageId);
+    return info;
+  } catch (error) {
+    console.error("Nodemailer transport error:", error);
+    throw new Error(`Failed to send email: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }

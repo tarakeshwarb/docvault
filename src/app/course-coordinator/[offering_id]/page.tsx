@@ -5,12 +5,10 @@ import { SendRemindersButton } from "@/components/coordinator/SendRemindersButto
 import { getFacultySession } from "@/lib/auth";
 import { SubmissionFilesModal } from "@/components/coordinator/SubmissionFilesModal";
 import { BroadcastCard } from "@/components/ui/BroadcastCard";
-import { ConfirmDownloadLink } from "@/components/ui/ConfirmDownloadLink";
 import {
   getFacultyAssignments,
   getCourseComponents,
   getSubmissionStatus,
-  getGeneratedReports,
   getComponentMasters,
   getAllSections,
   getAllFacultyForAssignment,
@@ -80,7 +78,6 @@ export default async function OfferingDetailPage({
     assignments,
     components,
     submissions,
-    reports,
     componentMasters,
     allSections,
     allFaculty,
@@ -91,7 +88,6 @@ export default async function OfferingDetailPage({
       getFacultyAssignments(offering_id),
       getCourseComponents(offering_id),
       getSubmissionStatus(offering_id),
-      getGeneratedReports(offering_id),
       getComponentMasters(),
       getAllSections(),
       getAllFacultyForAssignment(),
@@ -136,7 +132,7 @@ export default async function OfferingDetailPage({
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
             {offering.course_name}
           </h1>
-          
+
           <div className="mt-5 flex flex-wrap gap-8">
             {[
               { label: "Faculty Assigned", value: assignments.length },
@@ -160,195 +156,138 @@ export default async function OfferingDetailPage({
       <OfferingTabs
         overviewContent={
           <div className="space-y-8">
-      {/* Course Broadcasts */}
-      <div id="broadcasts" className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[var(--color-ink)] flex items-center gap-2">
-            <Megaphone className="w-5 h-5 text-[var(--color-accent)]" />
-            Course Broadcasts
-          </h2>
-          <AddBroadcastForm offering_id={offering_id} faculty_id={session.faculty_id} />
-        </div>
+            {/* Course Broadcasts */}
+            <div id="broadcasts" className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-[var(--color-ink)] flex items-center gap-2">
+                  <Megaphone className="w-5 h-5 text-[var(--color-accent)]" />
+                  Course Broadcasts
+                </h2>
+                <AddBroadcastForm offering_id={offering_id} faculty_id={session.faculty_id} />
+              </div>
 
-        {broadcasts.length === 0 ? (
-          <div className="panel-card border-dashed border-gray-200 p-5 text-center">
-            <p className="text-sm text-gray-500">No course materials broadcasted yet.</p>
-          </div>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {broadcasts.map((b) => (
-              <BroadcastCard
-                key={b.broadcast_id}
-                broadcast={{ ...b, course_code: offering.course_code }}
-                baseUrl={process.env.R2_PUBLIC_BASE_URL!}
-                currentFacultyId={session.faculty_id}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+              {broadcasts.length === 0 ? (
+                <div className="panel-card border-dashed border-gray-200 py-[30px] px-5 text-center">
+                  <p className="text-sm text-gray-500">No course materials broadcasted yet.</p>
+                </div>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {broadcasts.map((b) => (
+                    <BroadcastCard
+                      key={b.broadcast_id}
+                      broadcast={{ ...b, course_code: offering.course_code }}
+                      baseUrl={process.env.R2_PUBLIC_BASE_URL!}
+                      currentFacultyId={session.faculty_id}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
 
-      {/* Components */}
-      <div id="document-requirements" className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[var(--color-ink)] flex items-center gap-2">
-            <ClipboardList className="w-5 h-5 text-gray-400" />
-            Document Requirements
-          </h2>
-          <AddComponentForm offering_id={offering_id} componentMasters={componentMasters} />
-        </div>
+            {/* Components */}
+            <div id="document-requirements" className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-[var(--color-ink)] flex items-center gap-2">
+                  <ClipboardList className="w-5 h-5 text-gray-400" />
+                  Document Requirements
+                </h2>
+                <AddComponentForm offering_id={offering_id} componentMasters={componentMasters} />
+              </div>
 
-        {components.length === 0 ? (
-          <div className="panel-card border-dashed border-gray-200 p-5 text-center">
-            <p className="text-sm text-gray-500">
-              No components defined. Add document requirements above.
-            </p>
-          </div>
-        ) : (
-          <div className="panel-card overflow-hidden">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5">
-                <tr>
-                  <th className="px-5 py-3">Component</th>
-                  <th className="px-5 py-3 text-center">Mandatory</th>
-                  <th className="px-5 py-3">Deadline</th>
-                  <th className="px-5 py-3"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-black/5">
-                {components.map((comp) => (
-                  <EditableComponentRow
-                    key={comp.id}
-                    comp={comp}
-                    offering_id={offering_id}
-                    currentFacultyId={session.faculty_id}
-                    baseUrl={process.env.R2_PUBLIC_BASE_URL}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+              {components.length === 0 ? (
+                <div className="panel-card border-dashed border-gray-200 p-5 text-center">
+                  <p className="text-sm text-gray-500">
+                    No components defined. Add document requirements above.
+                  </p>
+                </div>
+              ) : (
+                <div className="panel-card overflow-hidden">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5">
+                      <tr>
+                        <th className="px-5 py-3">Component</th>
+                        <th className="px-5 py-3 text-center">Mandatory</th>
+                        <th className="px-5 py-3">Deadline</th>
+                        <th className="px-5 py-3"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-black/5">
+                      {components.map((comp) => (
+                        <EditableComponentRow
+                          key={comp.id}
+                          comp={comp}
+                          offering_id={offering_id}
+                          currentFacultyId={session.faculty_id}
+                          baseUrl={process.env.R2_PUBLIC_BASE_URL}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
 
-      {/* Generated reports */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-[var(--color-ink)] flex items-center gap-2">
-          <ClipboardList className="w-5 h-5 text-gray-400" />
-          Generated Reports
-        </h2>
 
-        {submissions.length === 0 ? (
-          <div className="panel-card border-dashed border-gray-200 p-5 text-center">
-            <p className="text-sm text-gray-500">Generate a report after faculty begin uploading files.</p>
-          </div>
-        ) : (
-          <div className="panel-card overflow-hidden">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5">
-                <tr>
-                  <th className="px-5 py-3">Report Type</th>
-                  <th className="px-5 py-3">Generated By</th>
-                  <th className="px-5 py-3">Generated At</th>
-                  <th className="px-5 py-3 text-right">File</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-black/5">
-                {reports.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="px-5 py-10 text-center text-gray-500">
-                      No reports generated yet.
-                    </td>
-                  </tr>
-                ) : (
-                  reports.map((report) => (
-                    <tr key={report.report_id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-5 py-3 font-medium text-[var(--color-ink)]">
-                        {report.report_type.replace(/_/g, " ")}
-                      </td>
-                      <td className="px-5 py-3 text-gray-500">
-                        {report.generated_by_name ?? "System"}
-                      </td>
-                      <td className="px-5 py-3 text-gray-500 text-xs">
-                        {formatDate(report.generated_at)}
-                      </td>
-                      <td className="px-5 py-3 text-right">
-                        <ConfirmDownloadLink
-                          href={report.r2_report_path}
-                          className="text-[var(--color-accent)] hover:underline"
-                          target="_blank"
-                        >
-                          Download
-                        </ConfirmDownloadLink>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
 
           </div>
         }
         facultyContent={
           <div className="space-y-8">
-      {/* Faculty Assignments */}
-      <div id="faculty-assignments" className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[var(--color-ink)] flex items-center gap-2">
-            <Users className="w-5 h-5 text-gray-400" />
-            Faculty & Sections
-          </h2>
-          <AddFacultyForm
-            offering_id={offering_id}
-            allFaculty={allFaculty}
-            allSections={allSections}
-          />
-        </div>
+            {/* Faculty Assignments */}
+            <div id="faculty-assignments" className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-[var(--color-ink)] flex items-center gap-2">
+                  <Users className="w-5 h-5 text-gray-400" />
+                  Faculty & Sections
+                </h2>
+                <AddFacultyForm
+                  offering_id={offering_id}
+                  allFaculty={allFaculty}
+                  allSections={allSections}
+                />
+              </div>
 
-        {assignments.length === 0 ? (
-          <div className="panel-card border-dashed border-gray-200 p-5 text-center">
-            <p className="text-sm text-gray-500">No faculty assigned yet.</p>
-          </div>
-        ) : (
-          <div className="panel-card overflow-hidden">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5">
-                <tr>
-                  <th className="px-5 py-3">Faculty</th>
-                  <th className="px-5 py-3">Section</th>
-                  <th className="px-5 py-3 text-center">Students</th>
-                  <th className="px-5 py-3 text-center">Submitted</th>
-                  <th className="px-5 py-3 text-center">Pending</th>
-                  <th className="px-5 py-3"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-black/5">
-                {assignments.map((fa) => {
-                  const faSubmissions = submissions.filter(
-                    (s) => s.faculty_assignment_id === fa.id
-                  );
-                  const submittedCount = faSubmissions.filter((s) => s.status === "submitted" || s.status === "approved").length;
-                  const pendingCount = faSubmissions.filter((s) => s.status === "pending").length;
-                  return (
-                    <EditableFacultyRow
-                      key={fa.id}
-                      fa={fa}
-                      allSections={allSections}
-                      allFaculty={allFaculty}
-                      submittedCount={submittedCount}
-                      pendingCount={pendingCount}
-                      offering_id={offering_id}
-                    />
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+              {assignments.length === 0 ? (
+                <div className="panel-card border-dashed border-gray-200 p-5 text-center">
+                  <p className="text-sm text-gray-500">No faculty assigned yet.</p>
+                </div>
+              ) : (
+                <div className="panel-card overflow-hidden">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5">
+                      <tr>
+                        <th className="px-5 py-3">Faculty</th>
+                        <th className="px-5 py-3">Section</th>
+                        <th className="px-5 py-3 text-center">Students</th>
+                        <th className="px-5 py-3 text-center">Submitted</th>
+                        <th className="px-5 py-3 text-center">Pending</th>
+                        <th className="px-5 py-3"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-black/5">
+                      {assignments.map((fa) => {
+                        const faSubmissions = submissions.filter(
+                          (s) => s.faculty_assignment_id === fa.id
+                        );
+                        const submittedCount = faSubmissions.filter((s) => s.status === "submitted" || s.status === "approved").length;
+                        const pendingCount = faSubmissions.filter((s) => s.status === "pending").length;
+                        return (
+                          <EditableFacultyRow
+                            key={fa.id}
+                            fa={fa}
+                            allSections={allSections}
+                            allFaculty={allFaculty}
+                            submittedCount={submittedCount}
+                            pendingCount={pendingCount}
+                            offering_id={offering_id}
+                          />
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
 
           </div>
         }
