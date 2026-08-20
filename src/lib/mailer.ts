@@ -13,8 +13,9 @@ export async function sendEmail({
   const pass = process.env.SMTP_PASS;
 
   if (!user || !pass) {
-    console.warn("SMTP_USER or SMTP_PASS is not set in environment variables. Skipping email send.");
-    return null;
+    const errMsg = "SMTP_USER or SMTP_PASS is not set in environment variables. Email sending is disabled.";
+    console.error(errMsg);
+    throw new Error(errMsg);
   }
 
   // Configure transporter for Google Workspace (Gmail)
@@ -33,12 +34,16 @@ export async function sendEmail({
     html: html,
   };
 
+  console.log(`[Email Info] Attempting to send email via SMTP to: ${to}`);
+  console.log(`[Email Info] Sender (SMTP_USER): ${user}`);
+  console.log(`[Email Info] Subject: "${subject}"`);
+
   try {
     const info = await transporter.sendMail(mailOptions);
-    console.log("Email sent successfully:", info.messageId);
+    console.log(`[Email Success] Email delivered successfully. Message ID: ${info.messageId}`);
     return info;
   } catch (error) {
-    console.error("Nodemailer transport error:", error);
+    console.error("[Email Error] Nodemailer transport error during execution:", error);
     throw new Error(`Failed to send email: ${error instanceof Error ? error.message : String(error)}`);
   }
 }

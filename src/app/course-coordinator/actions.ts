@@ -853,11 +853,19 @@ if (!assignment) throw new Error("Faculty assignment not found");
     </div>
   `;
 
-await sendEmail({
-    to: assignment.email,
-    subject: `Reminder: Pending Submissions for ${courseName}`,
-    html,
-  });
+  try {
+    await sendEmail({
+      to: assignment.email,
+      subject: `Reminder: Pending Submissions for ${courseName}`,
+      html,
+    });
+  } catch (err) {
+    console.error(`Failed to send email to ${assignment.email}:`, err);
+    return {
+      success: false,
+      message: `Failed to send to ${assignment.faculty_name}: ${err instanceof Error ? err.message : "SMTP Error"}`
+    };
+  }
 
   if (diffHours < 24) {
     await executeDb(
@@ -876,9 +884,20 @@ await sendEmail({
 
 
 export async function sendRemindersToAllPending(offering_id: string) {
+  // Stop early if SMTP configuration is missing
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    return {
+      success: false,
+      message: "Email sending failed: SMTP credentials are not configured on Vercel/env."
+    };
+  }
+
   const assignments = await getFacultyAssignments(offering_id);
   let sentCount = 0;
   let skippedCount = 0;
+  let errorCount = 0;
+  let lastErrorMsg = "";
+
   for (const assignment of assignments) {
     if (!assignment.email) continue;
     try {
@@ -887,14 +906,30 @@ export async function sendRemindersToAllPending(offering_id: string) {
         sentCount++;
       } else if (res.skipped) {
         skippedCount++;
+      } else if (res.success === false) {
+        errorCount++;
+        lastErrorMsg = res.message;
       }
     } catch (err) {
+      errorCount++;
+      lastErrorMsg = err instanceof Error ? err.message : "Unknown error";
       console.error(`Failed to send to ${assignment.email}`, err);
     }
   }
+
+  if (sentCount === 0 && errorCount > 0) {
+    return {
+      success: false,
+      message: `Failed to send reminders: ${lastErrorMsg}`
+    };
+  }
+
   let msg = `Sent ${sentCount} reminders successfully.`;
   if (skippedCount > 0) {
     msg += ` (${skippedCount} skipped - already reminded today)`;
+  }
+  if (errorCount > 0) {
+    msg += ` (${errorCount} failed)`;
   }
   return { success: true, message: msg };
 }
