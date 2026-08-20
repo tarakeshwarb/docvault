@@ -809,8 +809,8 @@ if (!assignment) throw new Error("Faculty assignment not found");
     const now = new Date();
     diffHours = (now.getTime() - lastSent.getTime()) / (1000 * 60 * 60);
     
-    if (diffHours < 24 && (assignment.daily_reminder_count || 0) >= 2) {
-      return { success: false, message: "Rate limit: 2 reminders already sent within the last 24 hours.", skipped: true };
+    if (diffHours < 24 && (assignment.daily_reminder_count || 0) >= 20) {
+      return { success: false, message: "Rate limit: 20 reminders already sent within the last 24 hours.", skipped: true };
     }
   }
 
