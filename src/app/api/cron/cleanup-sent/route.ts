@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { ImapFlow } from "imapflow";
 
+export const runtime = "nodejs";
+
 // This route is called by Vercel Cron every 15 minutes.
 // It connects to Gmail IMAP and deletes any portal reminder emails from Sent Mail.
 export async function GET(request: Request) {
