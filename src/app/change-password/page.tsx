@@ -19,8 +19,11 @@ function ChangePasswordForm() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
-  // When user presses browser back button → log out and go to login
+  // Only block back navigation when this is a forced password change (first login).
+  // When the user voluntarily opens Change Password from the sidebar, back should work normally.
   useEffect(() => {
+    if (!isForced) return;
+
     // Push a duplicate entry so the back button fires popstate instead of leaving
     window.history.pushState(null, "", window.location.href);
 
@@ -33,7 +36,7 @@ function ChangePasswordForm() {
 
     window.addEventListener("popstate", handleBackButton);
     return () => window.removeEventListener("popstate", handleBackButton);
-  }, []);
+  }, [isForced]);
 
   const fieldBase =
     "block w-full rounded-xl border border-gray-200 bg-gray-50/60 py-3 pl-11 pr-11 text-sm text-[var(--color-ink)] placeholder-gray-400 transition-all duration-200 focus:border-[var(--color-accent)] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[var(--color-accent)]/10";
@@ -72,14 +75,14 @@ function ChangePasswordForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
       });
-      const data = (await res.json()) as { ok: boolean; message: string };
+      const data = (await res.json()) as { ok: boolean; message: string; redirectTo?: string };
       if (!res.ok || !data.ok) {
         setError(data.message || "Something went wrong.");
       } else {
         setSuccess(true);
-        // Redirect to dashboard after 2 seconds
+        // Redirect back to their portal after 2 seconds
         setTimeout(() => {
-          router.push("/");
+          router.push(data.redirectTo || "/");
         }, 2000);
       }
     } catch {

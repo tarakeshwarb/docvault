@@ -58,8 +58,7 @@ export default async function SecondaryOfferingDetailPage({
   const offering = offerings.find((o) => o.offering_id === offering_id);
   if (!offering) notFound();
 
-  // Common components have one shared file, so they are excluded from per-faculty tracking
-  const trackedComponents = components.filter((c) => !c.is_common);
+  const trackedComponents = components;
   const totalExpected = assignments.length * trackedComponents.length;
   const submitted = submissions.filter((s) => s.status === "submitted" || s.status === "approved").length;
   const completionPct = totalExpected > 0 ? Math.round((submitted / totalExpected) * 100) : 0;
