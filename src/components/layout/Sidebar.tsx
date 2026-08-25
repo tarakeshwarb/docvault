@@ -52,6 +52,7 @@ export default function Sidebar({
               {/* Change Password — always appended under nav items */}
               <Link
                 href="/change-password"
+                prefetch={false}
                 className="flex w-full items-center gap-3 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink)] transition-colors hover:bg-gray-50"
               >
                 <KeyRound className="h-4 w-4 shrink-0 text-[var(--color-muted)]" />

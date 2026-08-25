@@ -5,8 +5,6 @@ import { CheckCircle2, Pencil, Trash2, X, Save, Loader2, Upload, Download, Users
 import {
   updateCourseComponent,
   deleteCourseComponent,
-  setCommonComponentFile,
-  removeCommonComponentFile,
 } from "../actions";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { formatDate } from "@/lib/utils";
@@ -16,9 +14,6 @@ type CourseComponent = {
   component_name: string;
   mandatory: boolean;
   deadline: string | null;
-  is_common: boolean;
-  common_file_key: string | null;
-  common_file_name: string | null;
 };
 
 export function EditableComponentRow({
@@ -40,12 +35,7 @@ export function EditableComponentRow({
   const [loading, setLoading] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
-  // Common-file state
-  const [fileKey, setFileKey] = useState(comp.common_file_key);
-  const [fileName, setFileName] = useState(comp.common_file_name);
-  const [uploading, setUploading] = useState(false);
-  const [fileError, setFileError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   async function handleSave() {
     setLoading(true);
@@ -70,120 +60,10 @@ export function EditableComponentRow({
     }
   }
 
-  async function handleCommonUpload(file: File) {
-    setUploading(true);
-    setFileError(null);
-    try {
-      const res = await fetch("/api/upload-url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ file_name: file.name, content_type: file.type, component_id: comp.id }),
-      });
-      if (!res.ok) {
-        const d = await res.json();
-        throw new Error(d.error || "Failed to get upload URL");
-      }
-      const { upload_url, r2_object_key, dev_mode } = await res.json();
-      if (!dev_mode) {
-        const put = await fetch(upload_url, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
-        if (!put.ok) throw new Error("Upload to storage failed");
-      }
-      await setCommonComponentFile({
-        course_component_id: comp.id,
-        offering_id,
-        r2_object_key,
-        file_name: file.name,
-        uploaded_by: currentFacultyId ?? 0,
-      });
-      setFileKey(r2_object_key);
-      setFileName(file.name);
-    } catch (e) {
-      setFileError(e instanceof Error ? e.message : "Upload failed.");
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  }
-
-  async function handleCommonRemove() {
-    if (!fileKey) return;
-    setUploading(true);
-    setFileError(null);
-    try {
-      await removeCommonComponentFile({ course_component_id: comp.id, offering_id, r2_object_key: fileKey });
-      setFileKey(null);
-      setFileName(null);
-    } catch (e) {
-      setFileError(e instanceof Error ? e.message : "Failed to remove.");
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  const commonControl = comp.is_common ? (
-    <div className="mt-2">
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".pdf,.xls,.xlsx,.doc,.docx,.jpg,.jpeg,.png,.zip"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) handleCommonUpload(f);
-        }}
-      />
-      {fileKey ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <a
-            href={`${baseUrl ?? ""}/${fileKey}`}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-accent)]/10 px-3 py-1 text-xs font-medium text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20"
-          >
-            <Download className="w-3 h-3" /> {fileName ?? "View file"}
-          </a>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="text-xs font-medium text-gray-500 hover:text-gray-800 disabled:opacity-50"
-          >
-            Replace
-          </button>
-          <button
-            onClick={handleCommonRemove}
-            disabled={uploading}
-            className="text-xs font-medium text-red-500 hover:text-red-700 disabled:opacity-50"
-          >
-            Remove
-          </button>
-          {uploading && <Loader2 className="w-3 h-3 animate-spin text-gray-400" />}
-        </div>
-      ) : (
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-gray-300 px-3 py-1 text-xs font-medium text-gray-600 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] disabled:opacity-50"
-        >
-          {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-          Upload common file
-        </button>
-      )}
-      {fileError && <p className="mt-1 text-xs text-red-500">{fileError}</p>}
-    </div>
-  ) : null;
-
   const nameCell = (
-    <>
-      <div className="flex items-center gap-2">
-        <span>{comp.component_name}</span>
-        {comp.is_common && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-indigo-600 ring-1 ring-inset ring-indigo-600/10">
-            <Users className="w-3 h-3" /> Common
-          </span>
-        )}
-      </div>
-      {commonControl}
-    </>
+    <div className="flex items-center gap-2">
+      <span>{comp.component_name}</span>
+    </div>
   );
 
   if (isEditing) {
@@ -248,7 +128,7 @@ export function EditableComponentRow({
         )}
       </td>
       <td className="px-5 py-3 text-gray-500 text-xs">
-        {comp.is_common ? "—" : comp.deadline ? formatDate(comp.deadline) : "No deadline"}
+        {comp.deadline ? formatDate(comp.deadline) : "No deadline"}
       </td>
       <td className="px-5 py-3 text-right">
         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">

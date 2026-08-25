@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { queryDb, executeDb } from "@/lib/db";
-import { getFacultySession, setFacultySession } from "@/lib/auth";
+import { getFacultySession, setFacultySession, getDashboardPathForRole } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 
 export async function POST(request: Request) {
@@ -68,5 +68,6 @@ export async function POST(request: Request) {
   // so the middleware stops blocking portal routes immediately
   await setFacultySession({ ...session, must_change_password: false });
 
-  return NextResponse.json({ ok: true, message: "Password updated successfully." });
+  const redirectTo = getDashboardPathForRole(session.role);
+  return NextResponse.json({ ok: true, message: "Password updated successfully.", redirectTo });
 }
