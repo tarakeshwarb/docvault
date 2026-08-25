@@ -35,25 +35,36 @@ export async function GET(request: Request) {
     const sentPath = sentFolder ? sentFolder.path : "[Gmail]/Sent Mail";
 
     const mailbox = await client.mailboxOpen(sentPath);
-    console.log(`[Cron Cleanup] Opened Sent Mail. Total messages: ${mailbox.exists}`);
+    const totalMessages = mailbox.exists;
+    console.log(`[Cron Cleanup] Opened "${sentPath}". Total messages: ${totalMessages}`);
 
-    // Search for any portal reminder emails by subject
-    const searchResult = await client.search({ subject: "Reminder: Pending Submissions" });
+    // Search by subject using uid:true to get UIDs (not sequence numbers)
+    const searchResult = await client.search(
+      { subject: "Reminder: Pending Submissions" },
+      { uid: true }
+    );
     const matchingUids = Array.isArray(searchResult) ? searchResult : [];
-    console.log(`[Cron Cleanup] Found ${matchingUids.length} portal reminder email(s) to delete.`);
+    console.log(`[Cron Cleanup] Found ${matchingUids.length} portal reminder email(s). UIDs: ${matchingUids.join(",") || "none"}`);
 
+    let deleted = 0;
     if (matchingUids.length > 0) {
       const uidList = matchingUids.join(",");
       await client.messageDelete(uidList, { uid: true });
-      console.log(`[Cron Cleanup] Successfully deleted ${matchingUids.length} email(s) from Sent Mail.`);
+      deleted = matchingUids.length;
+      console.log(`[Cron Cleanup] Successfully deleted ${deleted} email(s) from Sent Mail.`);
     }
 
     await client.logout();
 
     return NextResponse.json({
       ok: true,
-      deleted: matchingUids.length,
-      message: `Deleted ${matchingUids.length} reminder email(s) from Sent Mail.`,
+      deleted,
+      sentPath,
+      totalMessages,
+      matchedUids: matchingUids,
+      message: deleted > 0
+        ? `Deleted ${deleted} reminder email(s) from Sent Mail.`
+        : `No reminder emails found in Sent Mail (checked ${totalMessages} messages in "${sentPath}").`,
     });
   } catch (err) {
     console.error("[Cron Cleanup] IMAP error:", err);
