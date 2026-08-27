@@ -127,13 +127,21 @@ function ChangePasswordForm() {
               Set your password
             </h1>
             {/* Forced redirect warning */}
-            {isForced && (
-              <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800">
+            {isForced ? (
+              <div className="mt-4 mb-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800">
                 <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
                 <span>
-                  <strong>Access restricted.</strong> You must set a new password before you can access your portal.
+                  <strong>Access restricted.</strong> You must set a new password before you can access your portal. Or, you can <button type="button" onClick={() => { fetch('/api/auth/logout', { method: 'POST' }).finally(() => window.location.replace('/')) }} className="font-semibold text-amber-700 underline hover:text-amber-900">log out and return to login</button>.
                 </span>
               </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="mt-4 mb-2 text-sm font-semibold text-[var(--color-accent)] hover:underline"
+              >
+                &larr; Back to Dashboard
+              </button>
             )}
 
             <p className="mt-3 text-[15px] leading-relaxed text-[var(--color-muted)]">
