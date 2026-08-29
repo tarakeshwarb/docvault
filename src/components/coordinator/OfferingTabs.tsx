@@ -41,7 +41,7 @@ export function OfferingTabs({
           <button
             onClick={() => {
               setActiveTab("overview");
-              window.location.hash = "overview";
+              window.history.replaceState(null, "", "#overview");
             }}
             className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
               activeTab === "overview"
@@ -55,7 +55,7 @@ export function OfferingTabs({
           <button
             onClick={() => {
               setActiveTab("tracking");
-              window.location.hash = "submission-tracking";
+              window.history.replaceState(null, "", "#submission-tracking");
             }}
             className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
               activeTab === "tracking"
@@ -69,7 +69,7 @@ export function OfferingTabs({
           <button
             onClick={() => {
               setActiveTab("faculty");
-              window.location.hash = "faculty-assignments";
+              window.history.replaceState(null, "", "#faculty-assignments");
             }}
             className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
               activeTab === "faculty"
@@ -84,7 +84,7 @@ export function OfferingTabs({
             <button
               onClick={() => {
                 setActiveTab("result-analysis");
-                window.location.hash = "result-analysis";
+                window.history.replaceState(null, "", "#result-analysis");
               }}
               className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
                 activeTab === "result-analysis"

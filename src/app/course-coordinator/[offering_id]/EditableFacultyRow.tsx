@@ -11,14 +11,8 @@ type FacultyAssignment = {
   faculty_name: string;
   designation: string;
   email: string;
-  section_id: string;
   section_name: string;
-  student_count: number;
-};
-
-type Section = {
-  section_id: string;
-  section_name: string;
+  batch: number;
 };
 
 type Faculty = {
@@ -30,14 +24,12 @@ type Faculty = {
 
 export function EditableFacultyRow({
   fa,
-  allSections,
   allFaculty,
   submittedCount,
   pendingCount,
   offering_id,
 }: {
   fa: FacultyAssignment;
-  allSections: Section[];
   allFaculty: Faculty[];
   submittedCount: number;
   pendingCount: number;
@@ -45,8 +37,8 @@ export function EditableFacultyRow({
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [facultyId, setFacultyId] = useState(String(fa.faculty_id));
-  const [sectionId, setSectionId] = useState(fa.section_id);
-  const [studentCount, setStudentCount] = useState(String(fa.student_count));
+  const [sectionName, setSectionName] = useState(fa.section_name);
+  const [batch, setBatch] = useState(String(fa.batch));
   const [loading, setLoading] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
@@ -57,8 +49,8 @@ export function EditableFacultyRow({
         id: fa.id,
         offering_id,
         faculty_id: parseInt(facultyId) || fa.faculty_id,
-        section_id: sectionId,
-        student_count: parseInt(studentCount) || 0,
+        section_name: sectionName,
+        batch: parseInt(batch) || fa.batch,
       });
       setIsEditing(false);
     } catch (err) {
@@ -96,25 +88,21 @@ export function EditableFacultyRow({
           </select>
         </td>
         <td className="px-5 py-3">
-          <select
-            value={sectionId}
-            onChange={(e) => setSectionId(e.target.value)}
+          <input
+            type="text"
+            value={sectionName}
+            onChange={(e) => setSectionName(e.target.value)}
+            placeholder="e.g. A, B, TP101"
             className="w-full max-w-[120px] rounded border border-gray-300 px-2 py-1 text-sm outline-none focus:border-[var(--color-accent)] bg-white"
-          >
-            {allSections.map((sec) => (
-              <option key={sec.section_id} value={sec.section_id}>
-                Section/Classroom {sec.section_name}
-              </option>
-            ))}
-          </select>
+          />
         </td>
         <td className="px-5 py-3 text-center">
           <input
             type="number"
             min="1"
-            value={studentCount}
-            onChange={(e) => setStudentCount(e.target.value)}
-            className="w-20 text-center rounded border border-gray-300 px-2 py-1 text-sm outline-none focus:border-[var(--color-accent)]"
+            value={batch}
+            onChange={(e) => setBatch(e.target.value)}
+            className="w-16 text-center rounded border border-gray-300 px-2 py-1 text-sm outline-none focus:border-[var(--color-accent)]"
           />
         </td>
         <td className="px-5 py-3 text-center text-gray-400 text-xs" colSpan={2}>
@@ -133,8 +121,8 @@ export function EditableFacultyRow({
             <button
               onClick={() => {
                 setFacultyId(String(fa.faculty_id));
-                setSectionId(fa.section_id);
-                setStudentCount(String(fa.student_count));
+                setSectionName(fa.section_name);
+                setBatch(String(fa.batch));
                 setIsEditing(false);
               }}
               disabled={loading}
@@ -160,7 +148,7 @@ export function EditableFacultyRow({
           Section/Classroom {fa.section_name}
         </span>
       </td>
-      <td className="px-5 py-3 text-center text-gray-600">{fa.student_count}</td>
+      <td className="px-5 py-3 text-center text-gray-600">{fa.batch}</td>
       <td className="px-5 py-3 text-center">
         <span className="text-[var(--color-accent)] font-semibold">{submittedCount}</span>
       </td>
@@ -174,8 +162,8 @@ export function EditableFacultyRow({
           <button
             onClick={() => {
               setFacultyId(String(fa.faculty_id));
-              setSectionId(fa.section_id);
-              setStudentCount(String(fa.student_count));
+              setSectionName(fa.section_name);
+              setBatch(String(fa.batch));
               setIsEditing(true);
             }}
             disabled={loading}

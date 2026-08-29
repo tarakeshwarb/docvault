@@ -10,7 +10,6 @@ import {
   getCourseComponents,
   getSubmissionStatus,
   getComponentMasters,
-  getAllSections,
   getAllFacultyForAssignment,
   getCoordinatorOfferings,
   getCourseBroadcasts,
@@ -79,7 +78,6 @@ export default async function OfferingDetailPage({
     components,
     submissions,
     componentMasters,
-    allSections,
     allFaculty,
     broadcasts,
   ] =
@@ -89,7 +87,6 @@ export default async function OfferingDetailPage({
       getCourseComponents(offering_id),
       getSubmissionStatus(offering_id),
       getComponentMasters(),
-      getAllSections(),
       getAllFacultyForAssignment(),
       getCourseBroadcasts(offering_id),
     ]);
@@ -241,7 +238,6 @@ export default async function OfferingDetailPage({
                 <AddFacultyForm
                   offering_id={offering_id}
                   allFaculty={allFaculty}
-                  allSections={allSections}
                 />
               </div>
 
@@ -256,7 +252,7 @@ export default async function OfferingDetailPage({
                       <tr>
                         <th className="px-5 py-3">Faculty</th>
                         <th className="px-5 py-3">Section/Classroom</th>
-                        <th className="px-5 py-3 text-center">Students</th>
+                        <th className="px-5 py-3 text-center">Batch</th>
                         <th className="px-5 py-3 text-center">Submitted</th>
                         <th className="px-5 py-3 text-center">Pending</th>
                         <th className="px-5 py-3"></th>

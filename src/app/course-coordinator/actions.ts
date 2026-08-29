@@ -22,9 +22,8 @@ export type FacultyAssignment = {
   faculty_name: string;
   designation: string;
   email: string;
-  section_id: string;
   section_name: string;
-  student_count: number;
+  batch: number;
   last_reminder_sent_at: string | null;
   daily_reminder_count: number;
 };
@@ -137,16 +136,14 @@ export async function getFacultyAssignments(offering_id: string): Promise<Facult
       f.faculty_name,
       f.designation,
       f.email,
-      fa.section_id,
-      sec.section_name,
-      fa.student_count,
+      fa.section_name,
+      fa.batch,
       fa.last_reminder_sent_at,
       fa.daily_reminder_count
     FROM public.faculty_assignment fa
     JOIN public.faculty f ON fa.faculty_id = f.faculty_id
-    JOIN public.section_master sec ON fa.section_id = sec.section_id
     WHERE fa.offering_id = $1
-    ORDER BY sec.section_name, f.faculty_name
+    ORDER BY fa.section_name, f.faculty_name
   `, [offering_id]);
 }
 
@@ -172,13 +169,9 @@ export async function getComponentMasters(): Promise<ComponentMaster[]> {
   );
 }
 
-export async function getAllSections(): Promise<Section[]> {
-  return queryDb<Section>("SELECT * FROM public.section_master ORDER BY section_name");
-}
-
 export async function getAllFacultyForAssignment() {
   return queryDb<{ faculty_id: number; faculty_name: string; designation: string; role: string; email: string }>(
-    "SELECT faculty_id, faculty_name, designation, role, email FROM public.faculty WHERE role != 'admin' ORDER BY faculty_name"
+    "SELECT faculty_id, faculty_name, designation, role, email FROM public.faculty ORDER BY faculty_name"
   );
 }
 
@@ -188,7 +181,7 @@ export async function getSubmissionStatus(offering_id: string): Promise<Submissi
       s.submission_id,
       s.faculty_assignment_id,
       f.faculty_name,
-      sec.section_name,
+      fa.section_name,
       s.course_component_id,
       cm.component_name,
       s.status,
@@ -197,11 +190,10 @@ export async function getSubmissionStatus(offering_id: string): Promise<Submissi
     FROM public.submission s
     JOIN public.faculty_assignment fa ON s.faculty_assignment_id = fa.id
     JOIN public.faculty f ON fa.faculty_id = f.faculty_id
-    JOIN public.section_master sec ON fa.section_id = sec.section_id
     JOIN public.course_component cc ON s.course_component_id = cc.id
     JOIN public.component_master cm ON cc.component_id = cm.component_id
     WHERE fa.offering_id = $1
-    ORDER BY sec.section_name, f.faculty_name, cm.component_name
+    ORDER BY fa.section_name, f.faculty_name, cm.component_name
   `, [offering_id]);
 }
 
@@ -242,15 +234,15 @@ async function getOfferingSummary(offering_id: string): Promise<OfferingSummary 
 export async function addFacultyAssignment(data: {
   offering_id: string;
   faculty_id: number;
-  section_id: string;
-  student_count: number;
+  section_name: string;
+  batch: number;
 }) {
   const rows = await queryDb<{ id: string }>(
-    `INSERT INTO public.faculty_assignment (offering_id, faculty_id, section_id, student_count)
+    `INSERT INTO public.faculty_assignment (offering_id, faculty_id, section_name, batch)
      VALUES ($1, $2, $3, $4)
-     ON CONFLICT (offering_id, faculty_id, section_id) DO UPDATE SET student_count = $4
+     ON CONFLICT (offering_id, faculty_id, section_name) DO UPDATE SET batch = $4
      RETURNING id`,
-    [data.offering_id, data.faculty_id, data.section_id, data.student_count]
+    [data.offering_id, data.faculty_id, data.section_name, data.batch]
   );
 
   const assignment_id = rows[0]?.id;
@@ -273,14 +265,14 @@ export async function updateFacultyAssignment(data: {
   id: string;
   offering_id: string;
   faculty_id: number;
-  section_id: string;
-  student_count: number;
+  section_name: string;
+  batch: number;
 }) {
   await executeDb(
     `UPDATE public.faculty_assignment
-     SET section_id = $1, student_count = $2, faculty_id = $3
+     SET section_name = $1, batch = $2, faculty_id = $3
      WHERE id = $4 AND offering_id = $5`,
-    [data.section_id, data.student_count, data.faculty_id, data.id, data.offering_id]
+    [data.section_name, data.batch, data.faculty_id, data.id, data.offering_id]
   );
   revalidatePath(`/course-coordinator/${data.offering_id}`);
   revalidatePath(`/secondary-coordinator/${data.offering_id}`);
@@ -363,20 +355,6 @@ export async function deleteCourseComponent(data: {
   revalidatePath(`/faculty`);
 }
 
-export async function createSection(section_name: string): Promise<string> {
-  const rows = await queryDb<{ section_id: string }>(
-    `INSERT INTO public.section_master (section_name) VALUES ($1)
-     ON CONFLICT DO NOTHING RETURNING section_id`,
-    [section_name]
-  );
-  if (rows[0]) return rows[0].section_id;
-  const existing = await queryDb<{ section_id: string }>(
-    "SELECT section_id FROM public.section_master WHERE section_name = $1",
-    [section_name]
-  );
-  return existing[0]!.section_id;
-}
-
 export async function createCustomComponent(component_name: string): Promise<string> {
   const rows = await queryDb<{ component_id: string }>(
     `INSERT INTO public.component_master (component_name) VALUES ($1)
@@ -394,29 +372,29 @@ export async function createCustomComponent(component_name: string): Promise<str
 export async function addFacultyAssignments(data: {
   offering_id: string;
   faculty_id: number;
-  section_ids: string[];
-  student_count: number;
+  section_names: string[];
+  batch: number;
 }) {
-  for (const section_id of data.section_ids) {
+  for (const section_name of data.section_names) {
     await addFacultyAssignment({
       offering_id: data.offering_id,
       faculty_id: data.faculty_id,
-      section_id,
-      student_count: data.student_count,
+      section_name: section_name.trim(),
+      batch: data.batch,
     });
   }
 }
 
 export async function bulkAddFacultyAssignments(data: {
   offering_id: string;
-  assignments: { faculty_id: number; section_id: string; student_count: number }[];
+  assignments: { faculty_id: number; section_name: string; batch: number }[];
 }) {
   for (const a of data.assignments) {
     await addFacultyAssignment({
       offering_id: data.offering_id,
       faculty_id: a.faculty_id,
-      section_id: a.section_id,
-      student_count: a.student_count,
+      section_name: a.section_name,
+      batch: a.batch,
     });
   }
 }
@@ -425,9 +403,8 @@ export type ExcelParsedResult = {
   faculty_id: number;
   faculty_name: string;
   email: string;
-  section_id?: string;
   section_name?: string;
-  student_count?: number;
+  batch?: number;
   error?: string;
 };
 
@@ -443,16 +420,16 @@ export async function parseAssignmentExcel(formData: FormData): Promise<ExcelPar
 
   const results: ExcelParsedResult[] = [];
   const allFaculty = await getAllFacultyForAssignment();
-  const allSections = await getAllSections();
 
   worksheet.eachRow((row, rowNumber) => {
     if (rowNumber === 1) return; // Skip header
 
-    // Expecting: S.No (1), Faculty ID (2), Faculty Name (3), Email (4), Section (5)
+    // Expecting: S.No (1), Faculty ID (2), Email (3), Section (4), Batch (5)
     const rawId = row.getCell(2).text?.trim();
-    const rawName = row.getCell(3).text?.trim();
-    const rawEmail = row.getCell(4).text?.trim();
-    const rawSection = row.getCell(5).text?.trim();
+    const rawEmail = row.getCell(3).text?.trim();
+    const rawSection = row.getCell(4).text?.trim();
+    const rawBatch = row.getCell(5).text?.trim();
+    const batch = rawBatch ? parseInt(rawBatch) || 1 : 1;
 
     if (!rawEmail && !rawId) return;
 
@@ -461,33 +438,31 @@ export async function parseAssignmentExcel(formData: FormData): Promise<ExcelPar
       (rawEmail && f.email?.toLowerCase() === rawEmail.toLowerCase())
     );
 
-    let sectionMatch = undefined;
-    if (rawSection) {
-      sectionMatch = allSections.find(s => s.section_name.toLowerCase() === rawSection.toLowerCase());
-    }
-
-    if (facultyMatch && sectionMatch) {
+    if (facultyMatch && rawSection) {
       results.push({
         faculty_id: facultyMatch.faculty_id,
         faculty_name: facultyMatch.faculty_name,
         email: facultyMatch.email,
-        section_id: sectionMatch.section_id,
-        section_name: sectionMatch.section_name,
+        section_name: rawSection,
+        batch,
       });
     } else if (!facultyMatch) {
       results.push({
         faculty_id: parseInt(rawId) || 0,
-        faculty_name: rawName || "Unknown",
+        faculty_name: "Unknown",
         email: rawEmail || "",
+        section_name: rawSection || "",
+        batch,
         error: "Faculty not found in system.",
       });
-    } else if (!sectionMatch) {
+    } else if (!rawSection) {
       results.push({
         faculty_id: facultyMatch.faculty_id,
         faculty_name: facultyMatch.faculty_name,
         email: facultyMatch.email,
-        section_name: rawSection || "None",
-        error: "Section not found.",
+        section_name: "None",
+        batch,
+        error: "Section not provided.",
       });
     }
   });
@@ -563,7 +538,7 @@ export async function generateConsolidatedReport(formData: FormData) {
 
   drawLine("Sections", { bold: true, size: 14 });
   assignments.slice(0, 12).forEach((assignment) => {
-    drawLine(`Section ${assignment.section_name} - ${assignment.faculty_name} (${assignment.student_count} students)`, {
+    drawLine(`Section ${assignment.section_name} - ${assignment.faculty_name}`, {
       size: 10.5,
     });
   });

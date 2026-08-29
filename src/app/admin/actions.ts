@@ -45,7 +45,6 @@ export type CourseOffering = {
     faculty_id: number;
     faculty_name: string;
   }>;
-  batch: number | null;
 };
 
 export async function getCourses(): Promise<Course[]> {
@@ -124,13 +123,11 @@ export async function getCourseOfferings(): Promise<CourseOffering[]> {
       course_name: string;
       semester_name: string;
       year_name: string;
-      batch: number | null;
     }>(`
       SELECT
         co.offering_id,
         co.course_id,
         co.semester_id,
-        co.batch,
         cm.course_code,
         cm.course_name,
         sm.semester_name,
@@ -321,7 +318,6 @@ export async function bulkAddCourses(
 export async function createCourseOffering(data: {
   course_id: string;
   semester_id: string;
-  batch?: number | null;
   primary_coordinator_id?: number | null;
   secondary_coordinator_ids?: number[];
   audit_professor_ids?: number[];
@@ -329,8 +325,8 @@ export async function createCourseOffering(data: {
   let offering_id: string;
   try {
     const rows = await queryDb<{ offering_id: string }>(
-      "INSERT INTO public.course_offering (course_id, semester_id, batch) VALUES ($1, $2, $3) RETURNING offering_id",
-      [data.course_id, data.semester_id, data.batch || null]
+      "INSERT INTO public.course_offering (course_id, semester_id) VALUES ($1, $2) RETURNING offering_id",
+      [data.course_id, data.semester_id]
     );
     offering_id = rows[0]?.offering_id;
     if (!offering_id) throw new Error("Failed to create course offering.");
@@ -461,13 +457,11 @@ export async function getCourseOfferingById(offering_id: string): Promise<Course
       course_name: string;
       semester_name: string;
       year_name: string;
-      batch: number | null;
     }>(`
       SELECT
         co.offering_id,
         co.course_id,
         co.semester_id,
-        co.batch,
         cm.course_code,
         cm.course_name,
         sm.semester_name,
@@ -602,7 +596,6 @@ export type OfferingExcelRow = {
   course_code: string;
   semester_name: string;
   year_name: string;
-  batch: number | null;
   primary_coordinator_id: number | null;
   secondary_coordinator_ids: number[];
   audit_professor_ids: number[];
@@ -612,7 +605,7 @@ export type OfferingExcelRow = {
   semester_id?: string;
 };
 
-/** Parse an uploaded offerings Excel: columns Course Code | Semester Name | Academic Year | Batch | Primary Coordinator ID | Secondary Coordinator IDs | Audit Professor IDs */
+/** Parse an uploaded offerings Excel: columns Course Code | Semester Name | Academic Year | Primary Coordinator ID | Secondary Coordinator IDs | Audit Professor IDs */
 export async function parseOfferingsExcel(formData: FormData): Promise<OfferingExcelRow[]> {
   const file = formData.get("file") as File;
   if (!file) throw new Error("No file uploaded");
@@ -641,10 +634,9 @@ export async function parseOfferingsExcel(formData: FormData): Promise<OfferingE
     const courseCode = row.getCell(1).text?.trim();
     const semName = row.getCell(2).text?.trim();
     const yearName = row.getCell(3).text?.trim();
-    const batchRaw = row.getCell(4).text?.trim();
-    const primaryIdRaw = row.getCell(5).text?.trim();
-    const secondaryIdsRaw = row.getCell(6).text?.trim();
-    const auditIdsRaw = row.getCell(7).text?.trim();
+    const primaryIdRaw = row.getCell(4).text?.trim();
+    const secondaryIdsRaw = row.getCell(5).text?.trim();
+    const auditIdsRaw = row.getCell(6).text?.trim();
 
     if (!courseCode && !semName && !yearName) return;
 
@@ -655,9 +647,6 @@ export async function parseOfferingsExcel(formData: FormData): Promise<OfferingE
     
     if (!course_id) error = `Course code '${courseCode}' not found.`;
     else if (!semester_id) error = `Semester '${semName}' in year '${yearName}' not found.`;
-
-    const batch = batchRaw ? parseInt(batchRaw, 10) : null;
-    if (batchRaw && isNaN(batch as number)) error = "Invalid batch number.";
 
     const primary_coordinator_id = primaryIdRaw ? parseInt(primaryIdRaw, 10) : null;
     if (primaryIdRaw && isNaN(primary_coordinator_id as number)) error = "Invalid Primary Coordinator ID.";
@@ -682,7 +671,6 @@ export async function parseOfferingsExcel(formData: FormData): Promise<OfferingE
       course_code: courseCode || "",
       semester_name: semName || "",
       year_name: yearName || "",
-      batch,
       primary_coordinator_id,
       secondary_coordinator_ids,
       audit_professor_ids,
@@ -704,8 +692,8 @@ export async function bulkAddOfferings(rows: OfferingExcelRow[]): Promise<{ inse
     let offering_id: string;
     try {
       const res = await queryDb<{ offering_id: string }>(
-        "INSERT INTO public.course_offering (course_id, semester_id, batch) VALUES ($1, $2, $3) RETURNING offering_id",
-        [r.course_id, r.semester_id, r.batch]
+        "INSERT INTO public.course_offering (course_id, semester_id) VALUES ($1, $2) RETURNING offering_id",
+        [r.course_id, r.semester_id]
       );
       offering_id = res[0]?.offering_id;
       if (!offering_id) continue;

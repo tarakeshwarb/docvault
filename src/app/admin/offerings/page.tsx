@@ -43,7 +43,6 @@ export default async function OfferingsPage() {
               <th className="px-6 py-4">Course</th>
               <th className="px-6 py-4">Semester</th>
               <th className="px-6 py-4">Academic Year</th>
-              <th className="px-6 py-4">Batch</th>
               <th className="px-6 py-4">Coordinators</th>
               <th className="px-6 py-4">Audit Professors</th>
               <th className="px-6 py-4 text-right">Actions</th>
@@ -52,7 +51,7 @@ export default async function OfferingsPage() {
           <tbody className="divide-y divide-black/5">
             {offerings.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-12 text-center">
+                <td colSpan={6} className="px-6 py-12 text-center">
                   <Link2 className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                   <p className="text-gray-500">
                     No course offerings yet. Create one to get started.
@@ -68,7 +67,6 @@ export default async function OfferingsPage() {
                   </td>
                   <td className="px-6 py-4 text-gray-600">{o.semester_name}</td>
                   <td className="px-6 py-4 text-gray-600">{o.year_name}</td>
-                  <td className="px-6 py-4 text-gray-600">{o.batch ?? "—"}</td>
                   <td className="px-6 py-4">
                     <div className="space-y-1">
                       {o.primary_coordinator.faculty_name ? (

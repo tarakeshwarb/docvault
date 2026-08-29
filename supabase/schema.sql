@@ -47,11 +47,7 @@ create table if not exists public.semester_master (
   created_at timestamptz not null default now()
 );
 
-create table if not exists public.section_master (
-  section_id uuid primary key default gen_random_uuid(),
-  section_name text not null, -- e.g., "A", "B", "C"
-  created_at timestamptz not null default now()
-);
+
 
 create table if not exists public.component_master (
   component_id uuid primary key default gen_random_uuid(),
@@ -107,10 +103,10 @@ create table if not exists public.faculty_assignment (
   id uuid primary key default gen_random_uuid(),
   offering_id uuid not null references public.course_offering(offering_id) on delete cascade,
   faculty_id bigint not null references public.faculty(faculty_id) on delete cascade,
-  section_id uuid not null references public.section_master(section_id) on delete cascade,
+  section_name text not null,
   student_count integer default 0,
   created_at timestamptz not null default now(),
-  unique (offering_id, faculty_id, section_id)
+  unique (offering_id, faculty_id, section_name)
 );
 
 create table if not exists public.course_component (

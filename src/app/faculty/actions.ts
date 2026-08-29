@@ -37,7 +37,7 @@ export async function getFacultyCourses(faculty_id: number): Promise<FacultyCour
       fa.offering_id,
       cm.course_code,
       cm.course_name,
-      sec.section_name,
+      fa.section_name,
       sm.semester_name,
       ay.year_name,
       fa.student_count
@@ -46,7 +46,6 @@ export async function getFacultyCourses(faculty_id: number): Promise<FacultyCour
     JOIN public.course_master cm ON co.course_id = cm.course_id
     JOIN public.semester_master sm ON co.semester_id = sm.semester_id
     JOIN public.academic_year ay ON sm.year_id = ay.year_id
-    JOIN public.section_master sec ON fa.section_id = sec.section_id
     WHERE fa.faculty_id = $1 AND sm.is_active = true
     ORDER BY ay.start_date DESC, sm.semester_name, cm.course_code
   `, [faculty_id]);
@@ -66,7 +65,7 @@ export async function getFacultySubmissions(faculty_id: number): Promise<Pending
       fa.offering_id,
       cm.course_name,
       cm.course_code,
-      sec.section_name
+      fa.section_name
     FROM public.submission s
     JOIN public.faculty_assignment fa ON s.faculty_assignment_id = fa.id
     JOIN public.course_component cc ON s.course_component_id = cc.id
@@ -74,9 +73,8 @@ export async function getFacultySubmissions(faculty_id: number): Promise<Pending
     JOIN public.course_offering co ON fa.offering_id = co.offering_id
     JOIN public.course_master cm ON co.course_id = cm.course_id
     JOIN public.semester_master sm ON co.semester_id = sm.semester_id
-    JOIN public.section_master sec ON fa.section_id = sec.section_id
     WHERE fa.faculty_id = $1 AND sm.is_active = true
-    ORDER BY cm.course_code, sec.section_name, cmp.component_name
+    ORDER BY cm.course_code, fa.section_name, cmp.component_name
   `, [faculty_id]);
 }
 

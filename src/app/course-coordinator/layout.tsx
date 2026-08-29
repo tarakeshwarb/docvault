@@ -8,7 +8,6 @@ import { type SidebarItem } from "@/components/layout/Sidebar";
 
 const coordinatorSidebarItems: SidebarItem[] = [
   { label: "My Courses", href: "/course-coordinator", icon: LayoutDashboard, variant: "coordinator" },
-  { label: "Faculty Assign", href: "#faculty-assignments", icon: Users },
   { label: "Documents", href: "#document-requirements", icon: ClipboardList },
 ];
 

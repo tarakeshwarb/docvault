@@ -27,7 +27,6 @@ export function NewOfferingForm({
   // Manual Form State
   const [courseId, setCourseId] = useState("");
   const [semesterId, setSemesterId] = useState("");
-  const [batch, setBatch] = useState("");
   const [primaryCoordinatorId, setPrimaryCoordinatorId] = useState("");
   const [secondaryCoordinatorRows, setSecondaryCoordinatorRows] = useState<{id: string}[]>([{id: ""}]);
   const [auditProfessorRows, setAuditProfessorRows] = useState<{id: string}[]>([{id: ""}]);
@@ -104,7 +103,6 @@ export function NewOfferingForm({
       await createCourseOffering({
         course_id: courseId,
         semester_id: semesterId,
-        batch: batch ? parseInt(batch, 10) : null,
         primary_coordinator_id: primaryCoordinatorId ? parseInt(primaryCoordinatorId) : null,
         secondary_coordinator_ids: secondaryCoordinatorRows.filter(r => r.id).map(r => parseInt(r.id)),
         audit_professor_ids: auditProfessorRows.filter(r => r.id).map(r => parseInt(r.id)),
@@ -152,7 +150,6 @@ export function NewOfferingForm({
 
     if (!course) error = `Course code '${row.course_code}' not found.`;
     else if (!semester) error = `Semester '${row.semester_name}' in year '${row.year_name}' not found.`;
-    else if (row.batch !== null && isNaN(row.batch as number)) error = "Invalid batch number.";
     else if (row.primary_coordinator_id !== null && isNaN(row.primary_coordinator_id as number)) error = "Invalid Primary Coordinator ID.";
     else if (row.primary_coordinator_id && !coordinators.find(f => String(f.faculty_id) === String(row.primary_coordinator_id))) error = `Primary coordinator ${row.primary_coordinator_id} not found.`;
 
@@ -308,7 +305,7 @@ export function NewOfferingForm({
               </div>
 
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-4">
-                <div className="w-full sm:w-2/3">
+                <div className="w-full">
                   <label className="block text-xs font-medium text-[var(--color-ink)] mb-2">
                     Select Semester
                   </label>
@@ -317,18 +314,6 @@ export function NewOfferingForm({
                     value={semesterId}
                     onChange={setSemesterId}
                     placeholder="Search semester..."
-                  />
-                </div>
-                <div className="w-full sm:w-1/3">
-                  <label className="block text-xs font-medium text-[var(--color-ink)] mb-2">
-                    Batch <span className="text-gray-400 font-normal">(optional)</span>
-                  </label>
-                  <input
-                    type="number"
-                    value={batch}
-                    onChange={(e) => setBatch(e.target.value)}
-                    placeholder="e.g. 1"
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:border-[var(--color-accent)] h-10"
                   />
                 </div>
               </div>
@@ -444,8 +429,6 @@ export function NewOfferingForm({
                       <div className="w-px h-6 bg-gray-200"></div>
                       <div>Academic<br/>Year</div>
                       <div className="w-px h-6 bg-gray-200"></div>
-                      <div>Batch</div>
-                      <div className="w-px h-6 bg-gray-200"></div>
                       <div>Primary<br/>Coord ID</div>
                       <div className="w-px h-6 bg-gray-200"></div>
                       <div>Secondary<br/>Coord IDs</div>
@@ -481,7 +464,6 @@ export function NewOfferingForm({
                           <th className="px-3 py-2">Code</th>
                           <th className="px-3 py-2">Semester</th>
                           <th className="px-3 py-2">Year</th>
-                          <th className="px-3 py-2">Batch</th>
                           <th className="px-3 py-2">Primary</th>
                           <th className="px-3 py-2">Secondary</th>
                           <th className="px-3 py-2">Audit</th>
@@ -513,14 +495,6 @@ export function NewOfferingForm({
                                 value={r.year_name || ""}
                                 onChange={(e) => updateRow(i, "year_name", e.target.value)}
                                 className="w-full bg-transparent border border-transparent hover:border-gray-300 focus:border-[var(--color-accent)] focus:bg-white px-2 py-1 rounded text-xs outline-none transition-all"
-                              />
-                            </td>
-                            <td className="px-1 py-1">
-                              <input
-                                type="number"
-                                value={r.batch ?? ""}
-                                onChange={(e) => updateRow(i, "batch", e.target.value ? parseInt(e.target.value, 10) : null)}
-                                className="w-16 bg-transparent border border-transparent hover:border-gray-300 focus:border-[var(--color-accent)] focus:bg-white px-2 py-1 rounded text-xs outline-none transition-all"
                               />
                             </td>
                             <td className="px-1 py-1">
