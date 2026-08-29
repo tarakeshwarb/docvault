@@ -113,27 +113,6 @@ export default async function LoginPage() {
             ))}
           </div>
 
-          {/* Trust bar */}
-          <div className="mt-16 border-t border-white/10 pt-6">
-            <p className="text-xs font-medium uppercase tracking-widest text-white/40">
-              Trusted by SRM departments
-            </p>
-            <div className="mt-3 flex items-center gap-3">
-              <div className="flex -space-x-2">
-                {[...Array(4)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#0b1f47] bg-white/15 text-[10px] font-bold text-white"
-                  >
-                    {["CS", "IT", "EC", "ME"][i]}
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-white/50">
-                & more departments across the university
-              </p>
-            </div>
-          </div>
         </div>
       </div>
     </div>

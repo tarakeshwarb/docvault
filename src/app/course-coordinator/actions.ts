@@ -741,7 +741,7 @@ if (!assignment) throw new Error("Faculty assignment not found");
         ${componentNames}
       </div>
       <br/>
-      <p>You can upload these documents by logging into the Faculty Portal.</p>
+      <p>You can upload these documents by logging into the Faculty Portal at <a href="https://docvault-rho.vercel.app/" style="color: #0c4da2; text-decoration: underline;">https://docvault-rho.vercel.app/</a>.</p>
       <p>Thank you,</p>
       <p>Course Coordinator Team</p>
     </div>
