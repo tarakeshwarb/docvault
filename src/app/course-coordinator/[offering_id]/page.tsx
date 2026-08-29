@@ -269,7 +269,6 @@ export default async function OfferingDetailPage({
                           <EditableFacultyRow
                             key={fa.id}
                             fa={fa}
-                            allSections={allSections}
                             allFaculty={allFaculty}
                             submittedCount={submittedCount}
                             pendingCount={pendingCount}

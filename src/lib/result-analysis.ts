@@ -228,7 +228,7 @@ export async function generateResultAnalysisXlsx(
   inputs: ResultAnalysisInput[]
 ): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
-  wb.creator = "CourseFlow / DocVault";
+  wb.creator = "DocVault";
   wb.created = new Date();
   const specs: ChartSpec[] = [];
   inputs.forEach((input, i) => {
@@ -262,7 +262,7 @@ export async function generateResultAnalysisRegisterXlsx(
   sections: ResultAnalysisInput[]
 ): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
-  wb.creator = "CourseFlow / DocVault";
+  wb.creator = "DocVault";
   wb.created = new Date();
   const ws = wb.addWorksheet(safeSheetName(header.component), { views: [{ showGridLines: false }] });
   ws.columns = [
@@ -443,7 +443,7 @@ export async function generateConsolidatedResultAnalysisXlsx(
   componentsSections: Record<string, ResultAnalysisInput[]>
 ): Promise<any> {
   const wb = new ExcelJS.Workbook();
-  wb.creator = "CourseFlow / DocVault";
+  wb.creator = "DocVault";
   wb.created = new Date();
 
   const center = { horizontal: "center" as const, vertical: "middle" as const };

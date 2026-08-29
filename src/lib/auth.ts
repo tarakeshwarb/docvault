@@ -10,8 +10,8 @@ export type FacultySession = {
   must_change_password?: boolean;
 };
 
-const SESSION_COOKIE_NAME = "courseflow_session";
-const SESSION_SECRET = process.env.AUTH_SECRET ?? "courseflow-dev-secret";
+const SESSION_COOKIE_NAME = "docvault_session";
+const SESSION_SECRET = process.env.AUTH_SECRET ?? "docvault-dev-secret";
 
 function signPayload(payload: string): string {
   return createHmac("sha256", SESSION_SECRET).update(payload).digest("base64url");

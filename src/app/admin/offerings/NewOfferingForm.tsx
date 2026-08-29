@@ -221,7 +221,6 @@ export function NewOfferingForm({
     // Reset manual
     setCourseId("");
     setSemesterId("");
-    setBatch("");
     setPrimaryCoordinatorId("");
     setSecondaryCoordinatorRows([{id: ""}]);
     setAuditProfessorRows([{id: ""}]);

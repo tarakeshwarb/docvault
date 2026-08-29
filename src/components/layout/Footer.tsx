@@ -17,7 +17,7 @@ export default function Footer() {
               <div className="h-8 w-[1px] bg-black/10" />
               <div className="space-y-1">
                 <p className="text-sm font-bold text-[var(--color-ink)] tracking-tight">
-                  CourseFlow
+                  DocVault
                 </p>
                 <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-[var(--color-accent)]">
                   Academic Portal
@@ -55,7 +55,7 @@ export default function Footer() {
 
         <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-black/5 pt-8 sm:flex-row">
           <p className="text-xs text-[var(--color-muted)]">
-            &copy; {new Date().getFullYear()} CourseFlow Platform. All rights reserved.
+            &copy; {new Date().getFullYear()} DocVault Platform. All rights reserved.
           </p>
           <div className="flex items-center gap-3">
             <span className="flex h-2 w-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></span>

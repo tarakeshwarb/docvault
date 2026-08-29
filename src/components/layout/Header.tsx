@@ -10,11 +10,11 @@ export default async function Header() {
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-2 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-3 lg:px-2">
         <Link href="/" className="group flex items-center gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#0c4da2] text-sm font-semibold text-white shadow-[0_8px_20px_rgba(12,77,162,0.22)] sm:h-11 sm:w-11">
-            CF
+            DV
           </span>
           <div>
             <p className="text-base font-semibold tracking-tight text-[var(--color-ink)] sm:text-lg">
-              CourseFlow
+              DocVault
             </p>
             <p className="text-[9px] uppercase tracking-[0.2em] text-[var(--color-muted)] sm:text-[10px] sm:tracking-[0.3em]">
               Academic Operations Hub

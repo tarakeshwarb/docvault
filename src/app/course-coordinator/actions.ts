@@ -514,7 +514,7 @@ export async function generateConsolidatedReport(formData: FormData) {
     y -= 8;
   };
 
-  drawLine("CourseFlow Academic Report", { bold: true, size: 20 });
+  drawLine("DocVault Academic Report", { bold: true, size: 20 });
   drawLine(`${summary.course_code} - ${summary.course_name}`, { bold: true, size: 15 });
   drawLine(`${summary.semester_name} Semester | ${summary.year_name}`);
   drawLine(`Report type: ${report_type.replace(/_/g, " ")}`);

@@ -183,7 +183,6 @@ export default async function FacultyCoursePage({
                             course_code: course.course_code,
                           }}
                           baseUrl={process.env.R2_PUBLIC_BASE_URL!}
-                          currentFacultyId={session.faculty_id}
                         />
                       ))}
                     </div>

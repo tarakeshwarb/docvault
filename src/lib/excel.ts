@@ -22,7 +22,7 @@ export type ExcelPayload = {
   orientation?: "portrait" | "landscape";
 };
 
-const BRAND = "FF15519E"; // SRM / CourseFlow accent
+const BRAND = "FF15519E"; // SRM / DocVault accent
 const BRAND_SOFT = "FFEAF1FA";
 const INK = "FF1C2D45";
 
@@ -43,7 +43,7 @@ export async function buildXlsxBuffer(payload: ExcelPayload): Promise<Buffer> {
   } = payload;
 
   const wb = new ExcelJS.Workbook();
-  wb.creator = "CourseFlow — SRM Academic Portal";
+  wb.creator = "DocVault — SRM Academic Portal";
   wb.created = new Date();
 
   const ws = wb.addWorksheet(sheetName.slice(0, 31), {
@@ -63,7 +63,7 @@ export async function buildXlsxBuffer(payload: ExcelPayload): Promise<Buffer> {
       },
     },
     headerFooter: {
-      oddFooter: "&LCourseFlow · SRM Academic Portal&RPage &P of &N",
+      oddFooter: "&LDocVault · SRM Academic Portal&RPage &P of &N",
       oddHeader: `&L&"-,Bold"${title.replace(/&/g, "&&")}`,
     },
   });

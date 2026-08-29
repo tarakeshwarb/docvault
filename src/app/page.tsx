@@ -26,7 +26,7 @@ export default async function LoginPage() {
           />
           <div className="h-8 w-px bg-black/10" />
           <div className="leading-tight">
-            <p className="text-sm font-bold tracking-tight">CourseFlow</p>
+            <p className="text-sm font-bold tracking-tight">DocVault</p>
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--color-accent)]">
               Academic Portal
             </p>

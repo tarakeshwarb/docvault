@@ -44,12 +44,11 @@ type SectionRow = {
 
 const SECTION_SELECT = `
   fa.id AS faculty_assignment_id,
-  fa.student_count,
   f.faculty_name,
   f.designation,
   cm.course_code,
   cm.course_name,
-  sec.section_name,
+  fa.section_name,
   sm.semester_name,
   ay.year_name,
   cmp.component_name,
@@ -64,7 +63,6 @@ const SECTION_JOINS = `
   JOIN public.course_master cm ON co.course_id = cm.course_id
   JOIN public.semester_master sm ON co.semester_id = sm.semester_id
   JOIN public.academic_year ay ON sm.year_id = ay.year_id
-  JOIN public.section_master sec ON fa.section_id = sec.section_id
   JOIN public.faculty f ON fa.faculty_id = f.faculty_id
   JOIN public.component_master cmp ON cmp.component_id = $2
   LEFT JOIN public.result_analysis ra
@@ -225,7 +223,7 @@ export async function buildConsolidatedInputs(
   const rows = await queryDb<SectionRow>(
     `SELECT ${SECTION_SELECT} ${SECTION_JOINS}
      WHERE fa.offering_id = $1 AND ra.total_strength IS NOT NULL
-     ORDER BY sec.section_name`,
+     ORDER BY fa.section_name`,
     [offering_id, component_id]
   );
   return rows.map(rowToInput);
@@ -265,7 +263,7 @@ export async function getAllSavedAnalysesForFaculty(
     `SELECT
        ra.component_id,
        cmp.component_name,
-       sec.section_name,
+       fa.section_name,
        ra.faculty_assignment_id,
        ra.total_strength,
        ra.total_absentees,
@@ -275,9 +273,8 @@ export async function getAllSavedAnalysesForFaculty(
      FROM public.result_analysis ra
      JOIN public.component_master cmp ON cmp.component_id = ra.component_id
      JOIN public.faculty_assignment fa ON fa.id = ra.faculty_assignment_id
-     JOIN public.section_master sec ON sec.section_id = fa.section_id
      WHERE ra.faculty_assignment_id = $1
-     ORDER BY cmp.component_name, sec.section_name`,
+     ORDER BY cmp.component_name, fa.section_name`,
     [faculty_assignment_id]
   );
 

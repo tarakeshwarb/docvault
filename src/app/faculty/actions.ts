@@ -12,7 +12,6 @@ export type FacultyCourse = {
   section_name: string;
   semester_name: string;
   year_name: string;
-  student_count: number;
 };
 
 export type PendingSubmission = {
@@ -39,8 +38,7 @@ export async function getFacultyCourses(faculty_id: number): Promise<FacultyCour
       cm.course_name,
       fa.section_name,
       sm.semester_name,
-      ay.year_name,
-      fa.student_count
+      ay.year_name
     FROM public.faculty_assignment fa
     JOIN public.course_offering co ON fa.offering_id = co.offering_id
     JOIN public.course_master cm ON co.course_id = cm.course_id
