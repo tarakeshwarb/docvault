@@ -103,7 +103,7 @@ export function EditableFacultyRow({
           >
             {allSections.map((sec) => (
               <option key={sec.section_id} value={sec.section_id}>
-                Section {sec.section_name}
+                Section/Classroom {sec.section_name}
               </option>
             ))}
           </select>
@@ -157,7 +157,7 @@ export function EditableFacultyRow({
       </td>
       <td className="px-5 py-3">
         <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
-          Section {fa.section_name}
+          Section/Classroom {fa.section_name}
         </span>
       </td>
       <td className="px-5 py-3 text-center text-gray-600">{fa.student_count}</td>
@@ -197,7 +197,7 @@ export function EditableFacultyRow({
         <ConfirmDialog
           isOpen={isConfirmOpen}
           title="Remove Faculty Assignment"
-          message={`Are you sure you want to remove ${fa.faculty_name} from Section ${fa.section_name}? This action cannot be undone.`}
+          message={`Are you sure you want to remove ${fa.faculty_name} from Section/Classroom ${fa.section_name}? This action cannot be undone.`}
           onConfirm={handleDelete}
           onCancel={() => setIsConfirmOpen(false)}
           isLoading={loading}

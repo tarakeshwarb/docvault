@@ -191,7 +191,7 @@ export function AddFacultyForm({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1.5">Sections</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">Sections / Classrooms</label>
                   <SearchableMultiSelect
                     options={sectionOptions}
                     values={sectionIds}
@@ -231,7 +231,7 @@ export function AddFacultyForm({
                   <FileSpreadsheet className="w-10 h-10 text-gray-300 mx-auto mb-3" />
                   <p className="text-sm text-gray-600 mb-4">
                     Upload an Excel file to extract faculties. Format: <br/>
-                    <span className="font-mono text-xs bg-white px-2 py-1 rounded border mt-2 inline-block">S.No | Faculty ID | Faculty Name | Email ID | Section</span>
+                    <span className="font-mono text-xs bg-white px-2 py-1 rounded border mt-2 inline-block">S.No | Faculty ID | Faculty Name | Email ID | Section/Classroom</span>
                   </p>
                   <input
                     type="file"
@@ -261,7 +261,7 @@ export function AddFacultyForm({
                         <tr>
                           <th className="px-2 py-2 w-12 text-center font-medium text-gray-500 text-xs uppercase">Status</th>
                           <th className="px-4 py-2 font-medium text-gray-500 text-xs uppercase">Faculty Name</th>
-                          <th className="px-4 py-2 font-medium text-gray-500 text-xs uppercase">Section</th>
+                          <th className="px-4 py-2 font-medium text-gray-500 text-xs uppercase">Section / Classroom</th>
                           <th className="px-4 py-2 font-medium text-gray-500 text-xs uppercase">Student Count</th>
                         </tr>
                       </thead>

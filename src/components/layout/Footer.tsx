@@ -48,7 +48,6 @@ export default function Footer() {
               <ul className="space-y-3 text-sm text-[var(--color-muted)]">
                 <li>Contact IT Helpdesk</li>
                 <li>Documentation</li>
-                <li><a href="mailto:support@university.edu" className="text-[var(--color-accent)] hover:underline">support@university.edu</a></li>
               </ul>
             </div>
           </div>

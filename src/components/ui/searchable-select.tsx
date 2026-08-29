@@ -43,7 +43,14 @@ export function SearchableSelect({
           className="z-50 w-[var(--radix-popover-trigger-width)] rounded-md border bg-white p-0 shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2"
           align="start"
         >
-          <Command className="flex h-full w-full flex-col overflow-hidden rounded-md bg-white text-gray-950">
+          <Command 
+            filter={(value, search, keywords) => {
+              const extendValue = value + " " + (keywords?.join(" ") ?? "");
+              if (extendValue.toLowerCase().includes(search.toLowerCase())) return 1;
+              return 0;
+            }}
+            className="flex h-full w-full flex-col overflow-hidden rounded-md bg-white text-gray-950"
+          >
             <Command.Input
               placeholder="Search..."
               className="flex h-11 w-full rounded-md bg-transparent py-3 px-3 text-sm outline-none placeholder:text-gray-500 disabled:cursor-not-allowed disabled:opacity-50 border-b border-gray-100"
@@ -56,9 +63,10 @@ export function SearchableSelect({
                 {options.map((option) => (
                   <Command.Item
                     key={option.value}
-                    value={option.value}
-                    onSelect={(currentValue) => {
-                      onChange(currentValue === value ? "" : currentValue);
+                    value={option.label}
+                    keywords={option.value.includes('-') ? [] : [String(option.value)]}
+                    onSelect={() => {
+                      onChange(option.value === value ? "" : option.value);
                       setOpen(false);
                     }}
                     className={cn(

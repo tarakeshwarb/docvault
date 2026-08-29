@@ -1,13 +1,28 @@
 import { Plus, Link2 } from "lucide-react";
-import { getCourseOfferings } from "../actions";
-import { AdminListExport } from "@/components/admin/AdminListExport";
+import { getCourseOfferings, getCourses, getAllFaculty } from "../actions";
+import { NewOfferingForm } from "./NewOfferingForm";
+import { queryDb } from "@/lib/db";
+
+async function getSemesters() {
+  return queryDb<{ semester_id: string; semester_name: string; year_name: string }>(`
+    SELECT s.semester_id, s.semester_name, y.year_name
+    FROM public.semester_master s
+    JOIN public.academic_year y ON s.year_id = y.year_id
+    ORDER BY y.start_date DESC, s.semester_name
+  `);
+}
 
 export default async function OfferingsPage() {
-  const offerings = await getCourseOfferings();
+  const [offerings, courses, allFaculty, semesters] = await Promise.all([
+    getCourseOfferings(),
+    getCourses(),
+    getAllFaculty(),
+    getSemesters(),
+  ]);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-ink)]">
             Course Offerings
@@ -16,15 +31,8 @@ export default async function OfferingsPage() {
             Map courses to semesters and assign course coordinators.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <AdminListExport kind="offerings" rows={offerings} />
-          <a
-            href="/admin/offerings/new"
-            className="inline-flex items-center gap-2 rounded-full bg-[var(--color-ink)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-ink)]/80 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            New Offering
-          </a>
+        <div className="flex flex-wrap items-center gap-3">
+          <NewOfferingForm courses={courses} semesters={semesters} coordinators={allFaculty} />
         </div>
       </div>
 
@@ -35,6 +43,7 @@ export default async function OfferingsPage() {
               <th className="px-6 py-4">Course</th>
               <th className="px-6 py-4">Semester</th>
               <th className="px-6 py-4">Academic Year</th>
+              <th className="px-6 py-4">Batch</th>
               <th className="px-6 py-4">Coordinators</th>
               <th className="px-6 py-4">Audit Professors</th>
               <th className="px-6 py-4 text-right">Actions</th>
@@ -43,7 +52,7 @@ export default async function OfferingsPage() {
           <tbody className="divide-y divide-black/5">
             {offerings.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center">
+                <td colSpan={7} className="px-6 py-12 text-center">
                   <Link2 className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                   <p className="text-gray-500">
                     No course offerings yet. Create one to get started.
@@ -59,6 +68,7 @@ export default async function OfferingsPage() {
                   </td>
                   <td className="px-6 py-4 text-gray-600">{o.semester_name}</td>
                   <td className="px-6 py-4 text-gray-600">{o.year_name}</td>
+                  <td className="px-6 py-4 text-gray-600">{o.batch ?? "—"}</td>
                   <td className="px-6 py-4">
                     <div className="space-y-1">
                       {o.primary_coordinator.faculty_name ? (
