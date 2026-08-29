@@ -2,7 +2,7 @@
 
 import { useState, Suspense, useEffect } from "react";
 import Image from "next/image";
-import { Lock, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, ShieldCheck, TriangleAlert } from "lucide-react";
+import { Lock, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, ShieldCheck, TriangleAlert, FileStack, BarChart3 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 function ChangePasswordForm() {
@@ -93,25 +93,36 @@ function ChangePasswordForm() {
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-90px)] items-center justify-center bg-white px-4">
-      <div className="w-full max-w-[440px]">
+    <div className="flex min-h-[calc(100vh-90px)] items-center justify-center bg-gray-50/50 px-4 py-10">
+      <div className="w-full max-w-xl bg-white p-8 sm:p-12 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-black/5">
         {/* Brand lockup */}
-        <div className="flex items-center gap-4 mb-10">
-          <Image
-            src="/SRM_Institute_of_Science_and_Technology_Logo.svg"
-            alt="SRM Institute of Science and Technology"
-            width={150}
-            height={56}
-            priority
-            className="h-9 w-auto object-contain"
-          />
-          <div className="h-8 w-px bg-black/10" />
-          <div className="leading-tight">
-            <p className="text-sm font-bold tracking-tight text-[var(--color-ink)]">CourseFlow</p>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--color-accent)]">
-              Academic Portal
-            </p>
+        <div className="flex items-center justify-between mb-10">
+          <div className="flex items-center gap-4">
+            <Image
+              src="/SRM_Institute_of_Science_and_Technology_Logo.svg"
+              alt="SRM Institute of Science and Technology"
+              width={150}
+              height={56}
+              priority
+              className="h-9 w-auto object-contain"
+            />
+            <div className="h-8 w-px bg-black/10" />
+            <div className="leading-tight">
+              <p className="text-sm font-bold tracking-tight text-[var(--color-ink)]">DocVault</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--color-accent)]">
+                Academic Portal
+              </p>
+            </div>
           </div>
+          {!success && !isForced && (
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+            >
+              &larr; Back
+            </button>
+          )}
         </div>
 
         {!success ? (
@@ -127,21 +138,13 @@ function ChangePasswordForm() {
               Set your password
             </h1>
             {/* Forced redirect warning */}
-            {isForced ? (
+            {isForced && (
               <div className="mt-4 mb-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800">
                 <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
                 <span>
                   <strong>Access restricted.</strong> You must set a new password before you can access your portal. Or, you can <button type="button" onClick={() => { fetch('/api/auth/logout', { method: 'POST' }).finally(() => window.location.replace('/')) }} className="font-semibold text-amber-700 underline hover:text-amber-900">log out and return to login</button>.
                 </span>
               </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => router.back()}
-                className="mt-4 mb-2 text-sm font-semibold text-[var(--color-accent)] hover:underline"
-              >
-                &larr; Back to Dashboard
-              </button>
             )}
 
             <p className="mt-3 text-[15px] leading-relaxed text-[var(--color-muted)]">
@@ -241,7 +244,6 @@ function ChangePasswordForm() {
                   <span>{error}</span>
                 </div>
               )}
-
               {/* Submit */}
               <button
                 type="submit"

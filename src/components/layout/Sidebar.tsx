@@ -18,7 +18,7 @@ export type SidebarNote = {
 const defaultItems: SidebarItem[] = [];
 
 const defaultNote: SidebarNote = {
-  title: "CourseFlow Portal",
+  title: "DocVault Portal",
   body: "Coordinate courses, sections, submissions, and reports across every term.",
 };
 

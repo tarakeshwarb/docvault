@@ -17,7 +17,7 @@ export default function Error({
           We could not load this document.
         </h2>
         <button
-          onClick={() => reset()}
+          onClick={() => window.location.reload()}
           className="rounded-full bg-[var(--color-ink)] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-80"
         >
           Try again

@@ -209,7 +209,6 @@ export default async function SecondaryOfferingDetailPage({
                       <tr>
                         <th className="px-5 py-3">Faculty</th>
                         <th className="px-5 py-3">Section</th>
-                        <th className="px-5 py-3 text-center">Students</th>
                         <th className="px-5 py-3 text-center">Submitted</th>
                         <th className="px-5 py-3 text-center">Pending</th>
                       </tr>
@@ -229,9 +228,6 @@ export default async function SecondaryOfferingDetailPage({
                             </td>
                             <td className="px-5 py-3 font-medium text-[var(--color-accent)]">
                               Sec {fa.section_name}
-                            </td>
-                            <td className="px-5 py-3 text-center text-gray-500">
-                              {fa.student_count}
                             </td>
                             <td className="px-5 py-3 text-center">
                               <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">

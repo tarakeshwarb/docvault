@@ -76,7 +76,14 @@ export function SearchableMultiSelect({
           className="z-50 w-[var(--radix-popover-trigger-width)] rounded-md border border-black/10 bg-white p-0 shadow-lg outline-none"
           align="start"
         >
-          <Command className="flex h-full w-full flex-col overflow-hidden rounded-md bg-white text-gray-950">
+          <Command 
+            filter={(value, search, keywords) => {
+              const extendValue = value + " " + (keywords?.join(" ") ?? "");
+              if (extendValue.toLowerCase().includes(search.toLowerCase())) return 1;
+              return 0;
+            }}
+            className="flex h-full w-full flex-col overflow-hidden rounded-md bg-white text-gray-950"
+          >
             <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-3 py-2">
               <Command.Input
                 placeholder="Search..."
@@ -101,7 +108,8 @@ export function SearchableMultiSelect({
                 {options.map((option) => (
                   <Command.Item
                     key={option.value}
-                    value={`${option.label} ${option.value}`}
+                    value={option.label}
+                    keywords={option.value.includes('-') ? [] : [String(option.value)]}
                     onSelect={() => toggleValue(option.value)}
                     className={cn(
                       "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-gray-100 aria-selected:bg-gray-100"

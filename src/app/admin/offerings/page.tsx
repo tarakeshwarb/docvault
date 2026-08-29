@@ -1,13 +1,28 @@
 import { Plus, Link2 } from "lucide-react";
-import { getCourseOfferings } from "../actions";
-import { AdminListExport } from "@/components/admin/AdminListExport";
+import { getCourseOfferings, getCourses, getAllFaculty } from "../actions";
+import { NewOfferingForm } from "./NewOfferingForm";
+import { queryDb } from "@/lib/db";
+
+async function getSemesters() {
+  return queryDb<{ semester_id: string; semester_name: string; year_name: string }>(`
+    SELECT s.semester_id, s.semester_name, y.year_name
+    FROM public.semester_master s
+    JOIN public.academic_year y ON s.year_id = y.year_id
+    ORDER BY y.start_date DESC, s.semester_name
+  `);
+}
 
 export default async function OfferingsPage() {
-  const offerings = await getCourseOfferings();
+  const [offerings, courses, allFaculty, semesters] = await Promise.all([
+    getCourseOfferings(),
+    getCourses(),
+    getAllFaculty(),
+    getSemesters(),
+  ]);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-ink)]">
             Course Offerings
@@ -16,15 +31,8 @@ export default async function OfferingsPage() {
             Map courses to semesters and assign course coordinators.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <AdminListExport kind="offerings" rows={offerings} />
-          <a
-            href="/admin/offerings/new"
-            className="inline-flex items-center gap-2 rounded-full bg-[var(--color-ink)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-ink)]/80 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            New Offering
-          </a>
+        <div className="flex flex-wrap items-center gap-3">
+          <NewOfferingForm courses={courses} semesters={semesters} coordinators={allFaculty} />
         </div>
       </div>
 

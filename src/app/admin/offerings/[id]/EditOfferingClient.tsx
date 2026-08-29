@@ -60,7 +60,6 @@ export default function EditOfferingClient({
   ];
 
   const secondaryCoordinatorOptions = coordinators
-    .filter(f => String(f.faculty_id) !== primaryCoordinatorId)
     .map((f) => ({
       value: String(f.faculty_id),
       label: `${f.faculty_name} · ${f.designation}`,
@@ -211,15 +210,13 @@ export default function EditOfferingClient({
                     placeholder="Search faculty..."
                   />
                 </div>
-                {secondaryCoordinatorRows.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeSecondaryCoordinatorRow(index)}
-                    className="inline-flex items-center justify-center rounded-md bg-red-100 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-200 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => removeSecondaryCoordinatorRow(index)}
+                  className="inline-flex items-center justify-center rounded-md bg-red-100 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-200 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             ))}
             <button
@@ -248,15 +245,13 @@ export default function EditOfferingClient({
                     placeholder="Search faculty..."
                   />
                 </div>
-                {auditProfessorRows.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeAuditProfessorRow(index)}
-                    className="inline-flex items-center justify-center rounded-md bg-red-100 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-200 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => removeAuditProfessorRow(index)}
+                  className="inline-flex items-center justify-center rounded-md bg-red-100 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-200 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             ))}
             <button

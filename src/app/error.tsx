@@ -19,7 +19,7 @@ export default function Error({
         Refresh the page or try again in a moment.
       </p>
       <button
-        onClick={() => reset()}
+        onClick={() => window.location.reload()}
         className="rounded-full bg-[var(--color-ink)] px-6 py-2 text-sm font-semibold text-white"
       >
         Try again

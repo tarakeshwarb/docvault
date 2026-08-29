@@ -10,7 +10,6 @@ import {
   getCourseComponents,
   getSubmissionStatus,
   getComponentMasters,
-  getAllSections,
   getAllFacultyForAssignment,
   getCoordinatorOfferings,
   getCourseBroadcasts,
@@ -79,7 +78,6 @@ export default async function OfferingDetailPage({
     components,
     submissions,
     componentMasters,
-    allSections,
     allFaculty,
     broadcasts,
   ] =
@@ -89,7 +87,6 @@ export default async function OfferingDetailPage({
       getCourseComponents(offering_id),
       getSubmissionStatus(offering_id),
       getComponentMasters(),
-      getAllSections(),
       getAllFacultyForAssignment(),
       getCourseBroadcasts(offering_id),
     ]);
@@ -236,12 +233,11 @@ export default async function OfferingDetailPage({
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-[var(--color-ink)] flex items-center gap-2">
                   <Users className="w-5 h-5 text-gray-400" />
-                  Faculty & Sections
+                  Faculty & Sections/Classrooms
                 </h2>
                 <AddFacultyForm
                   offering_id={offering_id}
                   allFaculty={allFaculty}
-                  allSections={allSections}
                 />
               </div>
 
@@ -255,8 +251,8 @@ export default async function OfferingDetailPage({
                     <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5">
                       <tr>
                         <th className="px-5 py-3">Faculty</th>
-                        <th className="px-5 py-3">Section</th>
-                        <th className="px-5 py-3 text-center">Students</th>
+                        <th className="px-5 py-3">Section/Classroom</th>
+                        <th className="px-5 py-3 text-center">Batch</th>
                         <th className="px-5 py-3 text-center">Submitted</th>
                         <th className="px-5 py-3 text-center">Pending</th>
                         <th className="px-5 py-3"></th>
@@ -273,7 +269,6 @@ export default async function OfferingDetailPage({
                           <EditableFacultyRow
                             key={fa.id}
                             fa={fa}
-                            allSections={allSections}
                             allFaculty={allFaculty}
                             submittedCount={submittedCount}
                             pendingCount={pendingCount}

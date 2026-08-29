@@ -15,7 +15,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CourseFlow",
+  title: "DocVault",
   description:
     "Production-ready academic course file management for colleges and universities.",
 };

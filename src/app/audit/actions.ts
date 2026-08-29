@@ -44,7 +44,7 @@ export async function getAuditLogs(params?: {
       f.faculty_name as uploaded_by,
       cm.course_code,
       cm.course_name,
-      sec.section_name,
+      fa.section_name,
       cmp.component_name,
       sm.semester_name,
       ay.year_name,
@@ -55,7 +55,6 @@ export async function getAuditLogs(params?: {
     JOIN public.faculty f ON fa.faculty_id = f.faculty_id
     JOIN public.course_component cc ON s.course_component_id = cc.id
     JOIN public.component_master cmp ON cc.component_id = cmp.component_id
-    JOIN public.section_master sec ON fa.section_id = sec.section_id
     JOIN public.course_offering co ON fa.offering_id = co.offering_id
     JOIN public.course_master cm ON co.course_id = cm.course_id
     JOIN public.semester_master sm ON co.semester_id = sm.semester_id
