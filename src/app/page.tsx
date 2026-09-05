@@ -2,12 +2,16 @@ import { redirect } from "next/navigation";
 import Image from "next/image";
 import { ShieldCheck, FileStack, BarChart3 } from "lucide-react";
 import FacultyLoginForm from "@/components/auth/FacultyLoginForm";
-import { getDashboardPathForRole, getFacultySession } from "@/lib/auth";
+import { getDashboardPathForRole, getFacultySession, clearFacultySession } from "@/lib/auth";
 
 export default async function LoginPage() {
   const session = await getFacultySession();
   if (session) {
-    redirect(getDashboardPathForRole(session.role));
+    if (session.must_change_password) {
+      await clearFacultySession();
+    } else {
+      redirect(getDashboardPathForRole(session.role));
+    }
   }
 
   return (
