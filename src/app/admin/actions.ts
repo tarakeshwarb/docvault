@@ -425,21 +425,6 @@ export async function createDepartment(formData: FormData) {
   revalidatePath("/admin/departments");
 }
 
-export async function createFaculty(formData: FormData) {
-  const id = parseInt(formData.get("faculty_id") as string, 10);
-  const name = (formData.get("faculty_name") as string)?.trim();
-  const desig = (formData.get("designation") as string)?.trim();
-  const email = (formData.get("email") as string)?.trim();
-  const role = (formData.get("role") as string)?.trim() || "faculty";
-
-  if (!id || !name || !desig || !email) throw new Error("All required fields must be provided.");
-
-  await executeDb(
-    "INSERT INTO public.faculty (faculty_id, faculty_name, designation, email, role) VALUES ($1, $2, $3, $4, $5)",
-    [id, name, desig, email, role]
-  );
-  revalidatePath("/admin/faculty");
-}
 
 export async function getAcademicYears() {
   return queryDb<{ year_id: string; year_name: string; start_date: string; end_date: string; created_at: string }>(
