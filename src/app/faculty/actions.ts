@@ -138,9 +138,11 @@ export async function deleteFileAction(file_id: string, submission_id: string, s
   );
 
   if (Number(remaining[0]?.count) === 0) {
-    // 4. If no files left, revert submission status to pending
+    // 4. If no files left, mark as 'unsubmitted' (NOT 'pending') so the audit trail
+    // retains a record that files were once submitted and then deleted by the faculty.
+    // submitted_at is intentionally preserved as the timestamp of their last submission.
     await executeDb(
-      "UPDATE public.submission SET status = 'pending', submitted_at = NULL WHERE submission_id = $1",
+      "UPDATE public.submission SET status = 'unsubmitted' WHERE submission_id = $1",
       [submission_id]
     );
   }
