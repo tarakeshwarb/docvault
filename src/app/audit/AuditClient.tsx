@@ -16,7 +16,6 @@ import {
   X,
   Download,
 } from "lucide-react";
-import { ExportButton } from "@/components/audit/ExportButton";
 import type { AuditFacultySubmission } from "./actions";
 
 // ── File Preview Modal ────────────────────────────────────────────────────────
@@ -31,6 +30,7 @@ function FilePreviewModal({
   onClose: () => void;
 }) {
   const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMounted(true); }, []);
 
   const ext = fileUrl.split(".").pop()?.split("?")[0]?.toLowerCase() || "";
@@ -433,7 +433,6 @@ export default function AuditClient({ initialRows }: { initialRows: AuditFaculty
             Per-faculty submission status across all components and sections.
           </p>
         </div>
-        <ExportButton data={initialRows} />
       </div>
 
       {/* Stats Row */}
