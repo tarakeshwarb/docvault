@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import type { AuditFacultySubmission } from "./actions";
 
+import { forceDownload } from "@/lib/utils";
+
 // ── File Preview Modal ────────────────────────────────────────────────────────
 
 function FilePreviewModal({
@@ -54,16 +56,16 @@ function FilePreviewModal({
             <h3 className="font-semibold text-lg text-[var(--color-ink)] truncate max-w-xl">{fileName}</h3>
           </div>
           <div className="flex items-center gap-3 flex-shrink-0 ml-4">
-            <a
-              href={fileUrl}
-              download
-              target="_blank"
-              rel="noreferrer"
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                forceDownload(fileUrl, fileName);
+              }}
               className="inline-flex items-center gap-2 rounded-lg bg-[var(--color-accent)]/10 px-4 py-2 text-sm font-semibold text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20 transition-colors"
             >
               <Download className="w-4 h-4" />
               Download
-            </a>
+            </button>
             <button
               onClick={onClose}
               className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
@@ -89,16 +91,16 @@ function FilePreviewModal({
             <div className="flex-1 flex flex-col items-center justify-center gap-4 text-gray-400">
               <FileText className="w-12 h-12" />
               <p className="text-sm">Preview not available for this file type.</p>
-              <a
-                href={fileUrl}
-                download
-                target="_blank"
-                rel="noreferrer"
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  forceDownload(fileUrl, fileName);
+                }}
                 className="inline-flex items-center gap-2 rounded-lg bg-[var(--color-accent)] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-accent)]/90 transition-colors"
               >
                 <Download className="w-4 h-4" />
                 Download File
-              </a>
+              </button>
             </div>
           )}
         </div>

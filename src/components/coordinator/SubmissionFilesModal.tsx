@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { Download, X, FileText, CheckCircle2, Clock, ShieldCheck, RotateCcw, Loader2 } from "lucide-react";
-import { formatBytes } from "@/lib/utils";
+import { formatBytes, forceDownload } from "@/lib/utils";
 import { approveSubmission, revokeApproval } from "@/app/course-coordinator/actions";
 
 type FileItem = {
@@ -53,6 +53,7 @@ export function SubmissionFilesModal({
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [files, setFiles] = useState<FileItem[]>([]);
+  const [selectedFileIndex, setSelectedFileIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [localStatus, setLocalStatus] = useState(status);
   const [acting, setActing] = useState(false);
@@ -68,7 +69,9 @@ export function SubmissionFilesModal({
     try {
       const res = await fetch(`/api/submission-files?submission_id=${submission_id}`);
       const data = await res.json();
-      setFiles(data.files ?? []);
+      const fetchedFiles = data.files ?? [];
+      setFiles(fetchedFiles);
+      setSelectedFileIndex(fetchedFiles.length > 0 ? fetchedFiles.length - 1 : 0);
     } catch {
       setFiles([]);
     } finally {
@@ -116,6 +119,8 @@ export function SubmissionFilesModal({
     );
   }
 
+  const currentFile = files[selectedFileIndex];
+
   return (
     <>
       <button
@@ -140,8 +145,13 @@ export function SubmissionFilesModal({
             {/* Header */}
             <div className="flex items-center justify-between border-b border-black/5 px-6 py-4">
               <div>
-                <h2 className="text-base font-semibold text-[var(--color-ink)]">
+                <h2 className="text-base font-semibold text-[var(--color-ink)] flex items-center gap-2">
                   {component_name}
+                  {files.length > 1 && (
+                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-600">
+                      {files.length} FILES
+                    </span>
+                  )}
                 </h2>
                 <p className="text-xs text-gray-500 mt-0.5">
                   {faculty_name} · Section {section_name}
@@ -151,17 +161,17 @@ export function SubmissionFilesModal({
                 {actionError && (
                   <p className="rounded bg-red-50 p-1.5 px-2.5 text-xs font-medium text-red-600">{actionError}</p>
                 )}
-                {files.length > 0 && (
-                  <a
-                    href={`${baseUrl}/${files[files.length - 1].s3_object_key}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    download={files[files.length - 1].file_name}
+                {currentFile && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      forceDownload(`${baseUrl}/${currentFile.s3_object_key}`, currentFile.file_name);
+                    }}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
                   >
                     <Download className="w-4 h-4" />
                     Download
-                  </a>
+                  </button>
                 )}
                 {isApproved ? (
                   <button
@@ -192,7 +202,7 @@ export function SubmissionFilesModal({
               </div>
             </div>
 
-            {/* Body: Direct Preview */}
+            {/* Body */}
             <div className="flex-1 overflow-hidden bg-gray-100/50 rounded-b-2xl flex flex-col relative">
               {loading ? (
                 <div className="flex h-full items-center justify-center">
@@ -203,37 +213,60 @@ export function SubmissionFilesModal({
                   <p className="text-sm text-gray-500">No files found for this submission.</p>
                 </div>
               ) : (
-                (() => {
-                  const latestFile = files[files.length - 1];
-                  const { isImage, isPreviewable, previewSrc } = getPreviewData(latestFile.s3_object_key, baseUrl);
+                <div className="flex flex-col h-full overflow-hidden">
+                  {files.length > 1 && (
+                    <div className="flex items-center gap-2 overflow-x-auto bg-white border-b border-black/5 px-4 py-2 shrink-0">
+                      {files.map((f, i) => (
+                        <button
+                          key={f.file_id}
+                          onClick={() => setSelectedFileIndex(i)}
+                          className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap ${
+                            selectedFileIndex === i
+                              ? "bg-[var(--color-accent)]/10 text-[var(--color-accent)]"
+                              : "text-gray-600 hover:bg-gray-100"
+                          }`}
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span className="max-w-[150px] truncate">{f.file_name}</span>
+                          <span className="text-[10px] text-gray-400">v{f.version}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   
-                  if (!isPreviewable) {
-                    return (
-                      <div className="flex h-full flex-col items-center justify-center gap-2">
-                        <FileText className="w-10 h-10 text-gray-300" />
-                        <p className="text-sm text-gray-500">Preview not available for this file type.</p>
-                        <p className="text-xs text-gray-400">Please download the file to view it.</p>
-                      </div>
-                    );
-                  }
-                  
-                  if (isImage) {
-                    return (
-                      <div className="flex-1 flex items-center justify-center w-full h-full overflow-hidden p-4">
-                        <img src={previewSrc} alt={latestFile.file_name} className="max-w-full max-h-full object-contain rounded-lg shadow-sm" />
-                      </div>
-                    );
-                  }
-                  
-                  return (
-                    <iframe
-                      src={previewSrc}
-                      className="w-full h-full border-0 bg-white"
-                      title="Document Preview"
-                      allowFullScreen
-                    />
-                  );
-                })()
+                  <div className="flex-1 overflow-hidden relative">
+                    {(() => {
+                      const { isImage, isPreviewable, previewSrc } = getPreviewData(currentFile.s3_object_key, baseUrl);
+                      
+                      if (!isPreviewable) {
+                        return (
+                          <div className="flex h-full flex-col items-center justify-center gap-2">
+                            <FileText className="w-10 h-10 text-gray-300" />
+                            <p className="text-sm text-gray-500">Preview not available for this file type.</p>
+                            <p className="text-xs text-gray-400">Please download the file to view it.</p>
+                          </div>
+                        );
+                      }
+                      
+                      if (isImage) {
+                        return (
+                          <div className="flex-1 flex items-center justify-center w-full h-full overflow-hidden p-4">
+                            <img src={previewSrc} alt={currentFile.file_name} className="max-w-full max-h-full object-contain rounded-lg shadow-sm" />
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <iframe
+                          src={previewSrc}
+                          className="w-full h-full border-0 bg-white"
+                          title="Document Preview"
+                          allowFullScreen
+                        />
+                      );
+                    })()}
+                  </div>
+                </div>
               )}
             </div>
           </div>
