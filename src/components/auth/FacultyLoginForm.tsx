@@ -21,7 +21,7 @@ const ROLES: { value: string; label: string; icon: LucideIcon }[] = [
   { value: "faculty", label: "Faculty", icon: GraduationCap },
   { value: "course_coordinator", label: "Coordinator", icon: LayoutGrid },
   { value: "secondary_coordinator", label: "Sec. Coord.", icon: Users },
-  { value: "hod", label: "HOD", icon: ShieldCheck },
+  { value: "hod", label: "HoD/AC/Chair", icon: ShieldCheck },
   { value: "audit", label: "Audit", icon: ClipboardList },
   { value: "admin", label: "Admin", icon: Settings },
 ];

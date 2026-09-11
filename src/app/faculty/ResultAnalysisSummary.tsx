@@ -197,7 +197,7 @@ export function ResultAnalysisSummary({
                         ) : (
                           <FileSpreadsheet className="h-3.5 w-3.5" />
                         )}
-                        Template
+                        Download
                       </button>
                     </td>
                   </tr>

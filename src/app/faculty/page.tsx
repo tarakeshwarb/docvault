@@ -17,7 +17,7 @@ export default async function FacultyPage() {
     getFacultySubmissions(session.faculty_id),
   ]);
 
-  const pending = submissions.filter((s: PendingSubmission) => s.status === "pending");
+  const pending = submissions.filter((s: PendingSubmission) => s.status === "pending" || s.status === "rejected");
   const submitted = submissions.filter(
     (s: PendingSubmission) => s.status === "submitted" || s.status === "approved"
   );
@@ -89,7 +89,7 @@ export default async function FacultyPage() {
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {uniqueOfferings.map((course) => {
               const courseSubmissions = submissions.filter(s => s.offering_id === course.offering_id);
-              const coursePending = courseSubmissions.filter(s => s.status === "pending").length;
+              const coursePending = courseSubmissions.filter(s => s.status === "pending" || s.status === "rejected").length;
 
               return (
                 <Link

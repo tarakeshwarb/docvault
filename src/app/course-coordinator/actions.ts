@@ -491,7 +491,7 @@ export async function generateConsolidatedReport(formData: FormData) {
   }
 
   const submitted = submissions.filter((item) => item.status === "submitted").length;
-  const pending = submissions.filter((item) => item.status === "pending").length;
+  const pending = submissions.filter((item) => item.status === "pending" || item.status === "rejected").length;
   const late = submissions.filter((item) => item.status === "late").length;
 
   const pdf = await PDFDocument.create();
@@ -681,9 +681,25 @@ export async function revokeApproval(submission_id: string, offering_id: string)
   if (!submission_id) throw new Error("Missing submission.");
   await executeDb(
     `UPDATE public.submission
-     SET status = 'submitted', approved_by = NULL, approved_at = NULL
+     SET status = 'submitted', approved_by = NULL, approved_at = NULL, remarks = NULL
      WHERE submission_id = $1`,
     [submission_id]
+  );
+  revalidatePath(`/course-coordinator/${offering_id}`);
+  revalidatePath(`/secondary-coordinator/${offering_id}`);
+  revalidatePath(`/faculty`);
+}
+
+/** Reject a submission, providing a reason so the faculty can re-upload. */
+export async function rejectSubmission(submission_id: string, reason: string, offering_id: string) {
+  if (!submission_id) throw new Error("Missing submission.");
+  if (!reason.trim()) throw new Error("Reason is required for rejection.");
+  
+  await executeDb(
+    `UPDATE public.submission
+     SET status = 'rejected', approved_by = NULL, approved_at = NULL, remarks = $2
+     WHERE submission_id = $1`,
+    [submission_id, reason.trim()]
   );
   revalidatePath(`/course-coordinator/${offering_id}`);
   revalidatePath(`/secondary-coordinator/${offering_id}`);
@@ -716,7 +732,7 @@ if (!assignment) throw new Error("Faculty assignment not found");
 
   const pendingComponents = trackedComponents.filter((comp) => {
     const sub = facultySubmissions.find((s) => s.course_component_id === comp.id);
-    return !sub || sub.status === "pending" || sub.status === "late";
+    return !sub || sub.status === "pending" || sub.status === "late" || sub.status === "rejected";
   });
 
   if (pendingComponents.length === 0) {

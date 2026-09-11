@@ -219,7 +219,7 @@ export default async function SecondaryOfferingDetailPage({
                           (s) => s.faculty_assignment_id === fa.id
                         );
                         const submittedCount = faSubmissions.filter((s) => s.status === "submitted" || s.status === "approved").length;
-                        const pendingCount = faSubmissions.filter((s) => s.status === "pending").length;
+                        const pendingCount = faSubmissions.filter((s) => s.status === "pending" || s.status === "rejected").length;
                         return (
                           <tr key={fa.id} className="hover:bg-gray-50/50 transition-colors">
                             <td className="px-5 py-3">

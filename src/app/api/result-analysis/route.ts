@@ -8,6 +8,7 @@ import {
   generateResultAnalysisPdf,
   generateConsolidatedResultAnalysisXlsx,
   generateResultAnalysisRegisterXlsx,
+  generateOverallResultAnalysisXlsx,
   consolidate,
   type ResultAnalysisInput,
 } from "@/lib/result-analysis";
@@ -16,7 +17,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type Body = {
-  scope: "section" | "consolidated" | "register";
+  scope: "section" | "consolidated" | "register" | "overall";
   format: "xlsx" | "pdf";
   component_id?: string;
   component_ids?: string[];
@@ -49,6 +50,45 @@ export async function POST(request: Request) {
       { error: "scope, format and component_id(s) are required." },
       { status: 400 }
     );
+  }
+
+  // Overall analysis (all sections combined, single sheet per component, 6 range bars).
+  if (scope === "overall") {
+    try {
+      if (!body.offering_id) {
+        return NextResponse.json({ error: "offering_id is required." }, { status: 400 });
+      }
+      const componentSectionsMap: Record<string, ResultAnalysisInput[]> = {};
+      for (const cid of ids) {
+        const sections = await buildConsolidatedInputs(body.offering_id, cid);
+        if (sections.length > 0) {
+          componentSectionsMap[sections[0].component] = sections;
+        }
+      }
+      if (Object.keys(componentSectionsMap).length === 0) {
+        return NextResponse.json(
+          { error: "No section analyses have been entered yet for the selected components." },
+          { status: 404 }
+        );
+      }
+      const buffer = await generateOverallResultAnalysisXlsx(componentSectionsMap);
+      const stamp = new Date().toISOString().split("T")[0];
+      const firstComponent = Object.values(componentSectionsMap)[0][0];
+      const name = ids.length === 1
+        ? `${safeName(`${firstComponent.courseCode}_${firstComponent.component}_Overall_RA`)}_${stamp}`
+        : `${safeName(`${firstComponent.courseCode}_Multi_Overall_RA`)}_${stamp}`;
+      return new NextResponse(new Uint8Array(buffer), {
+        status: 200,
+        headers: {
+          "Content-Type": XLSX_CT,
+          "Content-Disposition": `attachment; filename="${name}.xlsx"`,
+          "Cache-Control": "no-store",
+        },
+      });
+    } catch (err) {
+      console.error("result-analysis overall failed", err);
+      return NextResponse.json({ error: "Failed to build the overall analysis." }, { status: 500 });
+    }
   }
 
   // Consolidated register (mam's all-sections table). Always XLSX.

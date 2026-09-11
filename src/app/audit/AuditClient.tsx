@@ -19,133 +19,16 @@ import {
 import type { AuditFacultySubmission } from "./actions";
 
 import { forceDownload } from "@/lib/utils";
+import { SubmissionFilesModal } from "@/components/coordinator/SubmissionFilesModal";
 
-// ── File Preview Modal ────────────────────────────────────────────────────────
-
-function FilePreviewModal({
-  fileName,
-  fileUrl,
-  onClose,
-}: {
-  fileName: string;
-  fileUrl: string;
-  onClose: () => void;
-}) {
-  const [mounted, setMounted] = useState(false);
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { setMounted(true); }, []);
-
-  const ext = fileUrl.split(".").pop()?.split("?")[0]?.toLowerCase() || "";
-  const isPdf = ext === "pdf";
-  const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(ext);
-  const isOffice = ["doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(ext);
-  const isPreviewable = isPdf || isImage || isOffice;
-
-  const previewSrc = isOffice
-    ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`
-    : fileUrl;
-
-  if (!mounted) return null;
-
-  return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-[95vw] h-[95vh] flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
-          <div className="min-w-0">
-            <h3 className="font-semibold text-lg text-[var(--color-ink)] truncate max-w-xl">{fileName}</h3>
-          </div>
-          <div className="flex items-center gap-3 flex-shrink-0 ml-4">
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                forceDownload(fileUrl, fileName);
-              }}
-              className="inline-flex items-center gap-2 rounded-lg bg-[var(--color-accent)]/10 px-4 py-2 text-sm font-semibold text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20 transition-colors"
-            >
-              <Download className="w-4 h-4" />
-              Download
-            </button>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-        {/* Preview Body */}
-        <div className="flex-1 bg-gray-50/50 p-4 overflow-hidden flex flex-col">
-          {isImage ? (
-            <div className="flex-1 flex items-center justify-center">
-              <img src={fileUrl} alt={fileName} className="max-w-full max-h-full object-contain rounded-lg shadow-sm" />
-            </div>
-          ) : isPreviewable ? (
-            <iframe
-              src={previewSrc}
-              className="w-full h-full border-0 rounded-lg shadow-sm bg-white"
-              title="Document Preview"
-              allowFullScreen
-            />
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center gap-4 text-gray-400">
-              <FileText className="w-12 h-12" />
-              <p className="text-sm">Preview not available for this file type.</p>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  forceDownload(fileUrl, fileName);
-                }}
-                className="inline-flex items-center gap-2 rounded-lg bg-[var(--color-accent)] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-accent)]/90 transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                Download File
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>,
-    document.body
-  );
-}
-
-// ── File Link with Preview ────────────────────────────────────────────────────
-
-function PreviewableFileLink({
-  file,
-}: {
-  file: { file_id: string; file_name: string; version: number; file_url: string };
-}) {
-  const [previewOpen, setPreviewOpen] = useState(false);
-
-  return (
-    <>
-      <button
-        onClick={() => setPreviewOpen(true)}
-        className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--color-accent)] hover:underline mr-4"
-      >
-        <FileText className="w-3.5 h-3.5" />
-        {file.file_name}
-        <span className="text-gray-400">v{file.version}</span>
-      </button>
-      {previewOpen && (
-        <FilePreviewModal
-          fileName={file.file_name}
-          fileUrl={file.file_url}
-          onClose={() => setPreviewOpen(false)}
-        />
-      )}
-    </>
-  );
-}
+// Removed FilePreviewModal and PreviewableFileLink in favor of SubmissionFilesModal
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type ComponentEntry = {
   submission_id: string;
   component_name: string;
-  status: "pending" | "submitted" | "unsubmitted" | null;
+  status: "pending" | "submitted" | "unsubmitted" | "rejected" | null;
   submitted_at: string | null;
   files: { file_id: string; file_name: string; version: number; file_url: string }[];
 };
@@ -223,7 +106,7 @@ function groupRows(rows: AuditFacultySubmission[]): FacultyGroup[] {
     const components = Array.from(compMap.values());
     const submittedCount = components.filter((c) => c.status === "submitted").length;
     const unsubmittedCount = components.filter((c) => c.status === "unsubmitted").length;
-    const pendingCount = components.filter((c) => c.status === "pending" || c.status === null).length;
+    const pendingCount = components.filter((c) => c.status === "pending" || c.status === "rejected" || c.status === null).length;
     return { ...meta, components, submittedCount, unsubmittedCount, pendingCount };
   });
 }
@@ -257,7 +140,7 @@ function StatusBadge({ status }: { status: string | null }) {
 
 // ── Faculty Card ─────────────────────────────────────────────────────────────
 
-function FacultyCard({ group }: { group: FacultyGroup }) {
+function FacultyCard({ group, baseUrl }: { group: FacultyGroup; baseUrl: string }) {
   const [open, setOpen] = useState(false);
 
   const overallStatus =
@@ -356,12 +239,19 @@ function FacultyCard({ group }: { group: FacultyGroup }) {
                       </p>
                     )}
 
-                    {/* Files */}
-                    {comp.files.length > 0 && (
-                      <div className="mt-2 ml-5 flex flex-wrap gap-1">
-                        {comp.files.map((f) => (
-                          <PreviewableFileLink key={f.file_id} file={f} />
-                        ))}
+                    {/* Files Modal */}
+                    {comp.status && comp.status !== "unsubmitted" && comp.status !== "pending" && (
+                      <div className="mt-2 ml-5">
+                        <SubmissionFilesModal
+                          submission_id={comp.submission_id}
+                          faculty_name={group.faculty_name}
+                          component_name={comp.component_name}
+                          section_name={group.section_name}
+                          status={comp.status}
+                          offering_id=""
+                          baseUrl={baseUrl}
+                          readonly={true}
+                        />
                       </div>
                     )}
 
@@ -383,7 +273,7 @@ function FacultyCard({ group }: { group: FacultyGroup }) {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export default function AuditClient({ initialRows }: { initialRows: AuditFacultySubmission[] }) {
+export default function AuditClient({ initialRows, baseUrl }: { initialRows: AuditFacultySubmission[], baseUrl: string }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [yearFilter, setYearFilter] = useState("");
   const [semesterFilter, setSemesterFilter] = useState("");
@@ -507,7 +397,7 @@ export default function AuditClient({ initialRows }: { initialRows: AuditFaculty
           </div>
         ) : (
           filteredGroups.map((group) => (
-            <FacultyCard key={group.assignment_id} group={group} />
+            <FacultyCard key={group.assignment_id} group={group} baseUrl={baseUrl} />
           ))
         )}
       </div>

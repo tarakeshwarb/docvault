@@ -22,6 +22,7 @@ export type PendingSubmission = {
   status: string;
   submitted_at: string | null;
   deadline: string | null;
+  remarks: string | null;
   mandatory: boolean;
   offering_id: string;
   course_name: string;
@@ -58,6 +59,7 @@ export async function getFacultySubmissions(faculty_id: number): Promise<Pending
       cmp.component_name,
       s.status,
       s.submitted_at,
+      s.remarks,
       cc.deadline,
       cc.mandatory,
       fa.offering_id,
@@ -82,6 +84,9 @@ export async function recordFileUpload(data: {
   r2_object_key: string;
   file_size: number;
 }) {
+  if (data.file_size > 3 * 1024 * 1024) {
+    throw new Error("File size exceeds the 3MB limit.");
+  }
   const versions = await queryDb<{ version: number }>(
     "SELECT COALESCE(MAX(version), 0) AS version FROM public.file_metadata WHERE submission_id = $1",
     [data.submission_id]
@@ -95,9 +100,11 @@ export async function recordFileUpload(data: {
   );
 
   await executeDb(
-    "UPDATE public.submission SET status = 'submitted', submitted_at = now() WHERE submission_id = $1",
+    "UPDATE public.submission SET status = 'submitted', submitted_at = now(), remarks = NULL WHERE submission_id = $1",
     [data.submission_id]
   );
+
+  // We should revalidate paths in the caller or here if we know them, but let's assume UI handles refresh.
 
   revalidatePath("/faculty");
 }

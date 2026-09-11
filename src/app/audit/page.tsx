@@ -12,5 +12,5 @@ export default async function AuditPage() {
       : undefined
   );
 
-  return <AuditClient initialRows={rows} />;
+  return <AuditClient initialRows={rows} baseUrl={process.env.R2_PUBLIC_BASE_URL || ""} />;
 }

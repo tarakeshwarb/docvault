@@ -3,21 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { recordFileUpload, getSubmissionFiles, deleteFileAction, type FileMetadata } from "./actions";
-import { Upload, Loader2, CheckCircle2, X, Trash2, File as FileIcon, UploadCloud, Plus } from "lucide-react";
+import { Upload, Loader2, CheckCircle2, X, Trash2, File as FileIcon, UploadCloud, Plus, AlertCircle } from "lucide-react";
 import { formatBytes } from "@/lib/utils";
-
-const ALLOWED_TYPES = [
-  "application/pdf",
-  "application/vnd.ms-excel",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "image/jpeg",
-  "image/png",
-  "application/zip",
-];
-
-const ALLOWED_EXTS = ".pdf,.xls,.xlsx,.doc,.docx,.jpg,.jpeg,.png,.zip";
 
 export function UploadModal({
   submission_id,
@@ -34,6 +21,7 @@ export function UploadModal({
   const [uploading, setUploading] = useState(false);
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -45,6 +33,7 @@ export function UploadModal({
       document.body.style.overflow = "unset";
       setStagedFiles([]);
       setError(null);
+      setIsDragging(false);
     }
     return () => {
       document.body.style.overflow = "unset";
@@ -63,25 +52,34 @@ export function UploadModal({
     }
   }
 
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files || []);
+  function processFiles(files: File[]) {
     if (!files.length) return;
 
-    const validFiles = files.filter((f) => {
-      if (!ALLOWED_TYPES.includes(f.type)) {
-        setError(`Invalid type: ${f.name}`);
-        return false;
-      }
-      if (f.size > 50 * 1024 * 1024) {
-        setError(`Too large: ${f.name}`);
-        return false;
-      }
-      return true;
-    });
+    const fileErrors: string[] = [];
+    const validFiles: File[] = [];
 
-    setStagedFiles((prev) => [...prev, ...validFiles]);
-    setError(null);
+    for (const f of files) {
+      if (f.size > 3 * 1024 * 1024) {
+        fileErrors.push(`"${f.name}" (${formatBytes(f.size)}) exceeds the 3MB size limit.`);
+        continue;
+      }
+      validFiles.push(f);
+    }
+
+    if (fileErrors.length > 0) {
+      setError(fileErrors.join(" • "));
+    } else {
+      setError(null);
+    }
+
+    if (validFiles.length > 0) {
+      setStagedFiles((prev) => [...prev, ...validFiles]);
+    }
     if (inputRef.current) inputRef.current.value = "";
+  }
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    processFiles(Array.from(e.target.files || []));
   }
 
   function removeStagedFile(index: number) {
@@ -91,18 +89,27 @@ export function UploadModal({
   async function handleSubmit() {
     if (stagedFiles.length === 0) return;
 
+    for (const file of stagedFiles) {
+      if (file.size > 3 * 1024 * 1024) {
+        setError(`"${file.name}" (${formatBytes(file.size)}) exceeds the 3MB limit. Please remove it.`);
+        return;
+      }
+    }
+
     setUploading(true);
     setError(null);
 
     try {
       for (const file of stagedFiles) {
+        const fileContentType = file.type || "application/octet-stream";
         const res = await fetch("/api/upload-url", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             file_name: file.name,
-            content_type: file.type,
+            content_type: fileContentType,
             submission_id,
+            file_size: file.size,
           }),
         });
 
@@ -117,7 +124,7 @@ export function UploadModal({
           const uploadRes = await fetch(upload_url, {
             method: "PUT",
             body: file,
-            headers: { "Content-Type": file.type },
+            headers: { "Content-Type": fileContentType },
           });
           if (!uploadRes.ok) throw new Error(`Upload to storage failed for ${file.name}`);
         }
@@ -246,7 +253,6 @@ export function UploadModal({
                 <input
                   ref={inputRef}
                   type="file"
-                  accept={ALLOWED_EXTS}
                   multiple
                   className="hidden"
                   onChange={handleFileSelect}
@@ -254,20 +260,49 @@ export function UploadModal({
 
                 <div
                   onClick={() => inputRef.current?.click()}
-                  className="group flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50/50 py-10 hover:border-[var(--color-accent)] hover:bg-[var(--color-accent)]/5 transition-colors"
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDragging(false);
+                    if (e.dataTransfer.files) {
+                      processFiles(Array.from(e.dataTransfer.files));
+                    }
+                  }}
+                  className={`group flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed py-10 transition-colors ${
+                    isDragging
+                      ? "border-[var(--color-accent)] bg-[var(--color-accent)]/10"
+                      : "border-gray-300 bg-gray-50/50 hover:border-[var(--color-accent)] hover:bg-[var(--color-accent)]/5"
+                  }`}
                 >
                   <div className="rounded-full bg-white p-3 shadow-sm ring-1 ring-black/5 group-hover:ring-[var(--color-accent)]/50 transition-all">
                     <UploadCloud className="h-6 w-6 text-gray-400 group-hover:text-[var(--color-accent)]" />
                   </div>
                   <p className="mt-4 text-sm font-medium text-gray-700">
-                    Click to browse files
+                    Click to browse files or drag and drop
                   </p>
                   <p className="mt-1 text-xs text-gray-500">
-                    PDF, Excel, Word, Image, or ZIP (max 50MB)
+                    All file formats supported (max 3MB per file)
                   </p>
                 </div>
 
-                {error && <p className="text-xs text-red-500 font-medium bg-red-50 p-2 rounded">{error}</p>}
+                {error && (
+                  <div className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 p-3.5 text-xs font-medium text-red-700 shadow-sm animate-in fade-in">
+                    <AlertCircle className="h-4 w-4 shrink-0 text-red-500 mt-0.5" />
+                    <span className="flex-1 leading-relaxed">{error}</span>
+                    <button
+                      type="button"
+                      onClick={() => setError(null)}
+                      className="text-red-400 hover:text-red-600 transition-colors p-0.5"
+                      title="Dismiss error"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
 
                 {/* Staged Files */}
                 {stagedFiles.length > 0 && (

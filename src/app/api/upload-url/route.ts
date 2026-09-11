@@ -3,17 +3,6 @@ import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "crypto";
 
-const ALLOWED_TYPES = [
-  "application/pdf",
-  "application/vnd.ms-excel",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "image/jpeg",
-  "image/png",
-  "application/zip",
-];
-
 function sanitize(name: string) {
   return name
     .toLowerCase()
@@ -24,22 +13,23 @@ function sanitize(name: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { file_name, content_type, submission_id, component_id } = await req.json();
+    const { file_name, content_type, submission_id, component_id, file_size } = await req.json();
 
     // Either a per-faculty submission upload, or a coordinator's common-component upload.
     const scopeId: string | undefined = submission_id || component_id;
-    if (!file_name || !content_type || !scopeId) {
+    if (!file_name || !scopeId) {
       return NextResponse.json(
-        { error: "file_name, content_type and submission_id (or component_id) are required." },
+        { error: "file_name and submission_id (or component_id) are required." },
         { status: 400 }
       );
     }
 
-    if (!ALLOWED_TYPES.includes(content_type)) {
-      return NextResponse.json({ error: "File type not allowed." }, { status: 400 });
+    if (submission_id && typeof file_size === "number" && file_size > 3 * 1024 * 1024) {
+      return NextResponse.json({ error: "File exceeds the maximum allowed size of 3MB." }, { status: 400 });
     }
 
     const folder = submission_id ? "submissions" : "common";
+    const effectiveContentType = content_type || "application/octet-stream";
 
     if (!process.env.R2_ENDPOINT || !process.env.R2_BUCKET) {
       // Graceful dev fallback when R2 is not configured
@@ -65,7 +55,7 @@ export async function POST(req: NextRequest) {
     const command = new PutObjectCommand({
       Bucket: process.env.R2_BUCKET,
       Key: r2_object_key,
-      ContentType: content_type,
+      ContentType: effectiveContentType,
     });
 
     const upload_url = await getSignedUrl(client, command, { expiresIn: 300 });

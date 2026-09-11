@@ -13,7 +13,9 @@ import { formatDate } from "@/lib/utils";
 import { getFacultySession } from "@/lib/auth";
 import Link from "next/link";
 import { FacultyTabs } from "@/components/faculty/FacultyTabs";
+import { FacultySubmissionViewModal } from "@/components/faculty/SubmissionViewModal";
 import { ResultAnalysisSummary } from "../ResultAnalysisSummary";
+import { XCircle } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +39,12 @@ function StatusBadge({ status, deadline }: { status: string; deadline: string | 
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
         <AlertCircle className="w-3 h-3" /> Late
+      </span>
+    );
+  if (effectiveStatus === "rejected")
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
+        <XCircle className="w-3 h-3" /> Rejected
       </span>
     );
   return (
@@ -72,7 +80,7 @@ export default async function FacultyCoursePage({
   const submissions = allSubmissions.filter(s => s.offering_id === offering_id);
   const broadcasts = allBroadcasts.filter(b => b.offering_id === offering_id);
 
-  const pending = submissions.filter((s: PendingSubmission) => s.status === "pending");
+  const pending = submissions.filter((s: PendingSubmission) => s.status === "pending" || s.status === "rejected");
   const submitted = submissions.filter(
     (s: PendingSubmission) => s.status === "submitted" || s.status === "approved"
   );
@@ -259,6 +267,12 @@ export default async function FacultyCoursePage({
                                       Required
                                     </span>
                                   )}
+                                  {sub.status === "rejected" && sub.remarks && (
+                                    <p className="mt-1 text-xs text-red-600 bg-red-50 p-1.5 rounded border border-red-100 max-w-sm">
+                                      <strong className="font-semibold block mb-0.5">Reason for rejection:</strong>
+                                      {sub.remarks}
+                                    </p>
+                                  )}
                                 </td>
                                 <td className="px-5 py-3 text-xs text-gray-500">
                                   {sub.deadline ? formatDate(sub.deadline) : "No deadline"}
@@ -267,11 +281,20 @@ export default async function FacultyCoursePage({
                                   <StatusBadge status={sub.status} deadline={sub.deadline} />
                                 </td>
                                 <td className="px-5 py-3">
-                                  <UploadModal
-                                    submission_id={sub.submission_id}
-                                    component_name={sub.component_name}
-                                    isSubmitted={sub.status === "submitted" || sub.status === "late"}
-                                  />
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <UploadModal
+                                      submission_id={sub.submission_id}
+                                      component_name={sub.component_name}
+                                      isSubmitted={sub.status === "submitted" || sub.status === "late"}
+                                    />
+                                    <FacultySubmissionViewModal
+                                      submission_id={sub.submission_id}
+                                      component_name={sub.component_name}
+                                      section_name={sub.section_name}
+                                      status={sub.status}
+                                      baseUrl={process.env.R2_PUBLIC_BASE_URL ?? ""}
+                                    />
+                                  </div>
                                 </td>
                               </tr>
                             ))}

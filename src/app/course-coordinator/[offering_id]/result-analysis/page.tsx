@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, BarChart3 } from "lucide-react";
+import { ArrowLeft, BarChart3, Users, TrendingUp } from "lucide-react";
 import { getFacultySession } from "@/lib/auth";
 import {
   getComponentsWithAnalysis,
@@ -7,6 +7,7 @@ import {
 } from "@/lib/result-analysis-data";
 import { ResultAnalysisChart } from "@/components/coordinator/ResultAnalysisChart";
 import { RaDownloadButtons } from "@/components/coordinator/RaDownloadButtons";
+import { OverallRaDownloadButton } from "@/components/coordinator/OverallRaDownloadButton";
 
 export const dynamic = "force-dynamic";
 
@@ -51,7 +52,7 @@ export default async function CoordinatorResultAnalysisPage({
           </p>
         )}
         <p className="mt-1 text-xs text-gray-400">
-          Consolidated across all sections. Faculty enter their section&apos;s numbers; totals and the graph update here.
+          Each component shows section-by-section figures (Individual) and a combined chart across all sections (Overall).
         </p>
       </div>
 
@@ -65,6 +66,7 @@ export default async function CoordinatorResultAnalysisPage({
         </div>
       ) : (
         blocks.map((block) => {
+          // Aggregate totals across all sections for this component
           const totals = new Array(6).fill(0);
           let grandStrength = 0;
           let grandAttended = 0;
@@ -77,13 +79,17 @@ export default async function CoordinatorResultAnalysisPage({
             grandAttended += Math.max(0, s.totalStrength - s.totalAbsentees);
           });
           const failures = totals[0];
-          const passPct = grandStrength > 0 ? ((grandStrength - failures) / grandStrength) * 100 : 0;
+          const passPct =
+            grandStrength > 0 ? ((grandStrength - failures) / grandStrength) * 100 : 0;
           const chartData = RANGE_LABELS.map((range, i) => ({ range, count: totals[i] }));
 
           return (
-            <div key={block.component_id} className="panel-card p-5 space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-lg font-semibold text-[var(--color-ink)]">{block.component_name}</h2>
+            <div key={block.component_id} className="panel-card p-5 space-y-6">
+              {/* Component header with download buttons */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-black/5">
+                <h2 className="text-lg font-semibold text-[var(--color-ink)]">
+                  {block.component_name}
+                </h2>
                 <RaDownloadButtons
                   offeringId={offering_id}
                   componentId={block.component_id}
@@ -92,21 +98,16 @@ export default async function CoordinatorResultAnalysisPage({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {[
-                  { label: "Total Strength", value: grandStrength },
-                  { label: "Present", value: grandAttended },
-                  { label: "Failures (0-49)", value: failures },
-                  { label: "Pass %", value: `${passPct.toFixed(2)}%` },
-                ].map((s) => (
-                  <div key={s.label} className="rounded-xl bg-slate-50 p-3 text-center">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">{s.label}</p>
-                    <p className="mt-1 text-xl font-semibold text-[var(--color-ink)]">{s.value}</p>
-                  </div>
-                ))}
-              </div>
+              {/* ── INDIVIDUAL ANALYSIS ── */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-gray-400" />
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-500">
+                    Individual Analysis
+                  </h3>
+                  <span className="text-xs text-gray-400">— per section breakdown</span>
+                </div>
 
-              <div className="grid gap-5 lg:grid-cols-2">
                 <div className="overflow-x-auto rounded-lg border border-black/5">
                   <table className="w-full text-sm text-left">
                     <thead className="bg-gray-50/70 text-gray-500 border-b border-black/5">
@@ -114,7 +115,9 @@ export default async function CoordinatorResultAnalysisPage({
                         <th className="px-3 py-2">Staff</th>
                         <th className="px-3 py-2">Sec</th>
                         {RANGE_LABELS.map((r) => (
-                          <th key={r} className="px-2 py-2 text-center">{r}</th>
+                          <th key={r} className="px-2 py-2 text-center">
+                            {r}
+                          </th>
                         ))}
                         <th className="px-2 py-2 text-center">Str</th>
                         <th className="px-2 py-2 text-center">Abs</th>
@@ -126,16 +129,23 @@ export default async function CoordinatorResultAnalysisPage({
                           <td className="px-3 py-2 whitespace-nowrap">{s.staffName}</td>
                           <td className="px-3 py-2">{s.yearSection}</td>
                           {s.ranges.map((v, i) => (
-                            <td key={i} className="px-2 py-2 text-center">{v}</td>
+                            <td key={i} className="px-2 py-2 text-center">
+                              {v}
+                            </td>
                           ))}
                           <td className="px-2 py-2 text-center">{s.totalStrength}</td>
                           <td className="px-2 py-2 text-center">{s.totalAbsentees}</td>
                         </tr>
                       ))}
+                      {/* Totals row */}
                       <tr className="bg-slate-50 font-semibold">
-                        <td className="px-3 py-2" colSpan={2}>TOTAL</td>
+                        <td className="px-3 py-2" colSpan={2}>
+                          TOTAL
+                        </td>
                         {totals.map((v, i) => (
-                          <td key={i} className="px-2 py-2 text-center">{v}</td>
+                          <td key={i} className="px-2 py-2 text-center">
+                            {v}
+                          </td>
                         ))}
                         <td className="px-2 py-2 text-center">{grandStrength}</td>
                         <td className="px-2 py-2 text-center">{grandAbsent}</td>
@@ -143,9 +153,50 @@ export default async function CoordinatorResultAnalysisPage({
                     </tbody>
                   </table>
                 </div>
+              </div>
 
+              {/* ── OVERALL ANALYSIS ── */}
+              <div className="space-y-4 rounded-xl bg-slate-50/60 border border-black/5 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-[var(--color-accent)]" />
+                    <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-accent)]">
+                      Overall Analysis
+                    </h3>
+                    <span className="text-xs text-gray-400">— all sections combined</span>
+                  </div>
+                  <OverallRaDownloadButton
+                    offeringId={offering_id}
+                    componentId={block.component_id}
+                    courseCode={first?.courseCode ?? "course"}
+                    componentName={block.component_name}
+                  />
+                </div>
+
+                {/* Summary stat cards */}
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {[
+                    { label: "Total Strength", value: grandStrength },
+                    { label: "Present", value: grandAttended },
+                    { label: "Failures (0-49)", value: failures },
+                    { label: "Pass %", value: `${passPct.toFixed(2)}%` },
+                  ].map((s) => (
+                    <div key={s.label} className="rounded-xl bg-white border border-black/5 p-3 text-center shadow-sm">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                        {s.label}
+                      </p>
+                      <p className="mt-1 text-xl font-semibold text-[var(--color-ink)]">
+                        {s.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* 6-bar combined chart */}
                 <div>
-                  <p className="mb-1 text-center text-sm font-medium text-gray-600">Total vs. Range of Marks</p>
+                  <p className="mb-1 text-center text-sm font-medium text-gray-600">
+                    Total Students vs. Range of Marks (All Sections Combined)
+                  </p>
                   <ResultAnalysisChart data={chartData} />
                 </div>
               </div>
@@ -156,3 +207,5 @@ export default async function CoordinatorResultAnalysisPage({
     </div>
   );
 }
+
+

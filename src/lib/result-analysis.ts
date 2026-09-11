@@ -669,3 +669,173 @@ export async function generateResultAnalysisPdf(inputs: ResultAnalysisInput[]): 
   const bytes = await pdf.save();
   return Buffer.from(bytes);
 }
+
+// ---------------------------------------------------------------------------
+// XLSX — Overall Analysis (per component, all sections combined, 6 range bars)
+// ---------------------------------------------------------------------------
+
+/**
+ * Generates a formal single-sheet XLSX for the "Overall Analysis" of one
+ * component. Rows = the 6 mark-range buckets. Each count = students from all
+ * sections combined. Matching the existing Register header style.
+ */
+export async function generateOverallResultAnalysisXlsx(
+  componentsSections: Record<string, ResultAnalysisInput[]>
+): Promise<Buffer> {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "DocVault";
+  wb.created = new Date();
+
+  const specs: ChartSpec[] = [];
+
+  const center = { horizontal: "center" as const, vertical: "middle" as const };
+  const BORDER = {
+    top: { style: "thin" as const },
+    left: { style: "thin" as const },
+    bottom: { style: "thin" as const },
+    right: { style: "thin" as const },
+  };
+
+  for (const [componentName, sections] of Object.entries(componentsSections)) {
+    if (sections.length === 0) continue;
+
+    const first = sections[0];
+    const ws = wb.addWorksheet(safeSheetName(componentName), {
+      views: [{ showGridLines: false }],
+    });
+
+    // 5 columns: A(summary label), B(summary val), C(spacer), D(range label), E(range total)
+    ws.columns = [
+      { width: 22 }, // A
+      { width: 13 }, // B
+      { width: 4 },  // C spacer
+      { width: 16 }, // D
+      { width: 10 }, // E
+    ];
+
+    // ── Header rows — merged A:E for true centering ──────────────────────────
+    const addTitle = (row: number, text: string, size: number, bold = true) => {
+      ws.mergeCells(`A${row}:E${row}`);
+      const c = ws.getCell(`A${row}`);
+      c.value = text;
+      c.font = { bold, size };
+      c.alignment = center;
+      ws.getRow(row).height = 16;
+    };
+
+    addTitle(1, INSTITUTION, 12);
+    addTitle(2, COLLEGE, 10);
+    addTitle(3, `(ACADEMIC YEAR ${first.academicYear})`, 10);
+    addTitle(4, `${first.semester} Semester — ${first.courseCode} - ${first.courseName}`, 10);
+    addTitle(5, `${componentName} — OVERALL RESULT ANALYSIS (All Sections Combined)`, 11);
+
+    // Spacer row 6
+    ws.getRow(6).height = 8;
+
+    // ── Aggregate totals ─────────────────────────────────────────────────────
+    const totals = new Array(RANGE_COUNT).fill(0);
+    for (const s of sections) {
+      const r = normalizeRanges(s.ranges);
+      for (let i = 0; i < RANGE_COUNT; i++) totals[i] += r[i];
+    }
+    const grandStrength = sections.reduce((a, s) => a + (s.totalStrength || 0), 0);
+    const grandAbsent   = sections.reduce((a, s) => a + (s.totalAbsentees || 0), 0);
+    const present   = grandStrength - grandAbsent;
+    const failures  = totals[0];
+    const passed    = present - failures;
+    const passPct   = grandStrength > 0 ? (passed / grandStrength) * 100 : 0;
+
+    // ── Left summary table (rows 7–11) ───────────────────────────────────────
+    const summaryRows: [string, string | number][] = [
+      ["Total Strength",        grandStrength],
+      ["Total Absentees",       grandAbsent],
+      ["Total No of Failures",  failures],
+      ["Pass Mark",             "50%"],
+      ["Pass Percentage",       `${passPct.toFixed(2)}%`],
+    ];
+
+    summaryRows.forEach(([label, value], i) => {
+      const rowNum = 7 + i;
+      ws.getRow(rowNum).height = 18;
+
+      const lc = ws.getCell(rowNum, 1); // A
+      lc.value = label;
+      lc.font = { bold: true };
+      lc.alignment = center;
+      lc.border = BORDER;
+
+      const vc = ws.getCell(rowNum, 2); // B
+      vc.value = value;
+      vc.alignment = center;
+      vc.border = BORDER;
+    });
+
+    // Italic caption below the left table (row 13)
+    ws.mergeCells("A13:B13");
+    const caption = ws.getCell("A13");
+    caption.value = "Total vs. Range of Marks";
+    caption.font = { italic: true, size: 10 };
+    caption.alignment = center;
+
+    // ── Right range table ────────────────────────────────────────────────────
+    // Header at row 7
+    ws.getRow(7).height = 18;
+    const rhD = ws.getCell(7, 4); // D7
+    rhD.value = "Range of Marks";
+    rhD.font = { bold: true };
+    rhD.alignment = center;
+    rhD.border = BORDER;
+
+    const rhE = ws.getCell(7, 5); // E7
+    rhE.value = "Total";
+    rhE.font = { bold: true };
+    rhE.alignment = center;
+    rhE.border = BORDER;
+
+    // Data rows 8–13 (6 ranges)
+    RANGE_LABELS.forEach((label, i) => {
+      const rowNum = 8 + i;
+      ws.getRow(rowNum).height = 18;
+
+      const dc = ws.getCell(rowNum, 4); // D
+      dc.value = label;
+      dc.alignment = center;
+      dc.border = BORDER;
+
+      const ec = ws.getCell(rowNum, 5); // E
+      ec.value = totals[i];
+      ec.alignment = center;
+      ec.border = BORDER;
+    });
+
+    // ── Signature — bottom-right of the chart ────────────────────────────────
+    ws.getRow(42).height = 14;
+    const sig = ws.getCell("E42");
+    sig.value = "Signature of Course Coordinator";
+    sig.font = { bold: true };
+    sig.alignment = { horizontal: "right" as const };
+
+    // Chart: categories = D8:D13 (range labels), values = E8:E13 (totals)
+    specs.push({
+      sheetIndex: specs.length + 1,
+      sheetName: safeSheetName(componentName),
+      catRange: "$D$8:$D$13",
+      valRange: "$E$8:$E$13",
+      titleCell: "$D$7",
+      title: `${componentName} — Total vs. Range of Marks (All Sections)`,
+      anchor: [0, 18, 8, 40],
+    });
+  }
+
+  const arr = await wb.xlsx.writeBuffer();
+  let buf: Buffer = Buffer.from(arr as ArrayBuffer);
+  if (specs.length > 0) {
+    buf = await injectBarCharts(buf, specs);
+  }
+  return buf;
+}
+
+
+
+
+

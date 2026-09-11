@@ -23,18 +23,19 @@ import { SubmissionTrackingMatrix } from "./SubmissionTrackingMatrix";
 import { CoordinatorResultAnalysis } from "./CoordinatorResultAnalysis";
 import {
   ArrowLeft,
-  Users,
   ClipboardList,
   CheckCircle2,
   Clock,
   AlertCircle,
   Megaphone,
+  Users,
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
 import { OfferingTabs } from "@/components/coordinator/OfferingTabs";
 
 export const dynamic = "force-dynamic";
+
 
 function StatusBadge({ status }: { status: string }) {
   if (status === "submitted") {
@@ -90,6 +91,8 @@ export default async function OfferingDetailPage({
       getAllFacultyForAssignment(),
       getCourseBroadcasts(offering_id),
     ]);
+
+
 
   const offering = offerings.find((o) => o.offering_id === offering_id);
   if (!offering) notFound();
@@ -264,7 +267,7 @@ export default async function OfferingDetailPage({
                           (s) => s.faculty_assignment_id === fa.id
                         );
                         const submittedCount = faSubmissions.filter((s) => s.status === "submitted" || s.status === "approved").length;
-                        const pendingCount = faSubmissions.filter((s) => s.status === "pending").length;
+                        const pendingCount = faSubmissions.filter((s) => s.status === "pending" || s.status === "rejected").length;
                         return (
                           <EditableFacultyRow
                             key={fa.id}
@@ -298,14 +301,16 @@ export default async function OfferingDetailPage({
         }
         resultAnalysisContent={
           <div className="space-y-8">
-            <CoordinatorResultAnalysis
-              offeringId={offering_id}
-              courseCode={offering.course_code}
-              components={components}
-            />
+            <div className="panel-card p-5">
+              <CoordinatorResultAnalysis
+                offeringId={offering_id}
+                courseCode={offering.course_code}
+                components={components}
+              />
+            </div>
           </div>
         }
       />
     </div>
   );
-}
+}
