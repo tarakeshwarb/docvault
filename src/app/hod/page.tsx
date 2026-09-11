@@ -13,5 +13,5 @@ export default async function HodPage() {
     getHodDetailedData(),
   ]);
 
-  return <HodClient initialData={detailedData} stats={stats} />;
+  return <HodClient initialRows={detailedData} initialStats={stats} baseUrl={process.env.R2_PUBLIC_BASE_URL || ""} />;
 }

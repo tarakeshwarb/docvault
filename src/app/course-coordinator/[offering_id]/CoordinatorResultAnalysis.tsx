@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Download, Loader2, CheckSquare, Square, FileSpreadsheet } from "lucide-react";
 
+
 export function CoordinatorResultAnalysis({
   offeringId,
   courseCode,
@@ -15,7 +16,7 @@ export function CoordinatorResultAnalysis({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
     new Set(components.map((c) => c.component_id))
   );
-  const [downloading, setDownloading] = useState(false);
+  const [downloadingType, setDownloadingType] = useState<"section" | "overall" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const toggle = (id: string) => {
@@ -33,18 +34,17 @@ export function CoordinatorResultAnalysis({
     }
   };
 
-  async function downloadExcel() {
+  async function triggerDownload(scope: "consolidated" | "overall") {
     if (selectedIds.size === 0) return;
-    setDownloading(true);
+    setDownloadingType(scope === "consolidated" ? "section" : "overall");
     setError(null);
     try {
       const res = await fetch("/api/result-analysis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          scope: "consolidated",
+          scope: scope,
           format: "xlsx",
-          component_id: Array.from(selectedIds)[0], // For fallback, but backend uses component_ids now
           component_ids: Array.from(selectedIds),
           offering_id: offeringId,
         }),
@@ -72,8 +72,9 @@ export function CoordinatorResultAnalysis({
           .join(" & ");
         namePrefix = `${names} - ${courseCode}`;
       }
-
-      link.download = `${namePrefix} - Result Analysis_${stamp}.xlsx`;
+      
+      const typeLabel = scope === "consolidated" ? "Section-Wise" : "Overall";
+      link.download = `${namePrefix} - ${typeLabel} Result Analysis_${stamp}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -81,7 +82,7 @@ export function CoordinatorResultAnalysis({
     } catch (e) {
       setError(e instanceof Error ? e.message : "Download failed.");
     } finally {
-      setDownloading(false);
+      setDownloadingType(null);
     }
   }
 
@@ -102,24 +103,39 @@ export function CoordinatorResultAnalysis({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-[var(--color-ink)]">Export Result Analysis</h2>
           <p className="text-sm text-gray-500">Select components to include in the exported Excel workbook.</p>
         </div>
-        <button
-          onClick={downloadExcel}
-          disabled={selectedIds.size === 0 || downloading}
-          className="inline-flex items-center gap-2 rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[var(--color-accent)]/90 disabled:opacity-50"
-        >
-          {downloading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Download className="h-4 w-4" />
-          )}
-          Download Excel
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => triggerDownload("consolidated")}
+            disabled={selectedIds.size === 0 || downloadingType !== null}
+            className="inline-flex items-center gap-2 rounded-lg bg-[var(--color-ink)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[var(--color-ink)]/90 disabled:opacity-50"
+          >
+            {downloadingType === "section" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            Download Section-Wise
+          </button>
+          <button
+            onClick={() => triggerDownload("overall")}
+            disabled={selectedIds.size === 0 || downloadingType !== null}
+            className="inline-flex items-center gap-2 rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[var(--color-accent)]/90 disabled:opacity-50"
+          >
+            {downloadingType === "overall" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            Download Overall
+          </button>
+        </div>
       </div>
+
 
       {error && (
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">

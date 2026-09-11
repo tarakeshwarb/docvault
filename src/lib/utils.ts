@@ -41,3 +41,22 @@ export function cx(...classes: Array<string | false | null | undefined>): string
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
+export async function forceDownload(url: string, fileName: string) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Failed to fetch file");
+    const blob = await res.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(blobUrl);
+  } catch (error) {
+    console.error("Download fallback to new tab:", error);
+    window.open(url, "_blank");
+  }
+}
