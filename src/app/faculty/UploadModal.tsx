@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { recordFileUpload, getSubmissionFiles, deleteFileAction, type FileMetadata } from "./actions";
-import { Upload, Loader2, CheckCircle2, X, Trash2, File as FileIcon, UploadCloud, Plus, AlertCircle } from "lucide-react";
+import { Upload, Loader2, CheckCircle2, X, Trash2, File as FileIcon, UploadCloud, AlertCircle } from "lucide-react";
 import { formatBytes } from "@/lib/utils";
 
 export function UploadModal({
@@ -19,7 +19,6 @@ export function UploadModal({
   const [existingFiles, setExistingFiles] = useState<FileMetadata[]>([]);
   const [stagedFiles, setStagedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [loadingFiles, setLoadingFiles] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -31,6 +30,7 @@ export function UploadModal({
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "unset";
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStagedFiles([]);
       setError(null);
       setIsDragging(false);
@@ -38,17 +38,15 @@ export function UploadModal({
     return () => {
       document.body.style.overflow = "unset";
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   async function loadFiles() {
-    setLoadingFiles(true);
     try {
       const files = await getSubmissionFiles(submission_id);
       setExistingFiles(files);
     } catch (err) {
       console.error(err);
-    } finally {
-      setLoadingFiles(false);
     }
   }
 
@@ -152,7 +150,7 @@ export function UploadModal({
     setExistingFiles((prev) => prev.filter((f) => f.file_id !== file_id));
     try {
       await deleteFileAction(file_id, submission_id, s3_object_key);
-    } catch (err) {
+    } catch {
       alert("Failed to delete file");
       loadFiles();
     }

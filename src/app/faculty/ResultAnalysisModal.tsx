@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import {
   getComponentsForOfferingAction,
   getResultAnalysisAction,
@@ -35,6 +36,7 @@ export function ResultAnalysisModal({
   courseCode: string;
   courseName: string;
 }) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [components, setComponents] = useState<ComponentOption[]>([]);
   const [componentId, setComponentId] = useState("");
@@ -73,6 +75,7 @@ export function ResultAnalysisModal({
   // Reset fields to 0 when the chosen component changes.
   useEffect(() => {
     if (!isOpen || !componentId) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStrength(0);
     setAbsentees(0);
     setRanges([0, 0, 0, 0, 0, 0]);
@@ -107,8 +110,16 @@ export function ResultAnalysisModal({
         total_absentees: absentees,
         ranges,
       });
-      if (res.ok) setSavedOk(true);
-      else setErrors(res.errors);
+      if (res.ok) {
+        setSavedOk(true);
+        setIsOpen(false);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("result-analysis-saved"));
+        }
+        router.refresh();
+      } else {
+        setErrors(res.errors);
+      }
     } catch (e) {
       setErrors([e instanceof Error ? e.message : "Failed to save."]);
     } finally {

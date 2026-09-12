@@ -47,7 +47,11 @@ export function ResultAnalysisSummary({
   }, [facultyAssignmentId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
+    const handleSaved = () => load();
+    window.addEventListener("result-analysis-saved", handleSaved);
+    return () => window.removeEventListener("result-analysis-saved", handleSaved);
   }, [load]);
 
 

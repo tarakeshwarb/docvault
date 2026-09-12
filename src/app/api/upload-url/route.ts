@@ -13,22 +13,22 @@ function sanitize(name: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { file_name, content_type, submission_id, component_id, file_size } = await req.json();
+    const { file_name, content_type, submission_id, component_id, audit_offering_id, file_size } = await req.json();
 
-    // Either a per-faculty submission upload, or a coordinator's common-component upload.
-    const scopeId: string | undefined = submission_id || component_id;
+    // Either a per-faculty submission upload, a coordinator's common-component upload, or an audit report upload.
+    const scopeId: string | undefined = submission_id || component_id || audit_offering_id;
     if (!file_name || !scopeId) {
       return NextResponse.json(
-        { error: "file_name and submission_id (or component_id) are required." },
+        { error: "file_name and submission_id (or component_id/audit_offering_id) are required." },
         { status: 400 }
       );
     }
 
-    if (submission_id && typeof file_size === "number" && file_size > 3 * 1024 * 1024) {
+    if ((submission_id || audit_offering_id) && typeof file_size === "number" && file_size > 3 * 1024 * 1024) {
       return NextResponse.json({ error: "File exceeds the maximum allowed size of 3MB." }, { status: 400 });
     }
 
-    const folder = submission_id ? "submissions" : "common";
+    const folder = submission_id ? "submissions" : audit_offering_id ? "audit" : "common";
     const effectiveContentType = content_type || "application/octet-stream";
 
     if (!process.env.R2_ENDPOINT || !process.env.R2_BUCKET) {
