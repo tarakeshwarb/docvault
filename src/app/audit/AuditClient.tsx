@@ -15,8 +15,11 @@ import {
   BookOpen,
   X,
   Download,
+  ShieldCheck,
+  FileCheck,
 } from "lucide-react";
-import type { AuditFacultySubmission } from "./actions";
+import type { AuditFacultySubmission, AuditCourseOffering } from "./actions";
+import { AuditReportsSubmission } from "@/components/audit/AuditReportsSubmission";
 
 import { forceDownload } from "@/lib/utils";
 import { SubmissionFilesModal } from "@/components/coordinator/SubmissionFilesModal";
@@ -273,11 +276,38 @@ function FacultyCard({ group, baseUrl }: { group: FacultyGroup; baseUrl: string 
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export default function AuditClient({ initialRows, baseUrl }: { initialRows: AuditFacultySubmission[], baseUrl: string }) {
+export default function AuditClient({
+  initialRows,
+  baseUrl,
+  auditCourses = [],
+  facultyId,
+  isAdmin = false,
+}: {
+  initialRows: AuditFacultySubmission[];
+  baseUrl: string;
+  auditCourses?: AuditCourseOffering[];
+  facultyId: number;
+  isAdmin?: boolean;
+}) {
+  const [activeTab, setActiveTab] = useState<"trail" | "reports">("trail");
   const [searchTerm, setSearchTerm] = useState("");
   const [yearFilter, setYearFilter] = useState("");
   const [semesterFilter, setSemesterFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<"" | "submitted" | "unsubmitted" | "pending">("");
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (window.location.hash === "#reports-submission" || window.location.hash === "#reports") {
+        setActiveTab("reports");
+      } else {
+        setActiveTab("trail");
+      }
+    };
+
+    handleHashChange();
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
 
   const groups = useMemo(() => groupRows(initialRows), [initialRows]);
 
@@ -320,14 +350,54 @@ export default function AuditClient({ initialRows, baseUrl }: { initialRows: Aud
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/60">
             IQAC Audit &amp; Compliance
           </p>
-          <h1 className="mt-2 text-3xl font-semibold">Master Action Trail</h1>
+          <h1 className="mt-2 text-3xl font-semibold">
+            {activeTab === "trail" ? "Master Action Trail" : "Reports Submission"}
+          </h1>
           <p className="mt-1 text-sm text-white/70">
-            Per-faculty submission status across all components and sections.
+            {activeTab === "trail"
+              ? "Per-faculty submission status across all components and sections."
+              : "Submit and manage compliance audit reports for each course component."}
           </p>
         </div>
       </div>
 
-      {/* Stats Row */}
+      {/* Horizontal Navigation Tabs */}
+      <div className="border-b border-black/5">
+        <nav className="-mb-px flex gap-6" aria-label="Audit Tabs">
+          <button
+            onClick={() => {
+              setActiveTab("trail");
+              window.history.replaceState(null, "", "#audit-trail");
+            }}
+            className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
+              activeTab === "trail"
+                ? "border-[var(--color-accent)] text-[var(--color-accent)]"
+                : "border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4" />
+            Audit Trail
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab("reports");
+              window.history.replaceState(null, "", "#reports-submission");
+            }}
+            className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
+              activeTab === "reports"
+                ? "border-[var(--color-accent)] text-[var(--color-accent)]"
+                : "border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            <FileCheck className="w-4 h-4" />
+            Reports Submission
+          </button>
+        </nav>
+      </div>
+
+      {/* Tab 1: Master Action Trail */}
+      <div className={activeTab === "trail" ? "space-y-6 block animate-in fade-in duration-300" : "hidden"}>
+        {/* Stats Row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
           { label: "Total Faculty", value: totalFaculty, color: "text-[var(--color-ink)]" },
@@ -406,5 +476,15 @@ export default function AuditClient({ initialRows, baseUrl }: { initialRows: Aud
         Showing {filteredGroups.length} of {totalFaculty} faculty assignments
       </p>
     </div>
-  );
+
+    {/* Tab 2: Reports Submission */}
+    <div className={activeTab === "reports" ? "block animate-in fade-in duration-300" : "hidden"}>
+      <AuditReportsSubmission
+        courses={auditCourses}
+        facultyId={facultyId}
+        isAdmin={isAdmin}
+      />
+    </div>
+  </div>
+);
 }
