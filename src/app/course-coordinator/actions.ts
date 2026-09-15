@@ -57,6 +57,8 @@ export type SubmissionStatus = {
   status: string;
   submitted_at: string | null;
   deadline: string | null;
+  audit_remarks: string | null;
+  hod_remarks: string | null;
 };
 
 export type GeneratedReport = {
@@ -186,6 +188,8 @@ export async function getSubmissionStatus(offering_id: string): Promise<Submissi
       cm.component_name,
       s.status,
       s.submitted_at,
+      s.audit_remarks,
+      s.hod_remarks,
       cc.deadline
     FROM public.submission s
     JOIN public.faculty_assignment fa ON s.faculty_assignment_id = fa.id

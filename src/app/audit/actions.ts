@@ -22,6 +22,7 @@ export type AuditFacultySubmission = {
   file_name: string | null;
   version: number | null;
   file_url: string | null;
+  audit_remarks: string | null;
 };
 
 /**
@@ -60,6 +61,7 @@ export async function getAuditData(params?: {
       cmp.component_name,
       s.status,
       s.submitted_at,
+      s.audit_remarks,
       fm.file_id,
       fm.file_name,
       fm.version,
@@ -88,6 +90,18 @@ export async function getAuditData(params?: {
     ...row,
     file_url: row.r2_object_key ? `${baseUrl}/${row.r2_object_key}` : null,
   })) as AuditFacultySubmission[];
+}
+
+export async function saveAuditRemark(
+  submission_id: string,
+  audit_remarks: string
+): Promise<{ ok: boolean }> {
+  await executeDb(
+    `UPDATE public.submission SET audit_remarks = $1 WHERE submission_id = $2`,
+    [audit_remarks.trim() || null, submission_id]
+  );
+  revalidatePath("/audit");
+  return { ok: true };
 }
 
 export async function getAcademicYears() {

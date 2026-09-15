@@ -2,13 +2,21 @@ import { NextResponse } from "next/server";
 import { ImapFlow } from "imapflow";
 
 export const runtime = "nodejs";
+// Vercel free plan has a 10s function timeout.
+// Keep IMAP operations fast: connect → open → search → move → logout.
 
-// This route is called by Vercel Cron every 15 minutes.
-// It connects to Gmail IMAP and deletes any portal reminder emails from Sent Mail.
 export async function GET(request: Request) {
-  // Protect this route — only allow Vercel's cron scheduler to call it
+  // Accept secret via header OR query param (for cron-job.org)
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const url = new URL(request.url);
+  const querySecret = url.searchParams.get("secret");
+
+  const expectedSecret = process.env.CRON_SECRET;
+  const isAuthorized =
+    (authHeader === `Bearer ${expectedSecret}`) ||
+    (querySecret === expectedSecret);
+
+  if (!expectedSecret || !isAuthorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -25,33 +33,60 @@ export async function GET(request: Request) {
     secure: true,
     auth: { user, pass },
     logger: false,
+    // Tight timeouts to avoid Vercel killing mid-operation
+    socketTimeout: 8000,
+    greetingTimeout: 5000,
   });
 
   try {
     await client.connect();
 
+    // Find the Sent folder
     const list = await client.list();
-    const sentFolder = list.find((f) => f.specialUse === "\\Sent" || f.path.toLowerCase().includes("sent"));
+    const sentFolder = list.find(
+      (f) => f.specialUse === "\\Sent" || f.path.toLowerCase().includes("sent")
+    );
     const sentPath = sentFolder ? sentFolder.path : "[Gmail]/Sent Mail";
+
+    // Find Trash folder for moving
+    const trashFolder = list.find(
+      (f) => f.specialUse === "\\Trash" || f.path.toLowerCase().includes("trash")
+    );
+    const trashPath = trashFolder ? trashFolder.path : "[Gmail]/Trash";
 
     const mailbox = await client.mailboxOpen(sentPath);
     const totalMessages = mailbox.exists;
-    console.log(`[Cron Cleanup] Opened "${sentPath}". Total messages: ${totalMessages}`);
+    console.log(`[Cron Cleanup] Opened "${sentPath}". ${totalMessages} total messages.`);
 
-    // Search by subject using uid:true to get UIDs (not sequence numbers)
+    // Search for all reminder emails (IMAP subject search is substring match)
     const searchResult = await client.search(
       { subject: "Reminder: Pending Submissions" },
       { uid: true }
     );
-    const matchingUids = Array.isArray(searchResult) ? searchResult : [];
-    console.log(`[Cron Cleanup] Found ${matchingUids.length} portal reminder email(s). UIDs: ${matchingUids.join(",") || "none"}`);
+    const matchingUids: number[] = Array.isArray(searchResult) ? searchResult : [];
+    console.log(`[Cron Cleanup] Found ${matchingUids.length} reminder(s). UIDs: ${matchingUids.join(",") || "none"}`);
 
     let deleted = 0;
     if (matchingUids.length > 0) {
-      const uidList = matchingUids.join(",");
-      await client.messageDelete(uidList, { uid: true });
-      deleted = matchingUids.length;
-      console.log(`[Cron Cleanup] Successfully deleted ${deleted} email(s) from Sent Mail.`);
+      // Gmail IMAP: messageMove is more reliable than messageDelete.
+      // messageDelete uses STORE \Deleted + EXPUNGE which Gmail handles inconsistently.
+      // messageMove uses MOVE command which Gmail handles properly.
+      const uidRange = matchingUids.join(",");
+      try {
+        await client.messageMove(uidRange, trashPath, { uid: true });
+        deleted = matchingUids.length;
+        console.log(`[Cron Cleanup] Moved ${deleted} email(s) to "${trashPath}".`);
+      } catch (moveErr) {
+        console.error("[Cron Cleanup] messageMove failed, trying messageDelete fallback:", moveErr);
+        // Fallback: try batch delete
+        try {
+          await client.messageDelete(uidRange, { uid: true });
+          deleted = matchingUids.length;
+          console.log(`[Cron Cleanup] Fallback: deleted ${deleted} email(s) via messageDelete.`);
+        } catch (delErr) {
+          console.error("[Cron Cleanup] messageDelete also failed:", delErr);
+        }
+      }
     }
 
     await client.logout();
@@ -63,12 +98,16 @@ export async function GET(request: Request) {
       totalMessages,
       matchedUids: matchingUids,
       message: deleted > 0
-        ? `Deleted ${deleted} reminder email(s) from Sent Mail.`
-        : `No reminder emails found in Sent Mail (checked ${totalMessages} messages in "${sentPath}").`,
+        ? `Removed ${deleted} reminder email(s) from Sent Mail.`
+        : `No reminder emails found (checked ${totalMessages} messages in "${sentPath}").`,
     });
   } catch (err) {
     console.error("[Cron Cleanup] IMAP error:", err);
     try { await client.logout(); } catch {}
-    return NextResponse.json({ error: "IMAP cleanup failed", detail: String(err) }, { status: 500 });
+    return NextResponse.json(
+      { error: "IMAP cleanup failed", detail: String(err) },
+      { status: 500 }
+    );
   }
 }
+

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { Download, X, FileText, CheckCircle2, Clock, ShieldCheck, RotateCcw, Loader2 } from "lucide-react";
+import { Download, X, FileText, CheckCircle2, Clock, ShieldCheck, RotateCcw, Loader2, MessageSquare } from "lucide-react";
 import { formatBytes, forceDownload } from "@/lib/utils";
 import { approveSubmission, revokeApproval, rejectSubmission } from "@/app/course-coordinator/actions";
 

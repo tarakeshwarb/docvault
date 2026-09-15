@@ -1,6 +1,7 @@
 "use server";
 
-import { queryDb } from "@/lib/db";
+import { queryDb, executeDb } from "@/lib/db";
+import { getFacultySession } from "@/lib/auth";
 
 
 
@@ -16,6 +17,10 @@ export type HodDeptStats = {
 
 
 export async function getHodDeptStats(): Promise<HodDeptStats> {
+  const session = await getFacultySession();
+  const isDev = session?.role === "developer";
+  const devCondition = isDev ? "AND cm.course_code LIKE 'DEV%'" : "AND cm.course_code NOT LIKE 'DEV%'";
+
   const rows = await queryDb<HodDeptStats>(`
     SELECT
       COUNT(DISTINCT co.offering_id)::int AS total_courses,
@@ -28,10 +33,11 @@ export async function getHodDeptStats(): Promise<HodDeptStats> {
         ELSE ROUND(COUNT(CASE WHEN s.status = 'submitted' THEN 1 END) * 100.0 / COUNT(s.submission_id))::int
       END AS overall_completion_pct
     FROM public.course_offering co
+    JOIN public.course_master cm ON co.course_id = cm.course_id
     JOIN public.semester_master sm ON co.semester_id = sm.semester_id
     LEFT JOIN public.faculty_assignment fa ON fa.offering_id = co.offering_id
     LEFT JOIN public.submission s ON s.faculty_assignment_id = fa.id
-    WHERE sm.is_active = true
+    WHERE sm.is_active = true ${devCondition}
   `);
   return rows[0] ?? {
     total_courses: 0,
@@ -58,6 +64,7 @@ export type HodDetailedSubmission = {
   component_name: string | null;
   status: "pending" | "submitted" | "unsubmitted" | null;
   submitted_at: string | null;
+  hod_remarks: string | null;
   file_id: string | null;
   file_name: string | null;
   version: number | null;
@@ -65,6 +72,10 @@ export type HodDetailedSubmission = {
 };
 
 export async function getHodDetailedData(): Promise<HodDetailedSubmission[]> {
+  const session = await getFacultySession();
+  const isDev = session?.role === "developer";
+  const devCondition = isDev ? "AND cm.course_code LIKE 'DEV%'" : "AND cm.course_code NOT LIKE 'DEV%'";
+
   const query = `
     SELECT
       co.offering_id,
@@ -81,6 +92,7 @@ export async function getHodDetailedData(): Promise<HodDetailedSubmission[]> {
       cmp.component_name,
       s.status,
       s.submitted_at,
+      s.hod_remarks,
       fm.file_id,
       fm.file_name,
       fm.version,
@@ -95,7 +107,7 @@ export async function getHodDetailedData(): Promise<HodDetailedSubmission[]> {
     LEFT JOIN public.course_component  cc  ON s.course_component_id  = cc.id
     LEFT JOIN public.component_master  cmp ON cc.component_id        = cmp.component_id
     LEFT JOIN public.file_metadata     fm  ON fm.submission_id       = s.submission_id
-    WHERE sm.is_active = true
+    WHERE sm.is_active = true ${devCondition}
     ORDER BY cm.course_code, f.faculty_name, fa.section_name, cmp.component_name, fm.uploaded_at ASC
   `;
 
@@ -109,4 +121,79 @@ export async function getHodDetailedData(): Promise<HodDetailedSubmission[]> {
     ...row,
     file_url: row.r2_object_key ? `${baseUrl}/${row.r2_object_key}` : null,
   })) as HodDetailedSubmission[];
+}
+
+export type HodAuditReport = {
+  report_id: string;
+  status: string;
+  remarks: string | null;
+  file_name: string | null;
+  file_url: string | null;
+  file_size: number | null;
+  submitted_at: string;
+  course_code: string;
+  course_name: string;
+  component_name: string;
+  auditor_name: string | null;
+};
+
+export async function getHodAuditReports(): Promise<HodAuditReport[]> {
+  const session = await getFacultySession();
+  const isDev = session?.role === "developer";
+  const devCondition = isDev ? "AND cm.course_code LIKE 'DEV%'" : "AND cm.course_code NOT LIKE 'DEV%'";
+
+  const query = `
+    SELECT
+      acr.report_id,
+      acr.status,
+      acr.remarks,
+      acr.file_name,
+      acr.r2_file_key,
+      acr.file_size,
+      acr.submitted_at,
+      cm.course_code,
+      cm.course_name,
+      cmp.component_name,
+      f.faculty_name AS auditor_name
+    FROM public.audit_component_report acr
+    JOIN public.course_offering co ON acr.offering_id = co.offering_id
+    JOIN public.course_master cm ON co.course_id = cm.course_id
+    JOIN public.semester_master sm ON co.semester_id = sm.semester_id
+    JOIN public.course_component cc ON acr.course_component_id = cc.id
+    JOIN public.component_master cmp ON cc.component_id = cmp.component_id
+    LEFT JOIN public.faculty f ON acr.auditor_faculty_id = f.faculty_id
+    WHERE sm.is_active = true ${devCondition}
+    ORDER BY acr.submitted_at DESC
+  `;
+
+  const rows = await queryDb<
+    Omit<HodAuditReport, "file_url"> & { r2_file_key: string | null }
+  >(query);
+
+  const baseUrl = (process.env.R2_PUBLIC_BASE_URL || "").replace(/\/+$/, "");
+
+  return rows.map((row) => ({
+    ...row,
+    file_url: row.r2_file_key ? `${baseUrl}/${row.r2_file_key}` : null,
+  })) as HodAuditReport[];
+}
+
+export async function saveHodRemark(submissionId: string, remark: string) {
+  const session = await getFacultySession();
+  if (!session || (session.role !== "hod" && session.role !== "developer" && session.role !== "admin")) {
+    throw new Error("Unauthorized");
+  }
+  
+  if (!submissionId) {
+    throw new Error("Submission ID is required.");
+  }
+
+  await executeDb(
+    `
+    UPDATE public.submission
+    SET hod_remarks = $1
+    WHERE submission_id = $2
+    `,
+    [remark.trim() || null, submissionId]
+  );
 }

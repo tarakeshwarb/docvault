@@ -8,7 +8,7 @@ type FacultyAuthRow = {
   faculty_name: string;
   designation: string;
   email: string;
-  role: "admin" | "hod" | "course_coordinator" | "secondary_coordinator" | "faculty" | "audit";
+  role: "admin" | "hod" | "course_coordinator" | "secondary_coordinator" | "faculty" | "audit" | "developer";
   password_hash: string | null;
   must_change_password: boolean;
 };
@@ -78,8 +78,12 @@ export async function POST(request: Request) {
 
     // Verify the selected role
     let hasRole = false;
+    let finalRole = selectedRole;
 
-    if (selectedRole === "admin" || selectedRole === "hod") {
+    if (matched.role === "developer") {
+      hasRole = true;
+      finalRole = "developer";
+    } else if (selectedRole === "admin" || selectedRole === "hod") {
       hasRole = matched.role === selectedRole;
     } else if (selectedRole === "course_coordinator") {
       const rows = await queryDb<{ count: string }>(
@@ -106,22 +110,18 @@ export async function POST(request: Request) {
         hasRole = false;
       }
     } else if (selectedRole === "audit") {
-      if (faculty_id === 100174) {
-        hasRole = true;
-      } else {
-        try {
-          const rows = await queryDb<{ count: string }>(
-            `SELECT COUNT(*) AS count 
-             FROM public.audit_assignment aa
-             JOIN public.course_offering co ON aa.offering_id = co.offering_id
-             JOIN public.semester_master sm ON co.semester_id = sm.semester_id
-             WHERE aa.faculty_id = $1 AND sm.is_active = true`,
-            [faculty_id]
-          );
-          hasRole = Number(rows[0]?.count ?? 0) > 0;
-        } catch {
-          hasRole = false;
-        }
+      try {
+        const rows = await queryDb<{ count: string }>(
+          `SELECT COUNT(*) AS count 
+           FROM public.audit_assignment aa
+           JOIN public.course_offering co ON aa.offering_id = co.offering_id
+           JOIN public.semester_master sm ON co.semester_id = sm.semester_id
+           WHERE aa.faculty_id = $1 AND sm.is_active = true`,
+          [faculty_id]
+        );
+        hasRole = Number(rows[0]?.count ?? 0) > 0;
+      } catch {
+        hasRole = false;
       }
     } else if (selectedRole === "faculty") {
       const rows = await queryDb<{ count: string }>(
@@ -147,7 +147,7 @@ export async function POST(request: Request) {
       faculty_name: matched.faculty_name,
       designation: matched.designation,
       email: matched.email,
-      role: selectedRole,
+      role: finalRole,
       must_change_password: matched.must_change_password,
     };
 
@@ -164,7 +164,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       ok: true,
-      redirectTo: getDashboardPathForRole(session.role),
+      redirectTo: matched.role === "developer" 
+        ? getDashboardPathForRole(selectedRole) 
+        : getDashboardPathForRole(session.role),
       message: "Login successful.",
     });
   } catch (error) {

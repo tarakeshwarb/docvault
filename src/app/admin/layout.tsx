@@ -27,7 +27,7 @@ export default async function AdminLayout({
     redirect("/");
   }
 
-  if (session.role !== "admin") {
+  if (session.role !== "admin" && session.role !== "developer") {
     redirect(getDashboardPathForRole(session.role));
   }
 

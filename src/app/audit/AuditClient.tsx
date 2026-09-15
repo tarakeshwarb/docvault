@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { createPortal } from "react-dom";
 import {
-  FileText,
   ChevronDown,
   ChevronUp,
   Search,
@@ -14,17 +12,16 @@ import {
   User,
   BookOpen,
   X,
-  Download,
   ShieldCheck,
   FileCheck,
+  MessageSquare,
+  Save,
+  Loader2,
 } from "lucide-react";
 import type { AuditFacultySubmission, AuditCourseOffering } from "./actions";
+import { saveAuditRemark } from "./actions";
 import { AuditReportsSubmission } from "@/components/audit/AuditReportsSubmission";
-
-import { forceDownload } from "@/lib/utils";
 import { SubmissionFilesModal } from "@/components/coordinator/SubmissionFilesModal";
-
-// Removed FilePreviewModal and PreviewableFileLink in favor of SubmissionFilesModal
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -33,6 +30,7 @@ type ComponentEntry = {
   component_name: string;
   status: "pending" | "submitted" | "unsubmitted" | "rejected" | null;
   submitted_at: string | null;
+  audit_remarks: string | null;
   files: { file_id: string; file_name: string; version: number; file_url: string }[];
 };
 
@@ -87,10 +85,13 @@ function groupRows(rows: AuditFacultySubmission[]): FacultyGroup[] {
           component_name: row.component_name,
           status: row.status,
           submitted_at: row.submitted_at,
+          audit_remarks: row.audit_remarks ?? null,
           files: [],
         });
       }
       const comp = entry.compMap.get(row.submission_id)!;
+      // Update audit_remarks if present (overwrite with latest)
+      if (row.audit_remarks) comp.audit_remarks = row.audit_remarks;
       if (row.file_id && row.file_name && row.file_url) {
         // Avoid duplicate file entries (from multiple LEFT JOIN rows)
         if (!comp.files.find((f) => f.file_id === row.file_id)) {
@@ -114,7 +115,64 @@ function groupRows(rows: AuditFacultySubmission[]): FacultyGroup[] {
   });
 }
 
-// ── Status Badge ─────────────────────────────────────────────────────────────
+// ── Audit Comment Box ────────────────────────────────────────────────────────
+
+function AuditCommentBox({
+  submission_id,
+  initialRemark,
+}: {
+  submission_id: string;
+  initialRemark: string | null;
+}) {
+  const [remark, setRemark] = useState(initialRemark ?? "");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSave() {
+    setSaving(true);
+    setSaved(false);
+    setError(null);
+    try {
+      await saveAuditRemark(submission_id, remark);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5 w-full max-w-xs">
+      <div className="flex items-center gap-1 text-[10px] font-semibold text-amber-600 uppercase tracking-wider">
+        <MessageSquare className="w-3 h-3" />
+        Audit Comment
+      </div>
+      <div className="flex items-end gap-2">
+        <textarea
+          rows={2}
+          placeholder="Add comment for faculty..."
+          value={remark}
+          onChange={(e) => { setRemark(e.target.value); setSaved(false); }}
+          className="flex-1 resize-none rounded-lg border border-amber-200 bg-amber-50/50 px-2.5 py-1.5 text-xs text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-300 focus:border-amber-300"
+        />
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          title="Save comment"
+          className="inline-flex items-center gap-1 rounded-lg bg-amber-500 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 disabled:opacity-50 transition-colors shrink-0"
+        >
+          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+          {saved ? "Saved!" : "Save"}
+        </button>
+      </div>
+      {error && <p className="text-[10px] text-red-600">{error}</p>}
+    </div>
+  );
+}
+
 
 function StatusBadge({ status }: { status: string | null }) {
   if (status === "submitted") {
@@ -223,7 +281,8 @@ function FacultyCard({ group, baseUrl }: { group: FacultyGroup; baseUrl: string 
             group.components.map((comp) => (
               <div key={comp.submission_id} className="px-5 py-4">
                 <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
+                  {/* Left: component info + view button */}
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <BookOpen className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                       <span className="text-sm font-medium text-[var(--color-ink)]">
@@ -242,7 +301,7 @@ function FacultyCard({ group, baseUrl }: { group: FacultyGroup; baseUrl: string 
                       </p>
                     )}
 
-                    {/* Files Modal */}
+                    {/* View Files button */}
                     {comp.status && comp.status !== "unsubmitted" && comp.status !== "pending" && (
                       <div className="mt-2 ml-5">
                         <SubmissionFilesModal
@@ -264,6 +323,16 @@ function FacultyCard({ group, baseUrl }: { group: FacultyGroup; baseUrl: string 
                       </p>
                     )}
                   </div>
+
+                  {/* Right: audit comment box */}
+                  {comp.submission_id && comp.status !== "pending" && (
+                    <div className="shrink-0 pt-0.5">
+                      <AuditCommentBox
+                        submission_id={comp.submission_id}
+                        initialRemark={comp.audit_remarks}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             ))

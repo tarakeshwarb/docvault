@@ -29,6 +29,7 @@ import {
   AlertCircle,
   Megaphone,
   Users,
+  MessageSquare,
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
@@ -146,8 +147,14 @@ export default async function OfferingDetailPage({
         </div>
 
         <div className="flex flex-col items-start lg:items-end gap-3">
-
           <SendRemindersButton offering_id={offering_id} />
+          <Link
+            href={`/course-coordinator/${offering_id}/audit-comments`}
+            className="inline-flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 text-sm font-semibold text-white ring-1 ring-inset ring-white/30 hover:bg-white/30 transition-colors"
+          >
+            <MessageSquare className="w-4 h-4" />
+            Official Remarks
+          </Link>
         </div>
       </div>
 

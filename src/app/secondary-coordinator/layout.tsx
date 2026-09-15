@@ -27,7 +27,7 @@ export default async function SecondaryCoordinatorLayout({
     redirect("/");
   }
 
-  if (session.role !== "admin") {
+  if (session.role !== "admin" && session.role !== "developer") {
     // Check if assigned as secondary coordinator
     try {
       const secondaryRows = await queryDb<{ count: string }>(

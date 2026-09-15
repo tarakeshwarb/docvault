@@ -6,7 +6,7 @@ export type FacultySession = {
   faculty_name: string;
   email: string;
   designation: string;
-  role: "admin" | "hod" | "course_coordinator" | "secondary_coordinator" | "faculty" | "audit";
+  role: "admin" | "hod" | "course_coordinator" | "secondary_coordinator" | "faculty" | "audit" | "developer";
   must_change_password?: boolean;
 };
 
@@ -40,7 +40,7 @@ function decodeSession(token: string): FacultySession | null {
       typeof parsed.faculty_name !== "string" ||
       typeof parsed.email !== "string" ||
       typeof parsed.designation !== "string" ||
-      !["admin", "hod", "course_coordinator", "secondary_coordinator", "faculty", "audit"].includes(parsed.role)
+      !["admin", "hod", "course_coordinator", "secondary_coordinator", "faculty", "audit", "developer"].includes(parsed.role)
     ) {
       return null;
     }
@@ -51,7 +51,7 @@ function decodeSession(token: string): FacultySession | null {
 }
 
 export function getDashboardPathForRole(role: FacultySession["role"]): string {
-  if (role === "admin") return "/admin";
+  if (role === "developer" || role === "admin") return "/admin";
   if (role === "hod") return "/hod";
   if (role === "course_coordinator") return "/course-coordinator";
   if (role === "secondary_coordinator") return "/secondary-coordinator";

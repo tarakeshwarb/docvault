@@ -20,8 +20,8 @@ export default async function FacultyLayout({ children }: { children: React.Reac
     redirect("/");
   }
 
-  // Strict role isolation: only faculty (and admin) can access this portal
-  if (session.role !== "faculty" && session.role !== "admin") {
+  // Strict role isolation: only faculty, admin, and developer can access this portal
+  if (session.role !== "faculty" && session.role !== "admin" && session.role !== "developer") {
     redirect("/");
   }
 

@@ -16,8 +16,10 @@ import {
   Download,
   AlertCircle,
   TrendingUp,
+  MessageSquare,
 } from "lucide-react";
-import type { HodDetailedSubmission, HodDeptStats } from "./actions";
+import type { HodDetailedSubmission, HodDeptStats, HodAuditReport } from "./actions";
+import { saveHodRemark } from "./actions";
 
 import { forceDownload } from "@/lib/utils";
 import { SubmissionFilesModal } from "@/components/coordinator/SubmissionFilesModal";
@@ -31,6 +33,7 @@ type ComponentEntry = {
   component_name: string;
   status: "pending" | "submitted" | "unsubmitted" | "rejected" | null;
   submitted_at: string | null;
+  hod_remarks: string | null;
   files: { file_id: string; file_name: string; version: number; file_url: string }[];
 };
 
@@ -101,8 +104,9 @@ function groupRows(rows: HodDetailedSubmission[]): CourseGroup[] {
         facultyEntry.compMap.set(row.submission_id, {
           submission_id: row.submission_id,
           component_name: row.component_name,
-          status: row.status,
+          status: row.status as any,
           submitted_at: row.submitted_at,
+          hod_remarks: row.hod_remarks,
           files: [],
         });
       }
@@ -297,6 +301,16 @@ function FacultyCard({ group, baseUrl }: { group: FacultyGroup; baseUrl: string 
                       ⚠ Files were deleted by faculty after submission.
                     </p>
                   )}
+
+                  {/* HOD Comment Box */}
+                  {comp.status === "submitted" && (
+                    <div className="mt-3 ml-5.5">
+                      <HodCommentBox 
+                        submission_id={comp.submission_id} 
+                        initialRemark={comp.hod_remarks} 
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             ))
@@ -360,13 +374,16 @@ function CourseCard({ course, baseUrl }: { course: CourseGroup; baseUrl: string 
 export default function HodClient({
   initialStats: stats,
   initialRows,
+  auditReports,
   baseUrl,
 }: {
   initialStats: HodDeptStats;
   initialRows: HodDetailedSubmission[];
+  auditReports: HodAuditReport[];
   baseUrl: string;
 }) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState<"tracking" | "reports">("tracking");
 
   const courseGroups = useMemo(() => groupRows(initialRows), [initialRows]);
 
@@ -424,54 +441,200 @@ export default function HodClient({
         ))}
       </div>
 
-      {/* At-risk courses alert */}
-      {atRiskCourses.length > 0 && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <AlertCircle className="w-4 h-4 text-red-600" />
-            <p className="text-sm font-semibold text-red-700">
-              {atRiskCourses.length} course{atRiskCourses.length > 1 ? "s" : ""} below 50% completion
-            </p>
+
+      {/* Horizontal Navigation */}
+      <div className="border-b border-black/5">
+        <nav className="-mb-px flex gap-6" aria-label="Tabs">
+          <button
+            onClick={() => setActiveTab("tracking")}
+            className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
+              activeTab === "tracking"
+                ? "border-[var(--color-accent)] text-[var(--color-accent)]"
+                : "border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            Course Progress
+          </button>
+          <button
+            onClick={() => setActiveTab("reports")}
+            className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
+              activeTab === "reports"
+                ? "border-[var(--color-accent)] text-[var(--color-accent)]"
+                : "border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            Submitted Reports
+          </button>
+        </nav>
+      </div>
+
+      {/* Main Content Area */}
+      {activeTab === "tracking" ? (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <h2 className="text-lg font-semibold text-[var(--color-ink)] flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-gray-400" />
+              Course &amp; Faculty Tracking
+            </h2>
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search course or faculty..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-gray-200 outline-none focus:border-[var(--color-accent)] shadow-sm"
+              />
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {atRiskCourses.map((c) => (
-              <span key={c.offering_id} className="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700">
-                {c.course_code} — {c.completionPct}%
-              </span>
-            ))}
+
+          <div className="space-y-3">
+            {filteredCourses.length === 0 ? (
+              <div className="panel-card px-6 py-12 text-center text-gray-500">
+                No courses found matching "{searchTerm}".
+              </div>
+            ) : (
+              filteredCourses.map((course) => <CourseCard key={course.offering_id} course={course} baseUrl={baseUrl} />)
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-[var(--color-ink)] flex items-center gap-2">
+            <FileText className="w-5 h-5 text-gray-400" />
+            Official Audit Reports
+          </h2>
+          <div className="panel-card overflow-hidden">
+            {auditReports.length === 0 ? (
+              <div className="px-6 py-12 text-center text-gray-500">
+                No audit reports have been submitted yet.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm whitespace-nowrap">
+                  <thead className="bg-gray-50/80 border-b border-gray-200">
+                    <tr>
+                      <th className="px-5 py-3 font-semibold text-gray-900">Course</th>
+                      <th className="px-5 py-3 font-semibold text-gray-900">Component</th>
+                      <th className="px-5 py-3 font-semibold text-gray-900">Auditor</th>
+                      <th className="px-5 py-3 font-semibold text-gray-900">Date</th>
+                      <th className="px-5 py-3 font-semibold text-gray-900">Remarks</th>
+                      <th className="px-5 py-3 font-semibold text-gray-900 text-right">Report</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {auditReports.map((report) => (
+                      <tr key={report.report_id} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-5 py-4">
+                          <p className="font-semibold text-gray-900">{report.course_code}</p>
+                          <p className="text-xs text-gray-500">{report.course_name}</p>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                            {report.component_name}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-gray-600">{report.auditor_name || "Unknown"}</td>
+                        <td className="px-5 py-4 text-gray-600">
+                          {new Date(report.submitted_at).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </td>
+                        <td className="px-5 py-4">
+                          {report.remarks ? (
+                            <p className="max-w-[200px] truncate text-gray-600" title={report.remarks}>
+                              {report.remarks}
+                            </p>
+                          ) : (
+                            <span className="text-gray-400 italic">No remarks</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-4 text-right">
+                          {report.file_url ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                forceDownload(report.file_url!, report.file_name || "audit_report.pdf");
+                              }}
+                              className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-200"
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                              Download
+                            </button>
+                          ) : (
+                            <span className="text-xs text-gray-400">N/A</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
+    </div>
+  );
+}
 
-      {/* Main Content Area */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h2 className="text-lg font-semibold text-[var(--color-ink)] flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-gray-400" />
-            Course &amp; Faculty Tracking
-          </h2>
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search course or faculty..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-gray-200 outline-none focus:border-[var(--color-accent)] shadow-sm"
-            />
-          </div>
-        </div>
+// ── HOD Comment Box ─────────────────────────────────────────────────────────
 
-        <div className="space-y-3">
-          {filteredCourses.length === 0 ? (
-            <div className="panel-card px-6 py-12 text-center text-gray-500">
-              No courses found matching "{searchTerm}".
-            </div>
-          ) : (
-            filteredCourses.map((course) => <CourseCard key={course.offering_id} course={course} baseUrl={baseUrl} />)
-          )}
-        </div>
+function HodCommentBox({
+  submission_id,
+  initialRemark,
+}: {
+  submission_id: string;
+  initialRemark: string | null;
+}) {
+  const [remark, setRemark] = useState(initialRemark ?? "");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSave() {
+    setSaving(true);
+    setSaved(false);
+    setError(null);
+    try {
+      await saveHodRemark(submission_id, remark);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5 w-full max-w-sm">
+      <div className="flex items-center gap-1 text-[10px] font-semibold text-teal-600 uppercase tracking-wider">
+        <MessageSquare className="w-3 h-3" />
+        HOD / Reviewer Comment
       </div>
+      <div className="flex items-end gap-2">
+        <textarea
+          rows={2}
+          placeholder="Add a remark for the faculty..."
+          value={remark}
+          onChange={(e) => { setRemark(e.target.value); setSaved(false); }}
+          className="flex-1 resize-none rounded-lg border border-teal-200 bg-teal-50/50 px-2.5 py-1.5 text-xs text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400"
+        />
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          title="Save comment"
+          className="inline-flex items-center gap-1 rounded-lg bg-teal-500 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-teal-600 disabled:opacity-50 transition-colors shrink-0"
+        >
+          {saving ? "Saving..." : saved ? "Saved!" : "Save"}
+        </button>
+      </div>
+      {error && <p className="text-[10px] text-red-500 font-medium">{error}</p>}
     </div>
   );
 }

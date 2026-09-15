@@ -273,6 +273,18 @@ export default async function FacultyCoursePage({
                                       {sub.remarks}
                                     </p>
                                   )}
+                                  {sub.audit_remarks && (
+                                    <p className="mt-1 text-xs text-amber-700 bg-amber-50 p-1.5 rounded border border-amber-200 max-w-sm">
+                                      <strong className="font-semibold block mb-0.5">💬 Auditor Comment:</strong>
+                                      {sub.audit_remarks}
+                                    </p>
+                                  )}
+                                  {sub.hod_remarks && (
+                                    <p className="mt-1 text-xs text-teal-700 bg-teal-50 p-1.5 rounded border border-teal-200 max-w-sm">
+                                      <strong className="font-semibold block mb-0.5">💬 HOD/Reviewer Comment:</strong>
+                                      {sub.hod_remarks}
+                                    </p>
+                                  )}
                                 </td>
                                 <td className="px-5 py-3 text-xs text-gray-500">
                                   {sub.deadline ? formatDate(sub.deadline) : "No deadline"}
