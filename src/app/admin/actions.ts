@@ -50,7 +50,7 @@ export type CourseOffering = {
 export async function getCourses(): Promise<Course[]> {
   try {
     const session = await getFacultySession();
-    const isDev = session?.email === 'saiishita@gmail.com' || session?.email === 'shizuu1727@gmail.com';
+    const isDev = session?.role === "developer";
     
     const query = isDev 
       ? "SELECT * FROM public.course_master WHERE course_code LIKE 'DEV%' ORDER BY course_code ASC"

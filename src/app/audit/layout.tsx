@@ -15,8 +15,8 @@ export default async function AuditLayout({ children }: { children: React.ReactN
     redirect("/");
   }
 
-  // Must be logged in explicitly as audit or admin
-  if (session.role !== "audit" && session.role !== "admin") {
+  // Must be logged in explicitly as audit, admin, or developer
+  if (session.role !== "audit" && session.role !== "admin" && session.role !== "developer") {
     redirect("/");
   }
 

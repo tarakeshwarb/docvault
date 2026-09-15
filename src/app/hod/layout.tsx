@@ -6,8 +6,8 @@ export default async function HodLayout({ children }: { children: React.ReactNod
   const session = await getFacultySession();
   if (!session) redirect("/");
   
-  // Only HOD role allowed — admin cannot access this page
-  if (session.role !== "hod") redirect("/");
+  // Only HOD and developer roles allowed
+  if (session.role !== "hod" && session.role !== "developer") redirect("/");
 
   return <AppShell>{children}</AppShell>;
 }

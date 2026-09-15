@@ -1,8 +1,9 @@
 import Image from "next/image";
+import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="relative mt-12 bg-white pt-16 pb-8 border-t border-black/5">
+    <footer className="relative bg-white pt-16 pb-8 border-t border-black/5">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-10 md:flex-row md:justify-between lg:gap-20">
           <div className="max-w-sm space-y-6">
@@ -39,6 +40,11 @@ export default function Footer() {
                 <li>Admin Control</li>
                 <li>Coordinator Hub</li>
                 <li>Faculty Uploads</li>
+                <li>
+                  <Link href="/team" className="hover:text-[var(--color-ink)] transition-colors">
+                    Team
+                  </Link>
+                </li>
               </ul>
             </div>
             <div className="space-y-4">

@@ -23,6 +23,8 @@ export type PendingSubmission = {
   submitted_at: string | null;
   deadline: string | null;
   remarks: string | null;
+  audit_remarks: string | null;
+  hod_remarks: string | null;
   mandatory: boolean;
   offering_id: string;
   course_name: string;
@@ -60,6 +62,8 @@ export async function getFacultySubmissions(faculty_id: number): Promise<Pending
       s.status,
       s.submitted_at,
       s.remarks,
+      s.audit_remarks,
+      s.hod_remarks,
       cc.deadline,
       cc.mandatory,
       fa.offering_id,

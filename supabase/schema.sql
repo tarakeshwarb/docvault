@@ -135,6 +135,7 @@ create table if not exists public.submission (
   approved_by bigint references public.faculty(faculty_id) on delete set null,
   approved_at timestamptz,
   remarks text,
+  audit_remarks text, -- Comments left by the auditor, visible to faculty and coordinator
   created_at timestamptz not null default now(),
   unique (faculty_assignment_id, course_component_id)
 );
