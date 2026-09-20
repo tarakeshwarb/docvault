@@ -30,7 +30,7 @@ import { BarChart3 } from "lucide-react";
 type ComponentEntry = {
   submission_id: string;
   component_name: string;
-  status: "pending" | "submitted" | "unsubmitted" | "rejected" | null;
+  status: "pending" | "submitted" | "unsubmitted" | "approved" | "rejected" | null;
   submitted_at: string | null;
   audit_remarks: string | null;
   files: { file_id: string; file_name: string; version: number; file_url: string }[];
@@ -46,6 +46,8 @@ type FacultyGroup = {
   batch: number;
   semester_name: string;
   year_name: string;
+  department_id: string | null;
+  department_name: string | null;
   components: ComponentEntry[];
   submittedCount: number;
   unsubmittedCount: number;
@@ -73,6 +75,8 @@ function groupRows(rows: AuditFacultySubmission[]): FacultyGroup[] {
           batch: row.batch,
           semester_name: row.semester_name,
           year_name: row.year_name,
+          department_id: row.department_id,
+          department_name: row.department_name,
         },
         compMap: new Map(),
       });
@@ -362,9 +366,8 @@ export default function AuditClient({
 }) {
   const [activeTab, setActiveTab] = useState<"trail" | "result-analysis" | "reports">("trail");
   const [searchTerm, setSearchTerm] = useState("");
-  const [yearFilter, setYearFilter] = useState("");
-  const [semesterFilter, setSemesterFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"" | "submitted" | "unsubmitted" | "pending">("");
+  const [statusFilter, setStatusFilter] = useState<"" | "submitted" | "pending">("");
+  const [departmentFilter, setDepartmentFilter] = useState("");
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -384,8 +387,18 @@ export default function AuditClient({
 
   const groups = useMemo(() => groupRows(initialRows), [initialRows]);
 
-  const uniqueYears = useMemo(() => Array.from(new Set(groups.map((g) => g.year_name))), [groups]);
-  const uniqueSemesters = useMemo(() => Array.from(new Set(groups.map((g) => g.semester_name))), [groups]);
+
+  const uniqueDepartments = useMemo(() => {
+    const deptMap = new Map<string, string>();
+    for (const g of groups) {
+      if (g.department_id && g.department_name) {
+        deptMap.set(g.department_id, g.department_name);
+      }
+    }
+    return Array.from(deptMap.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [groups]);
 
   const filteredGroups = useMemo(() => {
     return groups.filter((g) => {
@@ -396,18 +409,16 @@ export default function AuditClient({
         g.course_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         g.section_name.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchesYear = !yearFilter || g.year_name === yearFilter;
-      const matchesSemester = !semesterFilter || g.semester_name === semesterFilter;
+      const matchesDepartment = !departmentFilter || g.department_id === departmentFilter;
 
       const matchesStatus =
         !statusFilter ||
         (statusFilter === "submitted" && g.submittedCount > 0) ||
-        (statusFilter === "unsubmitted" && g.unsubmittedCount > 0) ||
         (statusFilter === "pending" && g.pendingCount > 0);
 
-      return matchesSearch && matchesYear && matchesSemester && matchesStatus;
+      return matchesSearch && matchesStatus && matchesDepartment;
     });
-  }, [groups, searchTerm, yearFilter, semesterFilter, statusFilter]);
+  }, [groups, searchTerm, statusFilter, departmentFilter]);
 
   // Stats
   const totalFaculty = groups.length;
@@ -484,6 +495,8 @@ export default function AuditClient({
 
       {/* Tab 1: Master Action Trail */}
       <div className={activeTab === "trail" ? "space-y-6 block animate-in fade-in duration-300" : "hidden"}>
+
+
         {/* Stats Row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
@@ -514,23 +527,13 @@ export default function AuditClient({
         <div className="flex items-center gap-3 flex-wrap">
           <Filter className="w-4 h-4 text-gray-400" />
           <select
-            value={yearFilter}
-            onChange={(e) => setYearFilter(e.target.value)}
-            className="px-3 py-2 text-sm rounded-lg border border-gray-200 outline-none focus:border-[var(--color-accent)] bg-white min-w-[120px]"
-          >
-            <option value="">All Years</option>
-            {uniqueYears.map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
-          <select
-            value={semesterFilter}
-            onChange={(e) => setSemesterFilter(e.target.value)}
+            value={departmentFilter}
+            onChange={(e) => setDepartmentFilter(e.target.value)}
             className="px-3 py-2 text-sm rounded-lg border border-gray-200 outline-none focus:border-[var(--color-accent)] bg-white min-w-[140px]"
           >
-            <option value="">All Semesters</option>
-            {uniqueSemesters.map((s) => (
-              <option key={s} value={s}>{s}</option>
+            <option value="">All Departments</option>
+            {uniqueDepartments.map((d) => (
+              <option key={d.id} value={d.id}>{d.name}</option>
             ))}
           </select>
           <select
@@ -540,7 +543,6 @@ export default function AuditClient({
           >
             <option value="">All Statuses</option>
             <option value="submitted">Has Submissions</option>
-            <option value="unsubmitted">Has Deletions</option>
             <option value="pending">Has Pending</option>
           </select>
         </div>

@@ -144,8 +144,8 @@ export async function getDeptCoordinatorDeptId(faculty_id: number, offering_id: 
   }
 }
 
-export async function getFacultyAssignments(offering_id: string): Promise<FacultyAssignment[]> {
-  return queryDb<FacultyAssignment>(`
+export async function getFacultyAssignments(offering_id: string, department_id?: string | null): Promise<FacultyAssignment[]> {
+  const query = `
     SELECT
       fa.id,
       fa.faculty_id,
@@ -159,8 +159,11 @@ export async function getFacultyAssignments(offering_id: string): Promise<Facult
     FROM public.faculty_assignment fa
     JOIN public.faculty f ON fa.faculty_id = f.faculty_id
     WHERE fa.offering_id = $1
+    ${department_id ? `AND fa.department_id = $2` : ''}
     ORDER BY fa.section_name, f.faculty_name
-  `, [offering_id]);
+  `;
+  const params = department_id ? [offering_id, department_id] : [offering_id];
+  return queryDb<FacultyAssignment>(query, params);
 }
 
 export async function getCourseComponents(offering_id: string): Promise<Component[]> {

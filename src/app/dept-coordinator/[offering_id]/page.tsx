@@ -75,6 +75,8 @@ export default async function OfferingDetailPage({
     return null;
   }
 
+  const coordinatorDeptId = await getDeptCoordinatorDeptId(session.faculty_id, offering_id);
+
   const [
     offerings,
     assignments,
@@ -83,20 +85,16 @@ export default async function OfferingDetailPage({
     componentMasters,
     allFaculty,
     broadcasts,
-    coordinatorDeptId,
   ] =
     await Promise.all([
       getCoordinatorOfferings(session.faculty_id),
-      getFacultyAssignments(offering_id),
+      getFacultyAssignments(offering_id, coordinatorDeptId),
       getCourseComponents(offering_id),
       getSubmissionStatus(offering_id),
       getComponentMasters(),
       getAllFacultyForAssignment(),
       getCourseBroadcasts(offering_id),
-      getDeptCoordinatorDeptId(session.faculty_id, offering_id),
     ]);
-
-
 
   const offering = offerings.find((o) => o.offering_id === offering_id);
   if (!offering) notFound();
