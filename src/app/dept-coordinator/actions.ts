@@ -58,7 +58,9 @@ export type SubmissionStatus = {
   submitted_at: string | null;
   deadline: string | null;
   audit_remarks: string | null;
+  audit_remark_by_name: string | null;
   hod_remarks: string | null;
+  hod_remark_by_name: string | null;
 };
 
 export type GeneratedReport = {
@@ -84,11 +86,11 @@ export async function getCoordinatorOfferings(faculty_id: number): Promise<Coord
     return await queryDb<CoordinatorOffering>(`
       WITH offering_ids AS (
         SELECT ca.offering_id
-        FROM public.coordinator_assignment ca
+        FROM public.main_coordinator_assignment ca
         WHERE ca.faculty_id = $1
         UNION
         SELECT sca.offering_id
-        FROM public.secondary_coordinator_assignment sca
+        FROM public.dept_coordinator_assignment sca
         WHERE sca.faculty_id = $1
       )
       SELECT DISTINCT
@@ -108,8 +110,8 @@ export async function getCoordinatorOfferings(faculty_id: number): Promise<Coord
       ORDER BY ay.start_date DESC, sm.semester_name, cm.course_code
     `, [faculty_id]);
   } catch (error) {
-    // Fallback to query without secondary_coordinator_assignment if table doesn't exist
-    console.warn("secondary_coordinator_assignment table not found, using fallback query");
+    // Fallback to query without dept_coordinator_assignment if table doesn't exist
+    console.warn("dept_coordinator_assignment table not found, using fallback query");
     return queryDb<CoordinatorOffering>(`
       SELECT DISTINCT
         co.offering_id,
@@ -119,7 +121,7 @@ export async function getCoordinatorOfferings(faculty_id: number): Promise<Coord
         sm.semester_name,
         ay.year_name,
         ay.start_date
-      FROM public.coordinator_assignment ca
+      FROM public.main_coordinator_assignment ca
       JOIN public.course_offering co ON ca.offering_id = co.offering_id
       JOIN public.course_master cm ON co.course_id = cm.course_id
       JOIN public.semester_master sm ON co.semester_id = sm.semester_id
@@ -189,13 +191,17 @@ export async function getSubmissionStatus(offering_id: string): Promise<Submissi
       s.status,
       s.submitted_at,
       s.audit_remarks,
+      audit_fac.faculty_name AS audit_remark_by_name,
       s.hod_remarks,
+      hod_fac.faculty_name AS hod_remark_by_name,
       cc.deadline
     FROM public.submission s
     JOIN public.faculty_assignment fa ON s.faculty_assignment_id = fa.id
     JOIN public.faculty f ON fa.faculty_id = f.faculty_id
     JOIN public.course_component cc ON s.course_component_id = cc.id
     JOIN public.component_master cm ON cc.component_id = cm.component_id
+    LEFT JOIN public.faculty hod_fac ON s.hod_remark_by = hod_fac.faculty_id
+    LEFT JOIN public.faculty audit_fac ON s.audit_remark_by = audit_fac.faculty_id
     WHERE fa.offering_id = $1
     ORDER BY fa.section_name, f.faculty_name, cm.component_name
   `, [offering_id]);
@@ -261,8 +267,8 @@ export async function addFacultyAssignment(data: {
     );
   }
 
-  revalidatePath(`/course-coordinator/${data.offering_id}`);
-  revalidatePath(`/secondary-coordinator/${data.offering_id}`);
+  revalidatePath("/dept-coordinator", "layout");
+  revalidatePath("/dept-coordinator", "layout");
 }
 
 export async function updateFacultyAssignment(data: {
@@ -278,8 +284,8 @@ export async function updateFacultyAssignment(data: {
      WHERE id = $4 AND offering_id = $5`,
     [data.section_name, data.batch, data.faculty_id, data.id, data.offering_id]
   );
-  revalidatePath(`/course-coordinator/${data.offering_id}`);
-  revalidatePath(`/secondary-coordinator/${data.offering_id}`);
+  revalidatePath("/dept-coordinator", "layout");
+  revalidatePath("/dept-coordinator", "layout");
 }
 
 export async function deleteFacultyAssignment(data: {
@@ -294,8 +300,8 @@ export async function deleteFacultyAssignment(data: {
     `DELETE FROM public.faculty_assignment WHERE id = $1 AND offering_id = $2`,
     [data.id, data.offering_id]
   );
-  revalidatePath(`/course-coordinator/${data.offering_id}`);
-  revalidatePath(`/secondary-coordinator/${data.offering_id}`);
+  revalidatePath("/dept-coordinator", "layout");
+  revalidatePath("/dept-coordinator", "layout");
 }
 
 export async function addCourseComponent(data: {
@@ -322,8 +328,8 @@ export async function addCourseComponent(data: {
     );
   }
 
-  revalidatePath(`/course-coordinator/${data.offering_id}`);
-  revalidatePath(`/secondary-coordinator/${data.offering_id}`);
+  revalidatePath("/dept-coordinator", "layout");
+  revalidatePath("/dept-coordinator", "layout");
   revalidatePath(`/faculty`);
 }
 
@@ -341,8 +347,8 @@ export async function updateCourseComponent(data: {
      WHERE id = $3 AND offering_id = $4`,
     [data.deadline, data.mandatory, data.id, data.offering_id]
   );
-  revalidatePath(`/course-coordinator/${data.offering_id}`);
-  revalidatePath(`/secondary-coordinator/${data.offering_id}`);
+  revalidatePath("/dept-coordinator", "layout");
+  revalidatePath("/dept-coordinator", "layout");
 }
 
 export async function deleteCourseComponent(data: {
@@ -354,8 +360,8 @@ export async function deleteCourseComponent(data: {
      WHERE id = $1 AND offering_id = $2`,
     [data.id, data.offering_id]
   );
-  revalidatePath(`/course-coordinator/${data.offering_id}`);
-  revalidatePath(`/secondary-coordinator/${data.offering_id}`);
+  revalidatePath("/dept-coordinator", "layout");
+  revalidatePath("/dept-coordinator", "layout");
   revalidatePath(`/faculty`);
 }
 
@@ -566,10 +572,10 @@ export async function generateConsolidatedReport(formData: FormData) {
     [offering_id, report_type, generated_by, reportUrl]
   );
 
-  revalidatePath(`/course-coordinator/${offering_id}`);
-  revalidatePath(`/secondary-coordinator/${offering_id}`);
-  revalidatePath("/course-coordinator");
-  revalidatePath("/secondary-coordinator");
+  revalidatePath("/dept-coordinator", "layout");
+  revalidatePath("/dept-coordinator", "layout");
+  revalidatePath("/dept-coordinator");
+  revalidatePath("/dept-coordinator", "layout");
 }
 
 export type CourseBroadcast = {
@@ -639,8 +645,8 @@ export async function addCourseBroadcast(data: {
      VALUES ($1, $2, $3, $4, $5)`,
     [data.offering_id, data.title, data.r2_file_key, data.file_name, data.uploaded_by]
   );
-  revalidatePath(`/course-coordinator/${data.offering_id}`);
-  revalidatePath(`/secondary-coordinator/${data.offering_id}`);
+  revalidatePath("/dept-coordinator", "layout");
+  revalidatePath("/dept-coordinator", "layout");
   revalidatePath(`/faculty`);
 }
 
@@ -654,8 +660,8 @@ export async function deleteCourseBroadcast(broadcast_id: string, offering_id: s
     `DELETE FROM public.course_broadcast WHERE broadcast_id = $1 AND offering_id = $2`,
     [broadcast_id, offering_id]
   );
-  revalidatePath(`/course-coordinator/${offering_id}`);
-  revalidatePath(`/secondary-coordinator/${offering_id}`);
+  revalidatePath("/dept-coordinator", "layout");
+  revalidatePath("/dept-coordinator", "layout");
   revalidatePath(`/faculty`);
 }
 
@@ -675,8 +681,8 @@ export async function approveSubmission(
      WHERE submission_id = $1`,
     [submission_id, approver_id]
   );
-  revalidatePath(`/course-coordinator/${offering_id}`);
-  revalidatePath(`/secondary-coordinator/${offering_id}`);
+  revalidatePath("/dept-coordinator", "layout");
+  revalidatePath("/dept-coordinator", "layout");
   revalidatePath(`/faculty`);
 }
 
@@ -689,8 +695,8 @@ export async function revokeApproval(submission_id: string, offering_id: string)
      WHERE submission_id = $1`,
     [submission_id]
   );
-  revalidatePath(`/course-coordinator/${offering_id}`);
-  revalidatePath(`/secondary-coordinator/${offering_id}`);
+  revalidatePath("/dept-coordinator", "layout");
+  revalidatePath("/dept-coordinator", "layout");
   revalidatePath(`/faculty`);
 }
 
@@ -705,8 +711,8 @@ export async function rejectSubmission(submission_id: string, reason: string, of
      WHERE submission_id = $1`,
     [submission_id, reason.trim()]
   );
-  revalidatePath(`/course-coordinator/${offering_id}`);
-  revalidatePath(`/secondary-coordinator/${offering_id}`);
+  revalidatePath("/dept-coordinator", "layout");
+  revalidatePath("/dept-coordinator", "layout");
   revalidatePath(`/faculty`);
 }
 
@@ -763,7 +769,7 @@ if (!assignment) throw new Error("Faculty assignment not found");
       <br/>
       <p>You can upload these documents by logging into the Faculty Portal at <a href="https://docvault-rho.vercel.app/" style="color: #0c4da2; text-decoration: underline;">https://docvault-rho.vercel.app/</a>.</p>
       <p>Thank you,</p>
-      <p>Course Coordinator Team</p>
+      <p>Dept Coordinator Team</p>
     </div>
   `;
 

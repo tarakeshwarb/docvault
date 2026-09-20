@@ -3,6 +3,7 @@
 import { queryDb, executeDb } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { deleteFromR2 } from "@/lib/r2";
+import { getFacultySession } from "@/lib/auth";
 
 export type AuditFacultySubmission = {
   assignment_id: string;
@@ -96,9 +97,12 @@ export async function saveAuditRemark(
   submission_id: string,
   audit_remarks: string
 ): Promise<{ ok: boolean }> {
+  const session = await getFacultySession();
+  if (!session) throw new Error("Unauthorized");
+  
   await executeDb(
-    `UPDATE public.submission SET audit_remarks = $1 WHERE submission_id = $2`,
-    [audit_remarks.trim() || null, submission_id]
+    `UPDATE public.submission SET audit_remarks = $1, audit_remark_by = $3 WHERE submission_id = $2`,
+    [audit_remarks.trim() || null, submission_id, session.faculty_id]
   );
   revalidatePath("/audit");
   return { ok: true };

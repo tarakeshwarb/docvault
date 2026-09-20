@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Loader2, Bell } from "lucide-react";
-import { sendRemindersToAllPending } from "@/app/course-coordinator/actions";
+import { sendRemindersToAllPending } from "@/app/main-coordinator/actions";
 
 export function SendRemindersButton({ offering_id }: { offering_id: string }) {
   const [loading, setLoading] = useState(false);

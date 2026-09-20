@@ -93,7 +93,7 @@ export async function uploadDocument(
     });
 
     revalidatePath("/faculty");
-    revalidatePath("/course-coordinator");
+    revalidatePath("/main-coordinator");
     revalidatePath("/admin");
 
     return { ok: true, message: "Upload complete." };
@@ -128,7 +128,7 @@ export async function deleteDocument(formData: FormData): Promise<void> {
   await deleteDocumentById(id);
 
   revalidatePath("/faculty");
-  revalidatePath("/course-coordinator");
+  revalidatePath("/main-coordinator");
   revalidatePath("/admin");
   revalidatePath(`/documents/${id}`);
 }

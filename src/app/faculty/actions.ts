@@ -24,7 +24,9 @@ export type PendingSubmission = {
   deadline: string | null;
   remarks: string | null;
   audit_remarks: string | null;
+  audit_remark_by_name: string | null;
   hod_remarks: string | null;
+  hod_remark_by_name: string | null;
   mandatory: boolean;
   offering_id: string;
   course_name: string;
@@ -63,7 +65,9 @@ export async function getFacultySubmissions(faculty_id: number): Promise<Pending
       s.submitted_at,
       s.remarks,
       s.audit_remarks,
+      audit_fac.faculty_name AS audit_remark_by_name,
       s.hod_remarks,
+      hod_fac.faculty_name AS hod_remark_by_name,
       cc.deadline,
       cc.mandatory,
       fa.offering_id,
@@ -77,6 +81,8 @@ export async function getFacultySubmissions(faculty_id: number): Promise<Pending
     JOIN public.course_offering co ON fa.offering_id = co.offering_id
     JOIN public.course_master cm ON co.course_id = cm.course_id
     JOIN public.semester_master sm ON co.semester_id = sm.semester_id
+    LEFT JOIN public.faculty hod_fac ON s.hod_remark_by = hod_fac.faculty_id
+    LEFT JOIN public.faculty audit_fac ON s.audit_remark_by = audit_fac.faculty_id
     WHERE fa.faculty_id = $1 AND sm.is_active = true
     ORDER BY cm.course_code, fa.section_name, cmp.component_name
   `, [faculty_id]);

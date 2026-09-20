@@ -15,27 +15,29 @@ export default function EditOfferingClient({
   courses,
   semesters,
   coordinators,
+  departments,
 }: {
   offering: CourseOffering;
   courses: Course[];
   semesters: Semester[];
   coordinators: Faculty[];
+  departments: { department_id: string; department_name: string }[];
 }) {
   const router = useRouter();
   const [courseId, setCourseId] = useState(offering.course_id);
   const [semesterId, setSemesterId] = useState(offering.semester_id);
   const [primaryCoordinatorId, setPrimaryCoordinatorId] = useState("");
-  const [secondaryCoordinatorRows, setSecondaryCoordinatorRows] = useState<{id: string}[]>([{id: ""}]);
-  const [auditProfessorRows, setAuditProfessorRows] = useState<{id: string}[]>([{id: ""}]);
+  const [deptCoordinatorRows, setDeptCoordinatorRows] = useState<{ id: string; dept: string }[]>([{ id: "", dept: "" }]);
+  const [auditProfessorRows, setAuditProfessorRows] = useState<{ id: string }[]>([{ id: "" }]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Initialize state from offering data
   useEffect(() => {
     setPrimaryCoordinatorId(offering.primary_coordinator.faculty_id ? String(offering.primary_coordinator.faculty_id) : "");
-    setSecondaryCoordinatorRows(offering.secondary_coordinators.length > 0 
-      ? offering.secondary_coordinators.map(c => ({id: String(c.faculty_id)})) 
-      : [{id: ""}]);
+    setDeptCoordinatorRows(offering.dept_coordinators.length > 0 
+      ? offering.dept_coordinators.map(c => ({ id: String(c.faculty_id), dept: c.department_id || "" })) 
+      : [{ id: "", dept: "" }]);
     setAuditProfessorRows(offering.audit_professors.length > 0 
       ? offering.audit_professors.map(a => ({id: String(a.faculty_id)})) 
       : [{id: ""}]);
@@ -59,7 +61,7 @@ export default function EditOfferingClient({
     })),
   ];
 
-  const secondaryCoordinatorOptions = coordinators
+  const deptCoordinatorOptions = coordinators
     .map((f) => ({
       value: String(f.faculty_id),
       label: `${f.faculty_name} · ${f.designation}`,
@@ -70,18 +72,18 @@ export default function EditOfferingClient({
     label: `${f.faculty_name} · ${f.designation}`,
   }));
 
-  const addSecondaryCoordinatorRow = () => {
-    setSecondaryCoordinatorRows([...secondaryCoordinatorRows, {id: ""}]);
+  const addDeptCoordinatorRow = () => {
+    setDeptCoordinatorRows([...deptCoordinatorRows, { id: "", dept: "" }]);
   };
 
-  const removeSecondaryCoordinatorRow = (index: number) => {
-    setSecondaryCoordinatorRows(secondaryCoordinatorRows.filter((_, i) => i !== index));
+  const removeDeptCoordinatorRow = (index: number) => {
+    setDeptCoordinatorRows(deptCoordinatorRows.filter((_, i) => i !== index));
   };
 
-  const updateSecondaryCoordinatorRow = (index: number, value: string) => {
-    const newRows = [...secondaryCoordinatorRows];
-    newRows[index].id = value;
-    setSecondaryCoordinatorRows(newRows);
+  const updateDeptCoordinatorRow = (index: number, id: string, dept: string) => {
+    const newRows = [...deptCoordinatorRows];
+    newRows[index] = { id, dept };
+    setDeptCoordinatorRows(newRows);
   };
 
   const addAuditProfessorRow = () => {
@@ -111,7 +113,9 @@ export default function EditOfferingClient({
         course_id: courseId,
         semester_id: semesterId,
         primary_coordinator_id: primaryCoordinatorId ? parseInt(primaryCoordinatorId) : null,
-        secondary_coordinator_ids: secondaryCoordinatorRows.filter(r => r.id).map(r => parseInt(r.id)),
+        dept_coordinator_ids: deptCoordinatorRows
+          .filter((r) => r.id !== "" && r.dept !== "")
+          .map((r) => ({ faculty_id: parseInt(r.id, 10), department_id: r.dept })),
         audit_professor_ids: auditProfessorRows.filter(r => r.id).map(r => parseInt(r.id)),
       });
       router.push("/admin/offerings");
@@ -185,7 +189,7 @@ export default function EditOfferingClient({
 
         <div>
           <label className="block text-sm font-medium text-[var(--color-ink)] mb-2">
-            Primary Coordinator <span className="text-gray-400 font-normal">(optional)</span>
+            SOC Coordinator
           </label>
           <SearchableSelect
             options={coordinatorOptions}
@@ -197,22 +201,34 @@ export default function EditOfferingClient({
 
         <div>
           <label className="block text-sm font-medium text-[var(--color-ink)] mb-2">
-            Secondary Coordinators <span className="text-gray-400 font-normal">(optional)</span>
+            Dept Coordinators
           </label>
           <div className="space-y-2">
-            {secondaryCoordinatorRows.map((row, index) => (
+            {deptCoordinatorRows.map((row, index) => (
               <div key={index} className="flex gap-2">
-                <div className="flex-1">
+                <div className="flex-[2]">
                   <SearchableSelect
-                    options={secondaryCoordinatorOptions}
+                    options={deptCoordinatorOptions}
                     value={row.id}
-                    onChange={(value) => updateSecondaryCoordinatorRow(index, value)}
+                    onChange={(value) => updateDeptCoordinatorRow(index, value, row.dept)}
                     placeholder="Search faculty..."
                   />
                 </div>
+                <div className="flex-1 min-w-[140px]">
+                  <select
+                    value={row.dept}
+                    onChange={(e) => updateDeptCoordinatorRow(index, row.id, e.target.value)}
+                    className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-[var(--color-ink)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
+                  >
+                    <option value="">Select Dept</option>
+                    {departments.map((d) => (
+                      <option key={d.department_id} value={d.department_id}>{d.department_name}</option>
+                    ))}
+                  </select>
+                </div>
                 <button
                   type="button"
-                  onClick={() => removeSecondaryCoordinatorRow(index)}
+                  onClick={() => removeDeptCoordinatorRow(index)}
                   className="inline-flex items-center justify-center rounded-md bg-red-100 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-200 transition-colors"
                 >
                   <X className="w-4 h-4" />
@@ -221,18 +237,18 @@ export default function EditOfferingClient({
             ))}
             <button
               type="button"
-              onClick={addSecondaryCoordinatorRow}
+              onClick={addDeptCoordinatorRow}
               className="inline-flex items-center gap-2 rounded-md bg-[var(--color-accent)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-accent)]/80 transition-colors"
             >
               <Plus className="w-4 h-4" />
-              Add Secondary Coordinator
+              Add Dept Coordinator
             </button>
           </div>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-[var(--color-ink)] mb-2">
-            Audit Professors <span className="text-gray-400 font-normal">(optional)</span>
+            Audit Professors
           </label>
           <div className="space-y-2">
             {auditProfessorRows.map((row, index) => (

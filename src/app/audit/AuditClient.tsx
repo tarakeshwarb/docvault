@@ -22,6 +22,8 @@ import type { AuditFacultySubmission, AuditCourseOffering } from "./actions";
 import { saveAuditRemark } from "./actions";
 import { AuditReportsSubmission } from "@/components/audit/AuditReportsSubmission";
 import { SubmissionFilesModal } from "@/components/coordinator/SubmissionFilesModal";
+import { GlobalResultAnalysis } from "@/components/coordinator/GlobalResultAnalysis";
+import { BarChart3 } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -358,7 +360,7 @@ export default function AuditClient({
   facultyId: number;
   isAdmin?: boolean;
 }) {
-  const [activeTab, setActiveTab] = useState<"trail" | "reports">("trail");
+  const [activeTab, setActiveTab] = useState<"trail" | "result-analysis" | "reports">("trail");
   const [searchTerm, setSearchTerm] = useState("");
   const [yearFilter, setYearFilter] = useState("");
   const [semesterFilter, setSemesterFilter] = useState("");
@@ -368,6 +370,8 @@ export default function AuditClient({
     const handleHashChange = () => {
       if (window.location.hash === "#reports-submission" || window.location.hash === "#reports") {
         setActiveTab("reports");
+      } else if (window.location.hash === "#result-analysis") {
+        setActiveTab("result-analysis");
       } else {
         setActiveTab("trail");
       }
@@ -446,6 +450,20 @@ export default function AuditClient({
           >
             <ShieldCheck className="w-4 h-4" />
             Audit Trail
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab("result-analysis");
+              window.history.replaceState(null, "", "#result-analysis");
+            }}
+            className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
+              activeTab === "result-analysis"
+                ? "border-[var(--color-accent)] text-[var(--color-accent)]"
+                : "border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            <BarChart3 className="w-4 h-4" />
+            Result Analysis
           </button>
           <button
             onClick={() => {
@@ -546,8 +564,21 @@ export default function AuditClient({
       </p>
     </div>
 
-    {/* Tab 2: Reports Submission */}
-    <div className={activeTab === "reports" ? "block animate-in fade-in duration-300" : "hidden"}>
+    {/* Tab 2: Result Analysis */}
+    <div className={activeTab === "result-analysis" ? "space-y-6 block animate-in fade-in duration-300" : "hidden"}>
+      <div className="panel-card p-6">
+        <GlobalResultAnalysis 
+          courses={auditCourses.map(c => ({
+            offering_id: c.offering_id,
+            course_code: c.course_code,
+            course_name: c.course_name
+          }))}
+        />
+      </div>
+    </div>
+
+    {/* Tab 3: Reports Submission */}
+    <div className={activeTab === "reports" ? "space-y-6 block animate-in fade-in duration-300" : "hidden"}>
       <AuditReportsSubmission
         courses={auditCourses}
         facultyId={facultyId}

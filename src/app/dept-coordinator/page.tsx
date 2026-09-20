@@ -7,7 +7,7 @@ import { getFacultySession } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export default async function CourseCoordinatorPage() {
+export default async function DeptCoordinatorPage() {
   const session = await getFacultySession();
   if (!session) {
     return null;
@@ -17,7 +17,7 @@ export default async function CourseCoordinatorPage() {
 
   // If assigned to exactly one offering, go straight to it — no need for the listing.
   if (offerings.length === 1) {
-    redirect(`/course-coordinator/${offerings[0].offering_id}`);
+    redirect(`/dept-coordinator/${offerings[0].offering_id}`);
   }
 
   const totalOfferings = offerings.length;
@@ -27,7 +27,7 @@ export default async function CourseCoordinatorPage() {
     <div className="space-y-6">
       <div className="rounded-[28px] bg-[#0c4da2] p-6 text-white shadow-[0_18px_50px_rgba(12,77,162,0.18)]">
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/60">
-          Course Coordinator Dashboard
+          Dept Coordinator Dashboard
         </p>
         <h1 className="mt-2 text-3xl font-semibold">My Course Offerings</h1>
         <p className="mt-1 text-sm text-white/70">
@@ -61,7 +61,7 @@ export default async function CourseCoordinatorPage() {
           {offerings.map((offering) => (
             <Link
               key={offering.offering_id}
-              href={`/course-coordinator/${offering.offering_id}`}
+              href={`/dept-coordinator/${offering.offering_id}`}
               className="panel-card panel-card-hover group p-5"
             >
               <div className="flex items-start justify-between">

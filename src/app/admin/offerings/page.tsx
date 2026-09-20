@@ -1,5 +1,5 @@
 import { Plus, Link2 } from "lucide-react";
-import { getCourseOfferings, getCourses, getAllFaculty } from "../actions";
+import { getCourseOfferings, getCourses, getAllFaculty, getDepartments } from "../actions";
 import { NewOfferingForm } from "./NewOfferingForm";
 import { queryDb } from "@/lib/db";
 
@@ -13,11 +13,12 @@ async function getSemesters() {
 }
 
 export default async function OfferingsPage() {
-  const [offerings, courses, allFaculty, semesters] = await Promise.all([
+  const [offerings, courses, allFaculty, semesters, departments] = await Promise.all([
     getCourseOfferings(),
     getCourses(),
     getAllFaculty(),
     getSemesters(),
+    getDepartments(),
   ]);
 
   return (
@@ -28,11 +29,11 @@ export default async function OfferingsPage() {
             Course Offerings
           </h1>
           <p className="text-sm text-[var(--color-muted)]">
-            Map courses to semesters and assign course coordinators.
+            Map courses to semesters and assign SOC Coordinators.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <NewOfferingForm courses={courses} semesters={semesters} coordinators={allFaculty} />
+          <NewOfferingForm courses={courses} semesters={semesters} coordinators={allFaculty} departments={departments} />
         </div>
       </div>
 
@@ -65,21 +66,30 @@ export default async function OfferingsPage() {
                     <p className="font-medium text-[var(--color-ink)]">{o.course_name}</p>
                     <p className="text-xs text-gray-500">{o.course_code}</p>
                   </td>
-                  <td className="px-6 py-4 text-gray-600">{o.semester_name}</td>
+                  <td className="px-6 py-4 text-gray-600">
+                    <div className="flex items-center gap-2">
+                      {o.semester_name}
+                      {!(o as any).is_active && (
+                        <span className="text-[10px] font-semibold uppercase tracking-wide bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
+                          Inactive
+                        </span>
+                      )}
+                    </div>
+                  </td>
                   <td className="px-6 py-4 text-gray-600">{o.year_name}</td>
                   <td className="px-6 py-4">
                     <div className="space-y-1">
                       {o.primary_coordinator.faculty_name ? (
                         <div className="text-sm">
                           <span className="text-[var(--color-ink)]">{o.primary_coordinator.faculty_name}</span>
-                          <span className="ml-1.5 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Primary</span>
+                          <span className="ml-1.5 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">SOC Coord.</span>
                         </div>
                       ) : (
                         <span className="text-orange-500 text-xs font-medium">⚠ Not assigned</span>
                       )}
-                      {o.secondary_coordinators.map((c) => (
-                        <div key={c.faculty_id} className="text-sm text-gray-600">
-                          {c.faculty_name}
+                      {o.dept_coordinators.map((c) => (
+                        <div key={`${c.faculty_id}-${c.department_id}`} className="text-sm text-gray-600">
+                          {c.faculty_name} {c.department_name ? <span className="text-xs text-gray-400">({c.department_name})</span> : null}
                         </div>
                       ))}
                     </div>

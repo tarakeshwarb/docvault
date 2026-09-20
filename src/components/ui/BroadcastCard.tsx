@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { ConfirmDownloadLink } from "./ConfirmDownloadLink";
 import { Eye, Download, X, Trash2, Loader2 } from "lucide-react";
-import { deleteCourseBroadcast } from "@/app/course-coordinator/actions";
+import { deleteCourseBroadcast } from "@/app/main-coordinator/actions";
 import { formatDate } from "@/lib/utils";
 
 export type BroadcastProps = {

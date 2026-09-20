@@ -15,7 +15,7 @@ type FacultyAuthRow = {
   faculty_name: string;
   designation: string;
   email: string;
-  role: "admin" | "hod" | "course_coordinator" | "faculty";
+  role: "admin" | "hod" | "main_coordinator" | "dept_coordinator" | "faculty" | "audit" | "developer";
 };
 
 export type LoginState = {
@@ -47,27 +47,27 @@ async function resolvePortalPath(faculty_id: number, role: FacultyAuthRow["role"
 
   // For faculty role, check assignment tables to decide the correct portal
   if (role === "faculty") {
-    // Check coordinator_assignment first — if assigned as primary coordinator, open coordinator portal
+    // Check main_coordinator_assignment first — if assigned as primary coordinator, open coordinator portal
     const coordinatorRows = await queryDb<{ count: string }>(
-      `SELECT COUNT(*) AS count FROM public.coordinator_assignment WHERE faculty_id = $1`,
+      `SELECT COUNT(*) AS count FROM public.main_coordinator_assignment WHERE faculty_id = $1`,
       [faculty_id]
     );
     if (Number(coordinatorRows[0]?.count ?? 0) > 0) {
-      return "/course-coordinator";
+      return "/main-coordinator";
     }
 
-    // Check secondary_coordinator_assignment — if assigned as secondary coordinator, open secondary coordinator portal
+    // Check dept_coordinator_assignment — if assigned as dept coordinator, open dept coordinator portal
     try {
-      const secondaryCoordinatorRows = await queryDb<{ count: string }>(
-        `SELECT COUNT(*) AS count FROM public.secondary_coordinator_assignment WHERE faculty_id = $1`,
+      const deptCoordinatorRows = await queryDb<{ count: string }>(
+        `SELECT COUNT(*) AS count FROM public.dept_coordinator_assignment WHERE faculty_id = $1`,
         [faculty_id]
       );
-      if (Number(secondaryCoordinatorRows[0]?.count ?? 0) > 0) {
-        return "/secondary-coordinator";
+      if (Number(deptCoordinatorRows[0]?.count ?? 0) > 0) {
+        return "/dept-coordinator";
       }
     } catch (error) {
-      // Table doesn't exist yet, skip secondary coordinator check
-      console.warn("secondary_coordinator_assignment table not found, skipping check");
+      // Table doesn't exist yet, skip dept coordinator check
+      console.warn("dept_coordinator_assignment table not found, skipping check");
     }
 
     // Check audit_assignment — if assigned as audit professor, open audit portal
@@ -97,7 +97,7 @@ async function resolvePortalPath(faculty_id: number, role: FacultyAuthRow["role"
     return "/faculty";
   }
 
-  // For all other roles (hod, course_coordinator) use the standard mapping
+  // For all other roles (hod, main_coordinator) use the standard mapping
   return getDashboardPathForRole(role);
 }
 
@@ -157,25 +157,25 @@ export async function loginFaculty(
       return { ok: false, message: "You do not have Admin privileges." };
     } else if (requestedRole === "hod" && matched.role !== "hod") {
       return { ok: false, message: "You are not assigned as HOD." };
-    } else if (requestedRole === "course_coordinator") {
+    } else if (requestedRole === "main_coordinator") {
       const rows = await queryDb<{ count: string }>(
-        `SELECT COUNT(*) AS count FROM public.coordinator_assignment WHERE faculty_id = $1`,
+        `SELECT COUNT(*) AS count FROM public.main_coordinator_assignment WHERE faculty_id = $1`,
         [matched.faculty_id]
       );
       if (Number(rows[0]?.count ?? 0) === 0) {
-        return { ok: false, message: "You are not assigned as a Course Coordinator." };
+        return { ok: false, message: "You are not assigned as a Main Coordinator." };
       }
-    } else if (requestedRole === "secondary_coordinator") {
+    } else if (requestedRole === "dept_coordinator") {
       try {
         const rows = await queryDb<{ count: string }>(
-          `SELECT COUNT(*) AS count FROM public.secondary_coordinator_assignment WHERE faculty_id = $1`,
+          `SELECT COUNT(*) AS count FROM public.dept_coordinator_assignment WHERE faculty_id = $1`,
           [matched.faculty_id]
         );
         if (Number(rows[0]?.count ?? 0) === 0) {
-          return { ok: false, message: "You are not assigned as a Secondary Coordinator." };
+          return { ok: false, message: "You are not assigned as a Dept Coordinator." };
         }
       } catch (e) {
-        return { ok: false, message: "Secondary coordinator verification failed." };
+        return { ok: false, message: "Dept coordinator verification failed." };
       }
     } else if (requestedRole === "faculty") {
       const rows = await queryDb<{ count: string }>(

@@ -183,7 +183,7 @@ export function AuditReportsSubmission({
           <BookOpen className="mx-auto h-8 w-8 text-gray-300 mb-2" />
           <p className="text-sm font-medium">No components configured for this course offering yet.</p>
           <p className="text-xs text-gray-400 mt-1">
-            Course coordinators must first define components (e.g. Lesson Plan, CTs) before reports can be submitted.
+            Main Coordinators must first define components (e.g. Lesson Plan, CTs) before reports can be submitted.
           </p>
         </div>
       ) : (

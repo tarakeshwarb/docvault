@@ -3,6 +3,53 @@
 import { queryDb, executeDb } from "@/lib/db";
 import { getFacultySession } from "@/lib/auth";
 
+// ── Course list for HOD landing page ─────────────────────────────────────────
+
+export type HodCourse = {
+  offering_id: string;
+  course_code: string;
+  course_name: string;
+  credits: number;
+  semester_name: string;
+  year_name: string;
+  total_submissions: number;
+  submitted_count: number;
+  completion_pct: number;
+};
+
+export async function getHodCourses(): Promise<HodCourse[]> {
+  const session = await getFacultySession();
+  const isDev = session?.role === "developer";
+  const devCondition = isDev ? "AND cm.course_code LIKE 'DEV%'" : "AND cm.course_code NOT LIKE 'DEV%'";
+
+  return queryDb<HodCourse>(`
+    SELECT
+      co.offering_id,
+      cm.course_code,
+      cm.course_name,
+      cm.credits,
+      sm.semester_name,
+      ay.year_name,
+      COUNT(s.submission_id)::int AS total_submissions,
+      COUNT(CASE WHEN s.status = 'submitted' THEN 1 END)::int AS submitted_count,
+      CASE
+        WHEN COUNT(s.submission_id) = 0 THEN 0
+        ELSE ROUND(COUNT(CASE WHEN s.status = 'submitted' THEN 1 END) * 100.0 / COUNT(s.submission_id))::int
+      END AS completion_pct
+    FROM public.course_offering co
+    JOIN public.course_master cm ON co.course_id = cm.course_id
+    JOIN public.semester_master sm ON co.semester_id = sm.semester_id
+    JOIN public.academic_year ay ON sm.year_id = ay.year_id
+    LEFT JOIN public.faculty_assignment fa ON fa.offering_id = co.offering_id
+    LEFT JOIN public.submission s ON s.faculty_assignment_id = fa.id
+    WHERE sm.is_active = true ${devCondition}
+    GROUP BY co.offering_id, cm.course_code, cm.course_name, cm.credits, sm.semester_name, ay.year_name
+    ORDER BY cm.course_code
+  `);
+}
+
+// ── Per-offering detailed submission data ─────────────────────────────────────
+
 
 
 export type HodDeptStats = {
@@ -191,9 +238,89 @@ export async function saveHodRemark(submissionId: string, remark: string) {
   await executeDb(
     `
     UPDATE public.submission
-    SET hod_remarks = $1
+    SET hod_remarks = $1, hod_remark_by = $3
     WHERE submission_id = $2
     `,
-    [remark.trim() || null, submissionId]
+    [remark.trim() || null, submissionId, session.faculty_id]
   );
+}
+
+// ── Per-offering actions ───────────────────────────────────────────────────────
+
+export async function getHodDetailedDataForOffering(offeringId: string): Promise<HodDetailedSubmission[]> {
+  const rows = await queryDb<
+    Omit<HodDetailedSubmission, "file_url"> & { r2_object_key: string | null }
+  >(`
+    SELECT
+      co.offering_id,
+      fa.id                   AS assignment_id,
+      f.faculty_id,
+      f.faculty_name,
+      cm.course_code,
+      cm.course_name,
+      fa.section_name,
+      fa.batch,
+      sm.semester_name,
+      ay.year_name,
+      s.submission_id,
+      cmp.component_name,
+      s.status,
+      s.submitted_at,
+      s.hod_remarks,
+      fm.file_id,
+      fm.file_name,
+      fm.version,
+      fm.s3_object_key        AS r2_object_key
+    FROM public.course_offering co
+    JOIN  public.course_master    cm  ON co.course_id    = cm.course_id
+    JOIN  public.semester_master  sm  ON co.semester_id  = sm.semester_id
+    JOIN  public.academic_year    ay  ON sm.year_id      = ay.year_id
+    JOIN public.faculty_assignment fa ON fa.offering_id = co.offering_id
+    JOIN  public.faculty          f   ON fa.faculty_id   = f.faculty_id
+    LEFT JOIN public.submission        s   ON s.faculty_assignment_id = fa.id
+    LEFT JOIN public.course_component  cc  ON s.course_component_id  = cc.id
+    LEFT JOIN public.component_master  cmp ON cc.component_id        = cmp.component_id
+    LEFT JOIN public.file_metadata     fm  ON fm.submission_id       = s.submission_id
+    WHERE co.offering_id = $1
+    ORDER BY f.faculty_name, fa.section_name, cmp.component_name, fm.uploaded_at ASC
+  `, [offeringId]);
+
+  const baseUrl = (process.env.R2_PUBLIC_BASE_URL || "").replace(/\/+$/, "");
+  return rows.map((row) => ({
+    ...row,
+    file_url: row.r2_object_key ? `${baseUrl}/${row.r2_object_key}` : null,
+  })) as HodDetailedSubmission[];
+}
+
+export async function getHodAuditReportsForOffering(offeringId: string): Promise<HodAuditReport[]> {
+  const rows = await queryDb<
+    Omit<HodAuditReport, "file_url"> & { r2_file_key: string | null }
+  >(`
+    SELECT
+      acr.report_id,
+      acr.status,
+      acr.remarks,
+      acr.file_name,
+      acr.r2_file_key,
+      acr.file_size,
+      acr.submitted_at,
+      cm.course_code,
+      cm.course_name,
+      cmp.component_name,
+      f.faculty_name AS auditor_name
+    FROM public.audit_component_report acr
+    JOIN public.course_offering co ON acr.offering_id = co.offering_id
+    JOIN public.course_master cm ON co.course_id = cm.course_id
+    JOIN public.course_component cc ON acr.course_component_id = cc.id
+    JOIN public.component_master cmp ON cc.component_id = cmp.component_id
+    LEFT JOIN public.faculty f ON acr.auditor_faculty_id = f.faculty_id
+    WHERE acr.offering_id = $1
+    ORDER BY acr.submitted_at DESC
+  `, [offeringId]);
+
+  const baseUrl = (process.env.R2_PUBLIC_BASE_URL || "").replace(/\/+$/, "");
+  return rows.map((row) => ({
+    ...row,
+    file_url: row.r2_file_key ? `${baseUrl}/${row.r2_file_key}` : null,
+  })) as HodAuditReport[];
 }

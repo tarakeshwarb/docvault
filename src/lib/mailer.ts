@@ -30,7 +30,7 @@ export async function sendEmail({
   });
 
   const mailOptions = {
-    from: `"Course Coordinator Portal" <${user}>`,
+    from: `"Main Coordinator Portal" <${user}>`,
     to: to,
     subject: subject,
     html: html,
