@@ -132,6 +132,18 @@ export async function getCoordinatorOfferings(faculty_id: number): Promise<Coord
   }
 }
 
+export async function getDeptCoordinatorDeptId(faculty_id: number, offering_id: string): Promise<string | null> {
+  try {
+    const rows = await queryDb<{ department_id: string }>(
+      `SELECT department_id FROM public.dept_coordinator_assignment WHERE faculty_id = $1 AND offering_id = $2 LIMIT 1`,
+      [faculty_id, offering_id]
+    );
+    return rows[0]?.department_id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getFacultyAssignments(offering_id: string): Promise<FacultyAssignment[]> {
   return queryDb<FacultyAssignment>(`
     SELECT
@@ -167,10 +179,30 @@ export async function getCourseComponents(offering_id: string): Promise<Componen
   `, [offering_id]);
 }
 
+const STANDARD_COMPONENTS = [
+  'Lesson Plan',
+  'CIA-1 Question Paper',
+  'CIA-1 Scheme of Evaluation',
+  'CIA-1 Sample Scripts',
+  'CIA-1 Marks Sheet',
+  'CIA-2 Question Paper',
+  'CIA-2 Scheme of Evaluation',
+  'CIA-2 Sample Scripts',
+  'CIA-2 Marks Sheet',
+  'Assignment/Quiz Docs',
+  'End Semester Question Paper',
+  'End Semester Scheme of Evaluation',
+  'End Semester Sample Scripts',
+  'End Semester Marks Sheet',
+  'Course End Survey',
+  'CO-PO Attainment Sheet'
+];
+
 export async function getComponentMasters(): Promise<ComponentMaster[]> {
-  return queryDb<ComponentMaster>(
+  const all = await queryDb<ComponentMaster>(
     "SELECT * FROM public.component_master ORDER BY component_name"
   );
+  return all.filter(c => STANDARD_COMPONENTS.includes(c.component_name));
 }
 
 export async function getAllFacultyForAssignment() {
@@ -246,13 +278,14 @@ export async function addFacultyAssignment(data: {
   faculty_id: number;
   section_name: string;
   batch: number;
+  department_id?: string | null;
 }) {
   const rows = await queryDb<{ id: string }>(
-    `INSERT INTO public.faculty_assignment (offering_id, faculty_id, section_name, batch)
-     VALUES ($1, $2, $3, $4)
-     ON CONFLICT (offering_id, faculty_id, section_name) DO UPDATE SET batch = $4
+    `INSERT INTO public.faculty_assignment (offering_id, faculty_id, section_name, batch, department_id)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (offering_id, faculty_id, section_name) DO UPDATE SET batch = $4, department_id = COALESCE($5, public.faculty_assignment.department_id)
      RETURNING id`,
-    [data.offering_id, data.faculty_id, data.section_name, data.batch]
+    [data.offering_id, data.faculty_id, data.section_name, data.batch, data.department_id ?? null]
   );
 
   const assignment_id = rows[0]?.id;
@@ -268,7 +301,7 @@ export async function addFacultyAssignment(data: {
   }
 
   revalidatePath("/dept-coordinator", "layout");
-  revalidatePath("/dept-coordinator", "layout");
+  revalidatePath("/main-coordinator", "layout");
 }
 
 export async function updateFacultyAssignment(data: {
@@ -384,6 +417,7 @@ export async function addFacultyAssignments(data: {
   faculty_id: number;
   section_names: string[];
   batch: number;
+  department_id?: string | null;
 }) {
   for (const section_name of data.section_names) {
     await addFacultyAssignment({
@@ -391,6 +425,7 @@ export async function addFacultyAssignments(data: {
       faculty_id: data.faculty_id,
       section_name: section_name.trim(),
       batch: data.batch,
+      department_id: data.department_id,
     });
   }
 }
@@ -398,6 +433,7 @@ export async function addFacultyAssignments(data: {
 export async function bulkAddFacultyAssignments(data: {
   offering_id: string;
   assignments: { faculty_id: number; section_name: string; batch: number }[];
+  department_id?: string | null;
 }) {
   for (const a of data.assignments) {
     await addFacultyAssignment({
@@ -405,6 +441,7 @@ export async function bulkAddFacultyAssignments(data: {
       faculty_id: a.faculty_id,
       section_name: a.section_name,
       batch: a.batch,
+      department_id: data.department_id,
     });
   }
 }

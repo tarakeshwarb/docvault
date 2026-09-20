@@ -295,10 +295,84 @@ export async function getCourseComponents(offering_id: string): Promise<Componen
   `, [offering_id]);
 }
 
+export type SocFacultyAssignment = FacultyAssignment & {
+  department_id: string | null;
+  department_name: string | null;
+};
+
+export async function getSocTrackingData(faculty_id: number): Promise<{
+  assignments: SocFacultyAssignment[];
+  components: Component[];
+  submissions: SubmissionStatus[];
+  depts: { department_id: string; department_name: string }[];
+}> {
+  const offeringRows = await queryDb<{ offering_id: string }>(
+    `SELECT offering_id FROM public.main_coordinator_assignment WHERE faculty_id = $1 LIMIT 1`,
+    [faculty_id]
+  );
+  if (offeringRows.length === 0) return { assignments: [], components: [], submissions: [], depts: [] };
+  const offering_id = offeringRows[0].offering_id;
+
+  const [components, submissions, rawAssignments, depts] = await Promise.all([
+    getCourseComponents(offering_id),
+    getSubmissionStatus(offering_id),
+    // All faculty assigned to this offering, with their own department info
+    queryDb<SocFacultyAssignment>(`
+      SELECT
+        fa.id,
+        fa.faculty_id,
+        f.faculty_name,
+        f.designation,
+        f.email,
+        fa.section_name,
+        fa.batch,
+        fa.last_reminder_sent_at,
+        fa.daily_reminder_count,
+        fa.department_id,
+        dm.department_name
+      FROM public.faculty_assignment fa
+      JOIN public.faculty f ON fa.faculty_id = f.faculty_id
+      LEFT JOIN public.department_master dm ON fa.department_id = dm.department_id
+      WHERE fa.offering_id = $1
+      ORDER BY dm.department_name NULLS LAST, fa.section_name, f.faculty_name
+    `, [offering_id]),
+    // Departments that have a dept coordinator for this offering
+    queryDb<{ department_id: string; department_name: string }>(`
+      SELECT DISTINCT dm.department_id, dm.department_name
+      FROM public.dept_coordinator_assignment dca
+      JOIN public.department_master dm ON dca.department_id = dm.department_id
+      WHERE dca.offering_id = $1 AND dca.department_id IS NOT NULL
+      ORDER BY dm.department_name
+    `, [offering_id]),
+  ]);
+
+  return { assignments: rawAssignments, components, submissions, depts };
+}
+
+const STANDARD_COMPONENTS = [
+  'Lesson Plan',
+  'CIA-1 Question Paper',
+  'CIA-1 Scheme of Evaluation',
+  'CIA-1 Sample Scripts',
+  'CIA-1 Marks Sheet',
+  'CIA-2 Question Paper',
+  'CIA-2 Scheme of Evaluation',
+  'CIA-2 Sample Scripts',
+  'CIA-2 Marks Sheet',
+  'Assignment/Quiz Docs',
+  'End Semester Question Paper',
+  'End Semester Scheme of Evaluation',
+  'End Semester Sample Scripts',
+  'End Semester Marks Sheet',
+  'Course End Survey',
+  'CO-PO Attainment Sheet'
+];
+
 export async function getComponentMasters(): Promise<ComponentMaster[]> {
-  return queryDb<ComponentMaster>(
+  const all = await queryDb<ComponentMaster>(
     "SELECT * FROM public.component_master ORDER BY component_name"
   );
+  return all.filter(c => STANDARD_COMPONENTS.includes(c.component_name));
 }
 
 export async function getAllFacultyForAssignment() {
@@ -370,13 +444,14 @@ export async function addFacultyAssignment(data: {
   faculty_id: number;
   section_name: string;
   batch: number;
+  department_id?: string | null;
 }) {
   const rows = await queryDb<{ id: string }>(
-    `INSERT INTO public.faculty_assignment (offering_id, faculty_id, section_name, batch)
-     VALUES ($1, $2, $3, $4)
-     ON CONFLICT (offering_id, faculty_id, section_name) DO UPDATE SET batch = $4
+    `INSERT INTO public.faculty_assignment (offering_id, faculty_id, section_name, batch, department_id)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (offering_id, faculty_id, section_name) DO UPDATE SET batch = $4, department_id = COALESCE($5, public.faculty_assignment.department_id)
      RETURNING id`,
-    [data.offering_id, data.faculty_id, data.section_name, data.batch]
+    [data.offering_id, data.faculty_id, data.section_name, data.batch, data.department_id ?? null]
   );
 
   const assignment_id = rows[0]?.id;

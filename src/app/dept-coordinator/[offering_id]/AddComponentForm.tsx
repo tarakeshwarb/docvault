@@ -16,13 +16,13 @@ export function AddComponentForm({
 }) {
   const [componentId, setComponentId] = useState("");
   const [customName, setCustomName] = useState("");
-  const [deadline, setDeadline] = useState("");
+  const [deadlineDate, setDeadlineDate] = useState("");
   const [mandatory, setMandatory] = useState(true);
 
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mode, setMode] = useState<"existing" | "custom">("existing");
+  const [mode, setMode] = useState<"custom" | "existing">("custom");
 
   const componentOptions = componentMasters.map((c) => ({
     value: c.component_id,
@@ -50,16 +50,18 @@ export function AddComponentForm({
         return;
       }
 
+      // Set deadline to 23:59:59 on the selected date
+      const deadlineValue = deadlineDate ? `${deadlineDate}T23:59:59` : null;
       await addCourseComponent({
         offering_id,
         component_id: finalComponentId,
-        deadline: deadline || null,
+        deadline: deadlineValue,
         mandatory,
       });
 
       setComponentId("");
       setCustomName("");
-      setDeadline("");
+      setDeadlineDate("");
       setMandatory(true);
       setOpen(false);
     } catch (err) {
@@ -93,36 +95,26 @@ export function AddComponentForm({
               <input
                 type="radio"
                 name="mode"
-                checked={mode === "existing"}
-                onChange={() => setMode("existing")}
-                className="accent-[var(--color-accent)]"
-              />
-              Select from existing components
-            </label>
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input
-                type="radio"
-                name="mode"
                 checked={mode === "custom"}
                 onChange={() => setMode("custom")}
                 className="accent-[var(--color-accent)]"
               />
               Create custom component
             </label>
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="radio"
+                name="mode"
+                checked={mode === "existing"}
+                onChange={() => setMode("existing")}
+                className="accent-[var(--color-accent)]"
+              />
+              Select from existing components
+            </label>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
-            {mode === "existing" ? (
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1.5">Component</label>
-                <SearchableSelect
-                  options={componentOptions}
-                  value={componentId}
-                  onChange={setComponentId}
-                  placeholder="Search component..."
-                />
-              </div>
-            ) : (
+            {mode === "custom" ? (
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1.5">
                   Custom Component Name
@@ -134,6 +126,16 @@ export function AddComponentForm({
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30"
                 />
               </div>
+            ) : (
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">Component</label>
+                <SearchableSelect
+                  options={componentOptions}
+                  value={componentId}
+                  onChange={setComponentId}
+                  placeholder="Search component..."
+                />
+              </div>
             )}
 
             <div>
@@ -141,9 +143,9 @@ export function AddComponentForm({
                 Deadline <span className="text-gray-400">(optional)</span>
               </label>
               <input
-                type="datetime-local"
-                value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
+                type="date"
+                value={deadlineDate}
+                onChange={(e) => setDeadlineDate(e.target.value)}
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30"
               />
             </div>

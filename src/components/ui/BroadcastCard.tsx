@@ -18,7 +18,7 @@ export type BroadcastProps = {
   offering_id: string;
 };
 
-export function BroadcastCard({ broadcast: b, baseUrl, currentFacultyId }: { broadcast: BroadcastProps; baseUrl: string; currentFacultyId?: number }) {
+export function BroadcastCard({ broadcast: b, baseUrl, currentFacultyId, allowDelete = false }: { broadcast: BroadcastProps; baseUrl: string; currentFacultyId?: number; allowDelete?: boolean }) {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -42,6 +42,8 @@ export function BroadcastCard({ broadcast: b, baseUrl, currentFacultyId }: { bro
     previewSrc = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
   }
 
+  const canDelete = allowDelete || (currentFacultyId && b.uploaded_by != null && String(b.uploaded_by) === String(currentFacultyId));
+
   return (
     <>
       <div className="panel-card flex flex-col justify-between p-4 hover:border-[var(--color-accent)] hover:shadow-md transition-all bg-white h-full">
@@ -50,7 +52,7 @@ export function BroadcastCard({ broadcast: b, baseUrl, currentFacultyId }: { bro
             <span className="inline-flex items-center rounded-md bg-[var(--color-accent)]/10 px-2 py-0.5 text-[10px] font-bold text-[var(--color-accent)] ring-1 ring-inset ring-[var(--color-accent)]/20">
               {b.course_code}
             </span>
-            {currentFacultyId && b.uploaded_by != null && String(b.uploaded_by) === String(currentFacultyId) && (
+            {canDelete && (
               <button
                 onClick={() => setIsDeleteConfirmOpen(true)}
                 disabled={isDeleting}

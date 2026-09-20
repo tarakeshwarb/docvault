@@ -21,16 +21,18 @@ export function EditableComponentRow({
   offering_id,
   currentFacultyId,
   baseUrl,
+  readonly = false,
 }: {
   comp: CourseComponent;
   offering_id: string;
   currentFacultyId?: number;
   baseUrl?: string;
+  readonly?: boolean;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [mandatory, setMandatory] = useState(comp.mandatory);
   const [deadline, setDeadline] = useState(
-    comp.deadline ? new Date(comp.deadline).toISOString().slice(0, 16) : ""
+    comp.deadline ? new Date(comp.deadline).toISOString().slice(0, 10) : ""
   );
   const [loading, setLoading] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -38,9 +40,11 @@ export function EditableComponentRow({
 
 
   async function handleSave() {
+    if (readonly) return;
     setLoading(true);
     try {
-      await updateCourseComponent({ id: comp.id, offering_id, mandatory, deadline: deadline || null });
+      const deadlineValue = deadline ? `${deadline}T23:59:59` : null;
+      await updateCourseComponent({ id: comp.id, offering_id, mandatory, deadline: deadlineValue });
       setIsEditing(false);
     } catch {
       alert("Failed to update component");
@@ -50,6 +54,7 @@ export function EditableComponentRow({
   }
 
   async function handleDelete() {
+    if (readonly) return;
     setLoading(true);
     try {
       await deleteCourseComponent({ id: comp.id, offering_id });
@@ -66,7 +71,7 @@ export function EditableComponentRow({
     </div>
   );
 
-  if (isEditing) {
+  if (isEditing && !readonly) {
     return (
       <tr className="bg-[var(--color-accent)]/5">
         <td className="px-5 py-3 font-medium text-[var(--color-ink)]">{nameCell}</td>
@@ -83,7 +88,7 @@ export function EditableComponentRow({
         </td>
         <td className="px-5 py-3">
           <input
-            type="datetime-local"
+            type="date"
             value={deadline}
             onChange={(e) => setDeadline(e.target.value)}
             className="w-full max-w-[200px] rounded border border-gray-300 px-2 py-1 text-sm outline-none focus:border-[var(--color-accent)]"
@@ -102,7 +107,7 @@ export function EditableComponentRow({
             <button
               onClick={() => {
                 setMandatory(comp.mandatory);
-                setDeadline(comp.deadline ? new Date(comp.deadline).toISOString().slice(0, 16) : "");
+                setDeadline(comp.deadline ? new Date(comp.deadline).toISOString().slice(0, 10) : "");
                 setIsEditing(false);
               }}
               disabled={loading}
@@ -131,24 +136,26 @@ export function EditableComponentRow({
         {comp.deadline ? formatDate(comp.deadline) : "No deadline"}
       </td>
       <td className="px-5 py-3 text-right">
-        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
-            onClick={() => setIsEditing(true)}
-            disabled={loading}
-            className="p-1.5 text-gray-400 hover:text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded transition-colors"
-            title="Edit"
-          >
-            <Pencil className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setIsConfirmOpen(true)}
-            disabled={loading}
-            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-            title="Delete"
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-          </button>
-        </div>
+        {!readonly && (
+          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => setIsEditing(true)}
+              disabled={loading}
+              className="p-1.5 text-gray-400 hover:text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded transition-colors"
+              title="Edit"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setIsConfirmOpen(true)}
+              disabled={loading}
+              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+              title="Delete"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+            </button>
+          </div>
+        )}
 
         <ConfirmDialog
           isOpen={isConfirmOpen}
