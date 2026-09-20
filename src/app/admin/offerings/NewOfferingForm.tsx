@@ -15,10 +15,12 @@ export function NewOfferingForm({
   courses,
   semesters,
   coordinators,
+  departments,
 }: {
   courses: Course[];
   semesters: Semester[];
   coordinators: Faculty[];
+  departments: { department_id: string; department_name: string }[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -28,7 +30,7 @@ export function NewOfferingForm({
   const [courseId, setCourseId] = useState("");
   const [semesterId, setSemesterId] = useState("");
   const [primaryCoordinatorId, setPrimaryCoordinatorId] = useState("");
-  const [secondaryCoordinatorRows, setSecondaryCoordinatorRows] = useState<{id: string}[]>([{id: ""}]);
+  const [deptCoordinatorRows, setDeptCoordinatorRows] = useState<{ id: string; dept: string }[]>([{ id: "", dept: "" }]);
   const [auditProfessorRows, setAuditProfessorRows] = useState<{id: string}[]>([{id: ""}]);
   const [manualError, setManualError] = useState<string | null>(null);
   const [manualLoading, setManualLoading] = useState(false);
@@ -64,7 +66,7 @@ export function NewOfferingForm({
     })),
   ];
 
-  const secondaryCoordinatorOptions = coordinators
+  const deptCoordinatorOptions = coordinators
     .map((f) => ({
       value: String(f.faculty_id),
       label: `${f.faculty_id} - ${f.faculty_name} · ${f.designation}`,
@@ -75,13 +77,19 @@ export function NewOfferingForm({
     label: `${f.faculty_id} - ${f.faculty_name} · ${f.designation}`,
   }));
 
-  const addSecondaryCoordinatorRow = () => setSecondaryCoordinatorRows([...secondaryCoordinatorRows, {id: ""}]);
-  const removeSecondaryCoordinatorRow = (index: number) => setSecondaryCoordinatorRows(secondaryCoordinatorRows.filter((_, i) => i !== index));
-  const updateSecondaryCoordinatorRow = (index: number, value: string) => {
-    const newRows = [...secondaryCoordinatorRows];
-    newRows[index].id = value;
-    setSecondaryCoordinatorRows(newRows);
-  };
+  function addDeptCoordinatorRow() {
+    setDeptCoordinatorRows((prev) => [...prev, { id: "", dept: "" }]);
+  }
+  function updateDeptCoordinatorRow(index: number, id: string, dept: string) {
+    setDeptCoordinatorRows((prev) => {
+      const newRows = [...prev];
+      newRows[index] = { id, dept };
+      return newRows;
+    });
+  }
+  function removeDeptCoordinatorRow(index: number) {
+    setDeptCoordinatorRows((prev) => prev.filter((_, i) => i !== index));
+  }
 
   const addAuditProfessorRow = () => setAuditProfessorRows([...auditProfessorRows, {id: ""}]);
   const removeAuditProfessorRow = (index: number) => setAuditProfessorRows(auditProfessorRows.filter((_, i) => i !== index));
@@ -104,7 +112,9 @@ export function NewOfferingForm({
         course_id: courseId,
         semester_id: semesterId,
         primary_coordinator_id: primaryCoordinatorId ? parseInt(primaryCoordinatorId) : null,
-        secondary_coordinator_ids: secondaryCoordinatorRows.filter(r => r.id).map(r => parseInt(r.id)),
+        dept_coordinator_ids: deptCoordinatorRows
+          .filter((r) => r.id !== "" && r.dept !== "")
+          .map((r) => ({ faculty_id: parseInt(r.id, 10), department_id: r.dept })),
         audit_professor_ids: auditProfessorRows.filter(r => r.id).map(r => parseInt(r.id)),
       });
       closeForm();
@@ -150,13 +160,13 @@ export function NewOfferingForm({
 
     if (!course) error = `Course code '${row.course_code}' not found.`;
     else if (!semester) error = `Semester '${row.semester_name}' in year '${row.year_name}' not found.`;
-    else if (row.primary_coordinator_id !== null && isNaN(row.primary_coordinator_id as number)) error = "Invalid Primary Coordinator ID.";
-    else if (row.primary_coordinator_id && !coordinators.find(f => String(f.faculty_id) === String(row.primary_coordinator_id))) error = `Primary coordinator ${row.primary_coordinator_id} not found.`;
+    else if (row.primary_coordinator_id !== null && isNaN(row.primary_coordinator_id as number)) error = "Invalid SOC Coordinator ID.";
+    else if (row.primary_coordinator_id && !coordinators.find(f => String(f.faculty_id) === String(row.primary_coordinator_id))) error = `SOC coordinator ${row.primary_coordinator_id} not found.`;
 
     if (!error) {
-      for (const id of row.secondary_coordinator_ids) {
+      for (const id of row.dept_coordinator_ids) {
         if (!coordinators.find(f => String(f.faculty_id) === String(id))) {
-          error = `Secondary coordinator ${id} not found.`;
+          error = `Dept coordinator ${id} not found.`;
           break;
         }
       }
@@ -185,7 +195,7 @@ export function NewOfferingForm({
       updatedRow[field] = value;
 
       if (field === '_raw_sec') {
-        updatedRow.secondary_coordinator_ids = value ? String(value).split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n)) : [];
+        updatedRow.dept_coordinator_ids = value ? String(value).split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n)) : [];
       } else if (field === '_raw_audit') {
         updatedRow.audit_professor_ids = value ? String(value).split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n)) : [];
       } else if (field === '_raw_primary') {
@@ -222,8 +232,8 @@ export function NewOfferingForm({
     setCourseId("");
     setSemesterId("");
     setPrimaryCoordinatorId("");
-    setSecondaryCoordinatorRows([{id: ""}]);
-    setAuditProfessorRows([{id: ""}]);
+    setDeptCoordinatorRows([{ id: "", dept: "" }]);
+    setAuditProfessorRows([{ id: "" }]);
     setManualError(null);
     // Reset bulk
     setRows([]);
@@ -319,7 +329,7 @@ export function NewOfferingForm({
 
               <div>
                 <label className="block text-xs font-medium text-[var(--color-ink)] mb-2">
-                  Primary Coordinator <span className="text-gray-400 font-normal">(optional)</span>
+                  SOC Coordinator
                 </label>
                 <SearchableSelect
                   options={coordinatorOptions}
@@ -331,22 +341,34 @@ export function NewOfferingForm({
 
               <div>
                 <label className="block text-xs font-medium text-[var(--color-ink)] mb-2">
-                  Secondary Coordinators <span className="text-gray-400 font-normal">(optional)</span>
+                  Dept Coordinators
                 </label>
                 <div className="space-y-2">
-                  {secondaryCoordinatorRows.map((row, index) => (
+                  {deptCoordinatorRows.map((row, index) => (
                     <div key={index} className="flex gap-2">
-                      <div className="flex-1">
+                      <div className="flex-[2]">
                         <SearchableSelect
-                          options={secondaryCoordinatorOptions}
+                          options={deptCoordinatorOptions}
                           value={row.id}
-                          onChange={(value) => updateSecondaryCoordinatorRow(index, value)}
+                          onChange={(value) => updateDeptCoordinatorRow(index, value, row.dept)}
                           placeholder="Search faculty..."
                         />
                       </div>
+                      <div className="flex-1 min-w-[140px]">
+                        <select
+                          value={row.dept}
+                          onChange={(e) => updateDeptCoordinatorRow(index, row.id, e.target.value)}
+                          className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-[var(--color-ink)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
+                        >
+                          <option value="">Select Dept</option>
+                          {departments.map((d) => (
+                            <option key={d.department_id} value={d.department_id}>{d.department_name}</option>
+                          ))}
+                        </select>
+                      </div>
                       <button
                         type="button"
-                        onClick={() => removeSecondaryCoordinatorRow(index)}
+                        onClick={() => removeDeptCoordinatorRow(index)}
                         className="inline-flex items-center justify-center rounded-md bg-red-100 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-200 transition-colors"
                       >
                         <X className="w-4 h-4" />
@@ -355,18 +377,18 @@ export function NewOfferingForm({
                   ))}
                   <button
                     type="button"
-                    onClick={addSecondaryCoordinatorRow}
+                    onClick={addDeptCoordinatorRow}
                     className="inline-flex items-center gap-2 rounded-md bg-[var(--color-accent)] px-3 py-2 text-xs font-medium text-white hover:bg-[var(--color-accent)]/80 transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    Add Secondary Coordinator
+                    Add Dept Coordinator
                   </button>
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-[var(--color-ink)] mb-2">
-                  Audit Professors <span className="text-gray-400 font-normal">(optional)</span>
+                  Audit Professors
                 </label>
                 <div className="space-y-2">
                   {auditProfessorRows.map((row, index) => (
@@ -430,7 +452,7 @@ export function NewOfferingForm({
                       <div className="w-px h-6 bg-gray-200"></div>
                       <div>Primary<br/>Coord ID</div>
                       <div className="w-px h-6 bg-gray-200"></div>
-                      <div>Secondary<br/>Coord IDs</div>
+                      <div>Dept<br/>Coord IDs</div>
                       <div className="w-px h-6 bg-gray-200"></div>
                       <div>Audit<br/>Prof IDs</div>
                     </div>
@@ -464,7 +486,7 @@ export function NewOfferingForm({
                           <th className="px-3 py-2">Semester</th>
                           <th className="px-3 py-2">Year</th>
                           <th className="px-3 py-2">Primary</th>
-                          <th className="px-3 py-2">Secondary</th>
+                          <th className="px-3 py-2">Dept</th>
                           <th className="px-3 py-2">Audit</th>
                           <th className="px-3 py-2">Status</th>
                         </tr>
@@ -507,7 +529,7 @@ export function NewOfferingForm({
                             <td className="px-1 py-1">
                               <input
                                 type="text"
-                                value={r._raw_sec ?? r.secondary_coordinator_ids?.join(', ') ?? ""}
+                                value={r._raw_sec ?? r.dept_coordinator_ids?.join(', ') ?? ""}
                                 onChange={(e) => updateRow(i, "_raw_sec", e.target.value)}
                                 placeholder="103, 104"
                                 className="w-24 bg-transparent border border-transparent hover:border-gray-300 focus:border-[var(--color-accent)] focus:bg-white px-2 py-1 rounded text-xs outline-none transition-all"

@@ -275,13 +275,13 @@ export default async function FacultyCoursePage({
                                   )}
                                   {sub.audit_remarks && (
                                     <p className="mt-1 text-xs text-amber-700 bg-amber-50 p-1.5 rounded border border-amber-200 max-w-sm">
-                                      <strong className="font-semibold block mb-0.5">💬 Auditor Comment:</strong>
+                                      <strong className="font-semibold block mb-0.5">💬 {sub.audit_remark_by_name ? `${sub.audit_remark_by_name} (Auditor):` : 'Auditor Comment:'}</strong>
                                       {sub.audit_remarks}
                                     </p>
                                   )}
                                   {sub.hod_remarks && (
                                     <p className="mt-1 text-xs text-teal-700 bg-teal-50 p-1.5 rounded border border-teal-200 max-w-sm">
-                                      <strong className="font-semibold block mb-0.5">💬 HOD/Reviewer Comment:</strong>
+                                      <strong className="font-semibold block mb-0.5">💬 {sub.hod_remark_by_name ? `${sub.hod_remark_by_name} (HoD/Chair/AC):` : 'HoD/Chair/AC Comment:'}</strong>
                                       {sub.hod_remarks}
                                     </p>
                                   )}

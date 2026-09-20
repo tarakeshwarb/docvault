@@ -811,7 +811,7 @@ export async function generateOverallResultAnalysisXlsx(
     // ── Signature — bottom-right of the chart ────────────────────────────────
     ws.getRow(42).height = 14;
     const sig = ws.getCell("E42");
-    sig.value = "Signature of Course Coordinator";
+    sig.value = "Signature of Main Coordinator";
     sig.font = { bold: true };
     sig.alignment = { horizontal: "right" as const };
 

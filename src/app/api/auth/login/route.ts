@@ -8,7 +8,7 @@ type FacultyAuthRow = {
   faculty_name: string;
   designation: string;
   email: string;
-  role: "admin" | "hod" | "course_coordinator" | "secondary_coordinator" | "faculty" | "audit" | "developer";
+  role: "admin" | "hod" | "main_coordinator" | "dept_coordinator" | "faculty" | "audit" | "developer";
   password_hash: string | null;
   must_change_password: boolean;
 };
@@ -85,21 +85,21 @@ export async function POST(request: Request) {
       finalRole = "developer";
     } else if (selectedRole === "admin" || selectedRole === "hod") {
       hasRole = matched.role === selectedRole;
-    } else if (selectedRole === "course_coordinator") {
+    } else if (selectedRole === "main_coordinator") {
       const rows = await queryDb<{ count: string }>(
         `SELECT COUNT(*) AS count 
-         FROM public.coordinator_assignment ca
+         FROM public.main_coordinator_assignment ca
          JOIN public.course_offering co ON ca.offering_id = co.offering_id
          JOIN public.semester_master sm ON co.semester_id = sm.semester_id
          WHERE ca.faculty_id = $1 AND sm.is_active = true`,
         [faculty_id]
       );
       hasRole = Number(rows[0]?.count ?? 0) > 0;
-    } else if (selectedRole === "secondary_coordinator") {
+    } else if (selectedRole === "dept_coordinator") {
       try {
         const rows = await queryDb<{ count: string }>(
           `SELECT COUNT(*) AS count 
-           FROM public.secondary_coordinator_assignment sca
+           FROM public.dept_coordinator_assignment sca
            JOIN public.course_offering co ON sca.offering_id = co.offering_id
            JOIN public.semester_master sm ON co.semester_id = sm.semester_id
            WHERE sca.faculty_id = $1 AND sm.is_active = true`,

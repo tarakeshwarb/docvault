@@ -7,16 +7,16 @@ import { getCoordinatorOfferings } from "./actions";
 import { type SidebarItem } from "@/components/layout/Sidebar";
 
 const coordinatorSidebarItems: SidebarItem[] = [
-  { label: "My Courses", href: "/course-coordinator", icon: LayoutDashboard, variant: "coordinator" },
+  { label: "My Courses", href: "/dept-coordinator", icon: LayoutDashboard, variant: "coordinator" },
   { label: "Documents", href: "#document-requirements", icon: ClipboardList },
 ];
 
 const coordinatorSidebarNote = {
-  title: "Course Coordinator Portal",
+  title: "Dept Coordinator Portal",
   body: "Manage your assigned courses, add requirements, and monitor faculty submissions.",
 };
 
-export default async function CourseCoordinatorLayout({
+export default async function DeptCoordinatorLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -26,8 +26,8 @@ export default async function CourseCoordinatorLayout({
     redirect("/");
   }
 
-  // Strict role isolation: only course_coordinator, admin, and developer can access this portal
-  if (session.role !== "course_coordinator" && session.role !== "admin" && session.role !== "developer") {
+  // Strict role isolation: only dept_coordinator, admin, and developer can access this portal
+  if (session.role !== "dept_coordinator" && session.role !== "admin" && session.role !== "developer") {
     redirect("/");
   }
 

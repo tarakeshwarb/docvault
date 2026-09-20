@@ -16,8 +16,8 @@ export default function SidebarLink({
   const isDashboard = 
     item.href === "/admin" || 
     item.href === "/faculty" || 
-    item.href === "/course-coordinator" || 
-    item.href === "/secondary-coordinator" || 
+    item.href === "/main-coordinator" || 
+    item.href === "/dept-coordinator" || 
     item.href === "/hod" || 
     item.href === "/audit";
     

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getCourseOfferingById, getCourses, getAllFaculty } from "../../actions";
+import { getCourseOfferingById, getCourses, getAllFaculty, getDepartments } from "../../actions";
 import { queryDb } from "@/lib/db";
 import EditOfferingClient from "./EditOfferingClient";
 
@@ -24,10 +24,11 @@ export default async function EditOfferingPage({
     notFound();
   }
 
-  const [courses, allFaculty, semesters] = await Promise.all([
+  const [courses, allFaculty, semesters, departments] = await Promise.all([
     getCourses(),
     getAllFaculty(),
     getSemesters(),
+    getDepartments(),
   ]);
 
   const coordinators = allFaculty;
@@ -38,6 +39,7 @@ export default async function EditOfferingPage({
       courses={courses}
       semesters={semesters}
       coordinators={coordinators}
+      departments={departments}
     />
   );
 }

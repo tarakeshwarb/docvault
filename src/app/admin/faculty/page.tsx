@@ -1,23 +1,21 @@
 import { Users } from "lucide-react";
 import { getAllFaculty } from "../actions";
-
+import { getDepartments } from "../departments/actions";
 import { getFacultySession } from "@/lib/auth";
+import { FacultyDirectoryTable } from "./FacultyDirectoryTable";
 
-const roleBadge: Record<string, { label: string; classes: string }> = {
-  admin: { label: "Admin", classes: "bg-slate-100 text-slate-700 ring-slate-700/10" },
-  hod: { label: "HOD", classes: "bg-[var(--color-accent)]/10 text-[var(--color-accent)] ring-[var(--color-accent)]/20" },
-  course_coordinator: { label: "Coordinator", classes: "bg-[var(--color-accent)]/10 text-[var(--color-accent)] ring-[var(--color-accent)]/20" },
-  faculty: { label: "Faculty", classes: "bg-gray-50 text-gray-700 ring-gray-700/10" },
-};
+export const dynamic = "force-dynamic";
 
 export default async function FacultyDirectoryPage() {
   const session = await getFacultySession();
-  const isDev = session?.email === 'saiishita@gmail.com' || session?.email === 'shizuu1727@gmail.com';
+  const isDev = session?.role === "developer";
 
   let faculty = await getAllFaculty();
   if (!isDev) {
-    faculty = faculty.filter(f => f.email !== 'saiishita@gmail.com' && f.email !== 'shizuu1727@gmail.com');
+    faculty = faculty.filter(f => f.role !== "developer");
   }
+
+  const departments = await getDepartments();
 
   return (
     <div className="space-y-6">
@@ -27,53 +25,13 @@ export default async function FacultyDirectoryPage() {
             Faculty Directory
           </h1>
           <p className="text-sm text-[var(--color-muted)]">
-            {faculty.length} faculty members loaded from the database.
+            {faculty.length} faculty members · hover a row and click{" "}
+            <span className="font-medium text-gray-700">Edit</span> to modify.
           </p>
         </div>
       </div>
 
-      <div className="panel-card overflow-hidden">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5">
-            <tr>
-              <th className="px-6 py-4">ID</th>
-              <th className="px-6 py-4">Name</th>
-              <th className="px-6 py-4">Designation</th>
-              <th className="px-6 py-4">Email</th>
-              <th className="px-6 py-4">Mobile</th>
-              <th className="px-6 py-4">Role</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-black/5">
-            {faculty.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-6 py-12 text-center">
-                  <Users className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                  <p className="text-gray-500">No faculty found.</p>
-                </td>
-              </tr>
-            ) : (
-              faculty.map((f) => {
-                const badge = roleBadge[f.role] ?? roleBadge.faculty;
-                return (
-                  <tr key={f.faculty_id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-6 py-3 text-gray-500 font-mono text-xs">{f.faculty_id}</td>
-                    <td className="px-6 py-3 font-medium text-[var(--color-ink)]">{f.faculty_name}</td>
-                    <td className="px-6 py-3 text-gray-600 text-xs">{f.designation}</td>
-                    <td className="px-6 py-3 text-gray-600 text-xs">{f.email}</td>
-                    <td className="px-6 py-3 text-gray-600 text-xs">{f.mobile_no}</td>
-                    <td className="px-6 py-3">
-                      <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${badge.classes}`}>
-                        {badge.label}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+      <FacultyDirectoryTable faculty={faculty} departments={departments} />
     </div>
   );
 }

@@ -1,0 +1,334 @@
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { SendRemindersButton } from "@/components/coordinator/SendRemindersButton";
+
+import { getFacultySession } from "@/lib/auth";
+import { SubmissionFilesModal } from "@/components/coordinator/SubmissionFilesModal";
+import { BroadcastCard } from "@/components/ui/BroadcastCard";
+import {
+  getFacultyAssignments,
+  getCourseComponents,
+  getSubmissionStatus,
+  getComponentMasters,
+  getAllFacultyForAssignment,
+  getFacultyOfferings,
+  getCourseBroadcasts,
+} from "../../../actions";
+import { AddFacultyForm } from "./AddFacultyForm";
+import { AddComponentForm } from "./AddComponentForm";
+import { AddBroadcastForm } from "./AddBroadcastForm";
+import { EditableComponentRow } from "./EditableComponentRow";
+import { EditableFacultyRow } from "./EditableFacultyRow";
+import { SubmissionTrackingMatrix } from "./SubmissionTrackingMatrix";
+import { CoordinatorResultAnalysis } from "./CoordinatorResultAnalysis";
+import {
+  ArrowLeft,
+  ClipboardList,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  Megaphone,
+  Users,
+  MessageSquare,
+} from "lucide-react";
+import { formatDate } from "@/lib/utils";
+
+import { OfferingTabs } from "@/components/coordinator/OfferingTabs";
+
+export const dynamic = "force-dynamic";
+
+
+function StatusBadge({ status }: { status: string }) {
+  if (status === "submitted") {
+    return (
+      <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[var(--color-accent)]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-accent)] ring-1 ring-inset ring-[var(--color-accent)]/20">
+        <CheckCircle2 className="w-3 h-3" />
+        Submitted
+      </div>
+    );
+  }
+  if (status === "late") {
+    return (
+      <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[var(--color-accent)]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-accent)] ring-1 ring-inset ring-[var(--color-accent)]/20">
+        <AlertCircle className="w-3 h-3" />
+        Late
+      </div>
+    );
+  }
+  return (
+    <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-gray-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-500 ring-1 ring-inset ring-gray-500/10">
+      <Clock className="w-3 h-3" />
+      Pending
+    </div>
+  );
+}
+
+export default async function OfferingDetailPage({
+  params,
+}: {
+  params: Promise<{ dept_id: string, faculty_id: string, offering_id: string }>;
+}) {
+  const { dept_id, faculty_id, offering_id } = await params;
+  const session = await getFacultySession();
+  if (!session) {
+    return null;
+  }
+
+  const [
+    offerings,
+    assignments,
+    components,
+    submissions,
+    componentMasters,
+    allFaculty,
+    broadcasts,
+  ] =
+    await Promise.all([
+      getFacultyOfferings(Number(faculty_id)),
+      getFacultyAssignments(offering_id),
+      getCourseComponents(offering_id),
+      getSubmissionStatus(offering_id),
+      getComponentMasters(),
+      getAllFacultyForAssignment(),
+      getCourseBroadcasts(offering_id),
+    ]);
+
+  let filteredAssignments = assignments.filter(a => a.faculty_id === Number(faculty_id));
+
+  const offering = offerings.find((o) => o.offering_id === offering_id);
+  if (!offering) notFound();
+
+  const trackedComponents = components;
+  const totalExpected = filteredAssignments.length * trackedComponents.length;
+  const submitted = submissions.filter((s) => s.status === "submitted" || s.status === "approved").length;
+  const completionPct = totalExpected > 0 ? Math.round((submitted / totalExpected) * 100) : 0;
+
+  const submissionMap = new Map(
+    submissions.map((s) => [`${s.faculty_assignment_id}::${s.course_component_id}`, s])
+  );
+
+  const statusByKey: Record<string, string> = Object.fromEntries(
+    submissions.map((s) => [
+      `${s.faculty_assignment_id}::${s.course_component_id}`,
+      s.status,
+    ])
+  );
+
+  return (
+    <div className="space-y-8">
+      {/* Breadcrumbs */}
+      <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+        <Link href="/main-coordinator" className="hover:text-[var(--color-accent)] transition-colors">Departments</Link>
+        <span>/</span>
+        <Link href={`/main-coordinator/${dept_id}`} className="hover:text-[var(--color-accent)] transition-colors">Faculties</Link>
+        <span>/</span>
+        <Link href={`/main-coordinator/${dept_id}/${faculty_id}`} className="hover:text-[var(--color-accent)] transition-colors">{faculty_id}</Link>
+        <span>/</span>
+        <span className="text-gray-900 font-medium">{offering.course_code}</span>
+      </div>
+
+      {/* Compact Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-[var(--color-accent)] p-5 sm:p-6 rounded-2xl shadow-lg shadow-[var(--color-accent)]/20">
+        {/* Left: Title & Stats */}
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="inline-flex items-center rounded-md bg-white/20 px-2 py-1 text-xs font-bold text-white ring-1 ring-inset ring-white/30 backdrop-blur-sm">
+              {offering.course_code}
+            </span>
+            <span className="text-xs font-medium text-white/70">
+              {offering.semester_name} • {offering.year_name}
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+            {offering.course_name}
+          </h1>
+
+          <div className="mt-5 flex flex-wrap gap-8">
+            {[
+              { label: "Faculty Assigned", value: filteredAssignments.length },
+              { label: "Requirements", value: components.length },
+              { label: "Completion Rate", value: `${completionPct}%` },
+            ].map((item) => (
+              <div key={item.label}>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-white/60">{item.label}</p>
+                <p className="text-xl font-bold text-white leading-none mt-1.5">{item.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col items-start lg:items-end gap-3">
+          <SendRemindersButton offering_id={offering_id} />
+          <Link
+            href={`/course-coordinator/${offering_id}/audit-comments`}
+            className="inline-flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 text-sm font-semibold text-white ring-1 ring-inset ring-white/30 hover:bg-white/30 transition-colors"
+          >
+            <MessageSquare className="w-4 h-4" />
+            Official Remarks
+          </Link>
+        </div>
+      </div>
+
+      <OfferingTabs
+        overviewContent={
+          <div className="space-y-8">
+            {/* Course Broadcasts */}
+            <div id="broadcasts" className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-[var(--color-ink)] flex items-center gap-2">
+                  <Megaphone className="w-5 h-5 text-[var(--color-accent)]" />
+                  Course Broadcasts
+                </h2>
+                <AddBroadcastForm offering_id={offering_id} faculty_id={session.faculty_id} />
+              </div>
+
+              {broadcasts.length === 0 ? (
+                <div className="panel-card border-dashed border-gray-200 py-[30px] px-5 text-center">
+                  <p className="text-sm text-gray-500">No course materials broadcasted yet.</p>
+                </div>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {broadcasts.map((b) => (
+                    <BroadcastCard
+                      key={b.broadcast_id}
+                      broadcast={{ ...b, course_code: offering.course_code }}
+                      baseUrl={process.env.R2_PUBLIC_BASE_URL!}
+                      currentFacultyId={session.faculty_id}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Components */}
+            <div id="document-requirements" className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-[var(--color-ink)] flex items-center gap-2">
+                  <ClipboardList className="w-5 h-5 text-gray-400" />
+                  Document Requirements
+                </h2>
+                <AddComponentForm offering_id={offering_id} componentMasters={componentMasters} />
+              </div>
+
+              {components.length === 0 ? (
+                <div className="panel-card border-dashed border-gray-200 p-5 text-center">
+                  <p className="text-sm text-gray-500">
+                    No components defined. Add document requirements above.
+                  </p>
+                </div>
+              ) : (
+                <div className="panel-card overflow-hidden">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5">
+                      <tr>
+                        <th className="px-5 py-3">Component</th>
+                        <th className="px-5 py-3 text-center">Mandatory</th>
+                        <th className="px-5 py-3">Deadline</th>
+                        <th className="px-5 py-3"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-black/5">
+                      {components.map((comp) => (
+                        <EditableComponentRow
+                          key={comp.id}
+                          comp={comp}
+                          offering_id={offering_id}
+                          currentFacultyId={session.faculty_id}
+                          baseUrl={process.env.R2_PUBLIC_BASE_URL}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+
+
+          </div>
+        }
+        facultyContent={
+          <div className="space-y-8">
+            {/* Faculty Assignments */}
+            <div id="faculty-assignments" className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-[var(--color-ink)] flex items-center gap-2">
+                  <Users className="w-5 h-5 text-gray-400" />
+                  Faculty & Sections/Classrooms
+                </h2>
+                <AddFacultyForm
+                  offering_id={offering_id}
+                  allFaculty={allFaculty}
+                />
+              </div>
+
+              {filteredAssignments.length === 0 ? (
+                <div className="panel-card border-dashed border-gray-200 p-5 text-center">
+                  <p className="text-sm text-gray-500">No faculty assigned yet.</p>
+                </div>
+              ) : (
+                <div className="panel-card overflow-hidden">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5">
+                      <tr>
+                        <th className="px-5 py-3">Faculty</th>
+                        <th className="px-5 py-3">Section/Classroom</th>
+                        <th className="px-5 py-3 text-center">Batch</th>
+                        <th className="px-5 py-3 text-center">Submitted</th>
+                        <th className="px-5 py-3 text-center">Pending</th>
+                        <th className="px-5 py-3"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-black/5">
+                      {filteredAssignments.map((fa) => {
+                        const faSubmissions = submissions.filter(
+                          (s) => s.faculty_assignment_id === fa.id
+                        );
+                        const submittedCount = faSubmissions.filter((s) => s.status === "submitted" || s.status === "approved").length;
+                        const pendingCount = faSubmissions.filter((s) => s.status === "pending" || s.status === "rejected").length;
+                        return (
+                          <EditableFacultyRow
+                            key={fa.id}
+                            fa={fa}
+                            allFaculty={allFaculty}
+                            submittedCount={submittedCount}
+                            pendingCount={pendingCount}
+                            offering_id={offering_id}
+                          />
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+          </div>
+        }
+        trackingContent={
+          <div className="space-y-8">
+            <SubmissionTrackingMatrix
+              offering_id={offering_id}
+              assignments={filteredAssignments}
+              components={trackedComponents}
+              submissions={submissions}
+              currentFacultyId={session.faculty_id}
+              baseUrl={process.env.R2_PUBLIC_BASE_URL ?? ""}
+            />
+          </div>
+        }
+        resultAnalysisContent={
+          <div className="space-y-8">
+            <div className="panel-card p-5">
+              <CoordinatorResultAnalysis
+                offeringId={offering_id}
+                courseCode={offering.course_code}
+                components={components}
+              />
+            </div>
+          </div>
+        }
+      />
+    </div>
+  );
+}
