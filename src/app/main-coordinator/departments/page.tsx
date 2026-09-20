@@ -52,6 +52,7 @@ export default async function DepartmentsPage() {
         depts={trackingData.depts}
         currentFacultyId={session.faculty_id}
         baseUrl={process.env.R2_PUBLIC_BASE_URL ?? ""}
+        offering_id={offering?.offering_id ?? ""}
       />
     </div>
   );

@@ -15,9 +15,11 @@ export type AuditFacultySubmission = {
   batch: number;
   semester_name: string;
   year_name: string;
+  department_id: string | null;
+  department_name: string | null;
   submission_id: string | null;
   component_name: string | null;
-  status: "pending" | "submitted" | "unsubmitted" | null;
+  status: "pending" | "submitted" | "unsubmitted" | "approved" | "rejected" | null;
   submitted_at: string | null;
   file_id: string | null;
   file_name: string | null;
@@ -58,6 +60,8 @@ export async function getAuditData(params?: {
       fa.batch,
       sm.semester_name,
       ay.year_name,
+      fa.department_id,
+      dm.department_name,
       s.submission_id,
       cmp.component_name,
       s.status,
@@ -73,6 +77,7 @@ export async function getAuditData(params?: {
     JOIN  public.course_master    cm  ON co.course_id    = cm.course_id
     JOIN  public.semester_master  sm  ON co.semester_id  = sm.semester_id
     JOIN  public.academic_year    ay  ON sm.year_id      = ay.year_id
+    LEFT JOIN public.department_master dm ON fa.department_id = dm.department_id
     LEFT JOIN public.submission        s   ON s.faculty_assignment_id = fa.id
     LEFT JOIN public.course_component  cc  ON s.course_component_id  = cc.id
     LEFT JOIN public.component_master  cmp ON cc.component_id        = cmp.component_id

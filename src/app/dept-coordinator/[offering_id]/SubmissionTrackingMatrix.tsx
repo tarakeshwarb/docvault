@@ -72,9 +72,9 @@ export function SubmissionTrackingMatrix({
         <table className="w-full text-sm text-left">
           <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5 whitespace-nowrap">
             <tr>
-              <th className="px-5 py-3 sticky left-0 bg-gray-50/70 z-10">Faculty</th>
+              <th className="px-5 py-3 sticky left-0 bg-gray-50/70 z-10 min-w-[200px] shadow-[inset_-1px_0_0_rgba(0,0,0,0.05)]">Faculty</th>
               {components.map((comp) => (
-                <th key={comp.id} className="px-5 py-3 text-center border-l border-black/5">
+                <th key={comp.id} className="px-5 py-3 text-center border-l border-black/5 min-w-[150px]">
                   <div className="flex flex-col items-center justify-center">
                     <span className="max-w-[120px] truncate" title={comp.component_name}>
                       {comp.component_name}
@@ -127,7 +127,7 @@ export function SubmissionTrackingMatrix({
 
               return (
                 <tr key={fa.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="px-5 py-3 whitespace-nowrap sticky left-0 bg-white group-hover:bg-gray-50/50 transition-colors z-10 border-r border-transparent">
+                  <td className="px-5 py-3 whitespace-nowrap sticky left-0 bg-white group-hover:bg-gray-50/50 transition-colors z-10 shadow-[inset_-1px_0_0_rgba(0,0,0,0.05)]">
                     <div className="font-medium text-[var(--color-ink)]">{fa.faculty_name}</div>
                     <div className="text-xs text-gray-500 mt-0.5">{fa.section_name}</div>
                   </td>

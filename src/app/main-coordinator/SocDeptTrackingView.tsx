@@ -12,6 +12,7 @@ export function SocDeptTrackingView({
   depts,
   currentFacultyId,
   baseUrl,
+  offering_id,
 }: {
   assignments: SocFacultyAssignment[];
   components: Component[];
@@ -19,6 +20,7 @@ export function SocDeptTrackingView({
   depts: { department_id: string; department_name: string }[];
   currentFacultyId: number;
   baseUrl: string;
+  offering_id: string;
 }) {
   const [selectedDept, setSelectedDept] = useState<string | null>(null);
 
@@ -127,9 +129,9 @@ export function SocDeptTrackingView({
           <table className="w-full text-sm text-left">
             <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5 whitespace-nowrap">
               <tr>
-                <th className="px-5 py-3 sticky left-0 bg-gray-50/70 z-10">Faculty / Section</th>
+                <th className="px-5 py-3 sticky left-0 bg-gray-50/70 z-10 min-w-[200px] shadow-[inset_-1px_0_0_rgba(0,0,0,0.05)]">Faculty / Section</th>
                 {components.map((comp) => (
-                  <th key={comp.id} className="px-5 py-3 text-center border-l border-black/5">
+                  <th key={comp.id} className="px-5 py-3 text-center border-l border-black/5 min-w-[150px]">
                     <div className="flex flex-col items-center justify-center">
                       <span className="max-w-[110px] truncate" title={comp.component_name}>
                         {comp.component_name}
@@ -155,7 +157,7 @@ export function SocDeptTrackingView({
                 );
                 return (
                   <tr key={fa.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-5 py-3 sticky left-0 bg-white z-10">
+                    <td className="px-5 py-3 sticky left-0 bg-white z-10 shadow-[inset_-1px_0_0_rgba(0,0,0,0.05)] group-hover:bg-gray-50/50">
                       <div className="font-medium text-[var(--color-ink)]">{fa.faculty_name}</div>
                       <div className="text-xs text-gray-500 mt-0.5">{fa.section_name}</div>
                     </td>
@@ -172,10 +174,9 @@ export function SocDeptTrackingView({
                             component_name={comp.component_name}
                             section_name={fa.section_name}
                             status={status}
-                            offering_id={""}
+                            offering_id={offering_id}
                             baseUrl={baseUrl}
                             currentFacultyId={currentFacultyId}
-                            readonly={true}
                           />
                         </td>
                       );
