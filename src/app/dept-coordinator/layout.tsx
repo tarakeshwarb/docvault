@@ -26,8 +26,8 @@ export default async function DeptCoordinatorLayout({
     redirect("/");
   }
 
-  // Strict role isolation: only dept_coordinator, admin, and developer can access this portal
-  if (session.role !== "dept_coordinator" && session.role !== "admin" && session.role !== "developer") {
+  // Strict role isolation: only dept_coordinator, main_coordinator, admin, and developer can access this portal
+  if (session.role !== "dept_coordinator" && session.role !== "main_coordinator" && session.role !== "admin" && session.role !== "developer") {
     redirect("/");
   }
 

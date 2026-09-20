@@ -12,9 +12,11 @@ type Section = { section_id: string; section_name: string };
 export function AddFacultyForm({
   offering_id,
   allFaculty,
+  department_id,
 }: {
   offering_id: string;
   allFaculty: Faculty[];
+  department_id: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"bulk" | "manual">("bulk");
@@ -55,6 +57,7 @@ export function AddFacultyForm({
         faculty_id: parseInt(facultyId),
         section_names: parsedSections,
         batch: parseInt(batch) || 1,
+        department_id,
       });
 
       setFacultyId("");
@@ -101,7 +104,8 @@ export function AddFacultyForm({
           faculty_id: f.faculty_id,
           section_name: f.section_name!,
           batch: f.batch || 1
-        }))
+        })),
+        department_id,
       });
       setParsedResults([]);
       setOpen(false);

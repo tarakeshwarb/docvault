@@ -6,7 +6,8 @@ import { getFacultySession } from "@/lib/auth";
 import { type SidebarItem } from "@/components/layout/Sidebar";
 
 const coordinatorSidebarItems: SidebarItem[] = [
-  { label: "Departments", href: "/main-coordinator", icon: LayoutDashboard, variant: "coordinator" },
+  { label: "Overview", href: "/main-coordinator", icon: LayoutDashboard, variant: "coordinator" },
+  { label: "Departments", href: "/main-coordinator/departments", icon: LayoutDashboard, variant: "coordinator" },
   { label: "Result Analysis", href: "/main-coordinator/result-analysis", icon: BarChart3, variant: "coordinator" },
 ];
 

@@ -13,6 +13,7 @@ import {
   getAllFacultyForAssignment,
   getCoordinatorOfferings,
   getCourseBroadcasts,
+  getDeptCoordinatorDeptId,
 } from "../actions";
 import { AddFacultyForm } from "./AddFacultyForm";
 import { AddComponentForm } from "./AddComponentForm";
@@ -82,6 +83,7 @@ export default async function OfferingDetailPage({
     componentMasters,
     allFaculty,
     broadcasts,
+    coordinatorDeptId,
   ] =
     await Promise.all([
       getCoordinatorOfferings(session.faculty_id),
@@ -91,6 +93,7 @@ export default async function OfferingDetailPage({
       getComponentMasters(),
       getAllFacultyForAssignment(),
       getCourseBroadcasts(offering_id),
+      getDeptCoordinatorDeptId(session.faculty_id, offering_id),
     ]);
 
 
@@ -196,13 +199,13 @@ export default async function OfferingDetailPage({
                   <ClipboardList className="w-5 h-5 text-gray-400" />
                   Document Requirements
                 </h2>
-                <AddComponentForm offering_id={offering_id} componentMasters={componentMasters} />
+                {/* AddComponentForm removed for Dept Coordinator */}
               </div>
 
               {components.length === 0 ? (
                 <div className="panel-card border-dashed border-gray-200 p-5 text-center">
                   <p className="text-sm text-gray-500">
-                    No components defined. Add document requirements above.
+                    No components defined by the SOC Coordinator yet.
                   </p>
                 </div>
               ) : (
@@ -224,6 +227,7 @@ export default async function OfferingDetailPage({
                           offering_id={offering_id}
                           currentFacultyId={session.faculty_id}
                           baseUrl={process.env.R2_PUBLIC_BASE_URL}
+                          readonly={true}
                         />
                       ))}
                     </tbody>
@@ -248,6 +252,7 @@ export default async function OfferingDetailPage({
                 <AddFacultyForm
                   offering_id={offering_id}
                   allFaculty={allFaculty}
+                  department_id={coordinatorDeptId}
                 />
               </div>
 
