@@ -26,20 +26,18 @@ export async function getGlobalResultAnalysisData(offeringId: string) {
       [offeringId]
     );
 
-    // 2. Get components for this offering
     const components = await queryDb<{
       component_id: string;
       component_name: string;
-      created_at: string;
     }>(
       `SELECT DISTINCT ON (cmp.component_id)
         cmp.component_id,
-        cmp.component_name,
-        cc.created_at
-      FROM public.course_component cc
-      JOIN public.component_master cmp ON cc.component_id = cmp.component_id
-      WHERE cc.offering_id = $1
-      ORDER BY cmp.component_id, cc.created_at`,
+        cmp.component_name
+      FROM public.component_main cmp
+      JOIN public.course_master c_master ON cmp.course_code = c_master.course_code
+      JOIN public.course_offering co ON co.course_id = c_master.course_id
+      WHERE co.offering_id = $1
+      ORDER BY cmp.component_id`,
       [offeringId]
     );
 

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Download, Loader2, CheckSquare, Square, FileSpreadsheet, ChevronDown } from "lucide-react";
 
 type Dept = { department_id: string; department_name: string; offering_id: string | null };
-type Component = { component_id: string; component_name: string; created_at: string };
+type Component = { component_id: string; component_name: string };
 
 export function SocResultAnalysis({
   deptOfferings,
@@ -204,9 +204,7 @@ export function SocResultAnalysis({
                       </button>
                     </td>
                     <td className="px-4 py-3 font-medium text-gray-900">{c.component_name}</td>
-                    <td className="px-4 py-3 text-right text-gray-500">
-                      {new Date(c.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                    </td>
+                    
                   </tr>
                 );
               })}

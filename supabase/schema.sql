@@ -55,6 +55,13 @@ create table if not exists public.component_master (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.component_main (
+  component_id uuid primary key default gen_random_uuid(),
+  component_name text not null,
+  course_code text not null references public.course_master(course_code) on delete cascade,
+  unique (component_name, course_code)
+);
+
 create table if not exists public.template_master (
   template_id uuid primary key default gen_random_uuid(),
   template_name text not null,
@@ -339,7 +346,7 @@ create table if not exists public.result_analysis (
   analysis_id uuid primary key default gen_random_uuid(),
   offering_id uuid not null references public.course_offering(offering_id) on delete cascade,
   faculty_assignment_id uuid not null references public.faculty_assignment(id) on delete cascade,
-  component_id uuid not null references public.component_master(component_id) on delete cascade,
+  component_id uuid not null references public.component_main(component_id) on delete cascade,
   total_strength integer not null default 0,
   total_absentees integer not null default 0,
   range_0_49 integer not null default 0,
