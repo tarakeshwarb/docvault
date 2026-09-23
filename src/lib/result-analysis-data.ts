@@ -64,7 +64,7 @@ const SECTION_JOINS = `
   JOIN public.semester_master sm ON co.semester_id = sm.semester_id
   JOIN public.academic_year ay ON sm.year_id = ay.year_id
   JOIN public.faculty f ON fa.faculty_id = f.faculty_id
-  JOIN public.component_master cmp ON cmp.component_id = $2
+  JOIN public.component_main cmp ON cmp.component_id = $2
   LEFT JOIN public.result_analysis ra
     ON ra.faculty_assignment_id = fa.id AND ra.component_id = $2
 `;
@@ -160,18 +160,24 @@ export async function createOfferingComponent(
 ): Promise<{ component_id: string; component_name: string }> {
   const clean = name.trim();
   if (!clean) throw new Error("Component name is required.");
+  // Get course_code
+  const courseRes = await queryDb<{ course_code: string }>(
+    `SELECT cm.course_code 
+     FROM public.course_master cm
+     JOIN public.course_offering co ON co.course_id = cm.course_id
+     WHERE co.offering_id = $1`,
+    [offering_id]
+  );
+  if (courseRes.length === 0) throw new Error("Course not found.");
+  const course_code = courseRes[0].course_code;
+
   const rows = await queryDb<{ component_id: string }>(
-    `INSERT INTO public.component_master (component_name) VALUES ($1)
-     ON CONFLICT (component_name) DO UPDATE SET component_name = EXCLUDED.component_name
+    `INSERT INTO public.component_main (component_name, course_code) VALUES ($1, $2)
+     ON CONFLICT (component_name, course_code) DO UPDATE SET component_name = EXCLUDED.component_name
      RETURNING component_id`,
-    [clean]
+    [clean, course_code]
   );
   const component_id = rows[0].component_id;
-  await executeDb(
-    `INSERT INTO public.course_component (offering_id, component_id)
-     VALUES ($1, $2) ON CONFLICT (offering_id, component_id) DO NOTHING`,
-    [offering_id, component_id]
-  );
   return { component_id, component_name: clean };
 }
 
@@ -180,11 +186,12 @@ export async function getComponentsForOffering(
   offering_id: string
 ): Promise<Array<{ component_id: string; component_name: string }>> {
   return queryDb<{ component_id: string; component_name: string }>(
-    `SELECT cmp.component_id, cmp.component_name
-     FROM public.course_component cc
-     JOIN public.component_master cmp ON cc.component_id = cmp.component_id
-     WHERE cc.offering_id = $1
-     ORDER BY cmp.component_name`,
+    `SELECT cm.component_id, cm.component_name
+     FROM public.component_main cm
+     JOIN public.course_master c_master ON cm.course_code = c_master.course_code
+     JOIN public.course_offering co ON co.course_id = c_master.course_id
+     WHERE co.offering_id = $1
+     ORDER BY cm.component_name`,
     [offering_id]
   );
 }
@@ -208,7 +215,7 @@ export async function getComponentsWithAnalysis(
   return queryDb<{ component_id: string; component_name: string }>(
     `SELECT DISTINCT cmp.component_id, cmp.component_name
      FROM public.result_analysis ra
-     JOIN public.component_master cmp ON ra.component_id = cmp.component_id
+     JOIN public.component_main cmp ON ra.component_id = cmp.component_id
      WHERE ra.offering_id = $1
      ORDER BY cmp.component_name`,
     [offering_id]
@@ -271,7 +278,7 @@ export async function getAllSavedAnalysesForFaculty(
        ra.range_70_79, ra.range_80_89, ra.range_90_100,
        ra.updated_at::text
      FROM public.result_analysis ra
-     JOIN public.component_master cmp ON cmp.component_id = ra.component_id
+     JOIN public.component_main cmp ON cmp.component_id = ra.component_id
      JOIN public.faculty_assignment fa ON fa.id = ra.faculty_assignment_id
      WHERE ra.faculty_assignment_id = $1
      ORDER BY cmp.component_name, fa.section_name`,

@@ -101,7 +101,7 @@ export async function getDepartments(): Promise<Department[]> {
 }
 
 export async function getSocComponentsByOfferings(offeringIds: string[]): Promise<
-  Record<string, { component_id: string; component_name: string; created_at: string }[]>
+  Record<string, { component_id: string; component_name: string }[]>
 > {
   if (offeringIds.length === 0) return {};
   try {
@@ -109,17 +109,16 @@ export async function getSocComponentsByOfferings(offeringIds: string[]): Promis
       offering_id: string;
       component_id: string;
       component_name: string;
-      created_at: string;
     }>(`
       SELECT
-        cc.offering_id,
+        co.offering_id,
         cmp.component_id,
-        cmp.component_name,
-        cc.created_at
-      FROM public.course_component cc
-      JOIN public.component_master cmp ON cc.component_id = cmp.component_id
-      WHERE cc.offering_id = ANY($1::uuid[])
-      ORDER BY cc.created_at
+        cmp.component_name
+      FROM public.course_offering co
+      JOIN public.course_master cm ON co.course_id = cm.course_id
+      JOIN public.component_main cmp ON cmp.course_code = cm.course_code
+      WHERE co.offering_id = ANY($1::uuid[])
+      ORDER BY cmp.component_name
     `, [offeringIds as unknown as string]);
 
     const result: Record<string, typeof rows> = {};
