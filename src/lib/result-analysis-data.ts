@@ -153,6 +153,17 @@ export async function upsertAnalysis(data: {
   );
 }
 
+export async function deleteResultAnalysis(
+  faculty_assignment_id: string,
+  component_id: string
+): Promise<void> {
+  await executeDb(
+    `DELETE FROM public.result_analysis 
+     WHERE faculty_assignment_id = $1 AND component_id = $2`,
+    [faculty_assignment_id, component_id]
+  );
+}
+
 /** Create a component (if new) and attach it to the offering; returns it. */
 export async function createOfferingComponent(
   offering_id: string,

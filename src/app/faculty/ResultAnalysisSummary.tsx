@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { getAllSavedAnalysesAction } from "./result-analysis-actions";
-import { BarChart3, Loader2, RefreshCw, FileSpreadsheet } from "lucide-react";
+import { getAllSavedAnalysesAction, deleteResultAnalysisAction } from "./result-analysis-actions";
+import { BarChart3, Loader2, RefreshCw, FileSpreadsheet, Trash2, Edit2 } from "lucide-react";
 
 const RANGE_LABELS = ["0-49", "50-59", "60-69", "70-79", "80-89", "90-100"];
 
@@ -34,6 +34,7 @@ export function ResultAnalysisSummary({
   const [rows, setRows] = useState<SavedRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -54,7 +55,20 @@ export function ResultAnalysisSummary({
     return () => window.removeEventListener("result-analysis-saved", handleSaved);
   }, [load]);
 
-
+  async function handleDelete(componentId: string) {
+    if (!confirm("Are you sure you want to delete this result analysis?")) return;
+    setDeleting(componentId);
+    setError(null);
+    try {
+      const res = await deleteResultAnalysisAction(facultyAssignmentId, componentId);
+      if (!res.ok) throw new Error(res.error || "Failed to delete");
+      load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Delete failed.");
+    } finally {
+      setDeleting(null);
+    }
+  }
 
   async function downloadTemplate(componentId: string) {
     setDownloading(componentId);
@@ -153,7 +167,7 @@ export function ResultAnalysisSummary({
                 <th className="px-2 py-3 text-xs font-semibold text-gray-500 text-center leading-snug w-16">Failures</th>
                 <th className="px-2 py-3 text-xs font-semibold text-gray-500 text-center leading-snug w-16">Total Pass</th>
                 <th className="px-2 py-3 text-xs font-semibold text-gray-500 text-center whitespace-nowrap">Pass %</th>
-                <th className="px-2 py-3 text-xs font-semibold text-gray-500 text-center whitespace-nowrap">Export</th>
+                <th className="px-2 py-3 text-xs font-semibold text-gray-500 text-center whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/5">
@@ -190,19 +204,41 @@ export function ResultAnalysisSummary({
                       </span>
                     </td>
                     <td className="px-2 py-3 text-center">
-                      <button
-                        onClick={() => downloadTemplate(row.component_id)}
-                        disabled={downloading === row.component_id}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-2 py-1.5 text-xs font-medium text-[var(--color-accent)] hover:bg-[var(--color-accent)]/5 hover:border-[var(--color-accent)]/20 transition-all disabled:opacity-50"
-                        title="Download Analysis Type Excel"
-                      >
-                        {downloading === row.component_id ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <FileSpreadsheet className="h-3.5 w-3.5" />
-                        )}
-                        Download
-                      </button>
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => {
+                            window.dispatchEvent(new CustomEvent("edit-result-analysis", { detail: row.component_id }));
+                          }}
+                          className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-200 text-blue-600 hover:bg-blue-50 hover:border-blue-200 transition-all"
+                          title="Edit Analysis"
+                        >
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => downloadTemplate(row.component_id)}
+                          disabled={downloading === row.component_id}
+                          className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-200 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/5 hover:border-[var(--color-accent)]/20 transition-all disabled:opacity-50"
+                          title="Download Analysis Type Excel"
+                        >
+                          {downloading === row.component_id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <FileSpreadsheet className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleDelete(row.component_id)}
+                          disabled={deleting === row.component_id}
+                          className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-200 text-red-600 hover:bg-red-50 hover:border-red-200 transition-all disabled:opacity-50"
+                          title="Delete Analysis"
+                        >
+                          {deleting === row.component_id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );

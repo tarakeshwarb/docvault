@@ -7,6 +7,7 @@ import {
   getComponentsForOffering,
   createOfferingComponent,
   getAllSavedAnalysesForFaculty,
+  deleteResultAnalysis,
 } from "@/lib/result-analysis-data";
 import { validateInput, type ResultAnalysisInput } from "@/lib/result-analysis";
 
@@ -62,4 +63,17 @@ export async function saveResultAnalysisAction(data: {
 
   revalidatePath("/faculty");
   return { ok: true, errors: [] };
+}
+
+export async function deleteResultAnalysisAction(
+  faculty_assignment_id: string,
+  component_id: string
+) {
+  try {
+    await deleteResultAnalysis(faculty_assignment_id, component_id);
+    revalidatePath("/faculty");
+    return { ok: true as const };
+  } catch (e) {
+    return { ok: false as const, error: e instanceof Error ? e.message : "Failed to delete" };
+  }
 }

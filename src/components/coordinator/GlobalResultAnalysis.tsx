@@ -5,7 +5,7 @@ import { Download, Loader2, CheckSquare, Square, FileSpreadsheet, ChevronDown, B
 import { getGlobalResultAnalysisData } from "@/app/actions/result-analysis-actions";
 
 type Dept = { department_id: string; department_name: string; offering_id: string | null };
-type Component = { component_id: string; component_name: string; created_at: string };
+type Component = { component_id: string; component_name: string; };
 
 type Course = {
   offering_id: string;
@@ -253,7 +253,6 @@ export function GlobalResultAnalysis({
                       </button>
                     </th>
                     <th className="px-4 py-3 font-semibold text-gray-500">Component Name</th>
-                    <th className="px-4 py-3 font-semibold text-gray-500 text-right">Added On</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-black/5">
@@ -271,9 +270,6 @@ export function GlobalResultAnalysis({
                           </button>
                         </td>
                         <td className="px-4 py-3 font-medium text-gray-900">{c.component_name}</td>
-                        <td className="px-4 py-3 text-right text-gray-500">
-                          {new Date(c.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                        </td>
                       </tr>
                     );
                   })}

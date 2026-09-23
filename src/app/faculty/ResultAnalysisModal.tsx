@@ -7,7 +7,6 @@ import {
   getComponentsForOfferingAction,
   getResultAnalysisAction,
   saveResultAnalysisAction,
-  createComponentAction,
 } from "./result-analysis-actions";
 import {
   BarChart3,
@@ -16,7 +15,6 @@ import {
   Save,
   CheckCircle2,
   AlertCircle,
-  Plus,
 } from "lucide-react";
 
 const RANGE_LABELS = ["0-49", "50-59", "60-69", "70-79", "80-89", "90-100"];
@@ -49,9 +47,16 @@ export function ResultAnalysisModal({
   const [absentees, setAbsentees] = useState(0);
   const [ranges, setRanges] = useState<number[]>([0, 0, 0, 0, 0, 0]);
 
-  const [addingOpen, setAddingOpen] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [creating, setCreating] = useState(false);
+
+  useEffect(() => {
+    const handleEdit = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      setComponentId(customEvent.detail);
+      setIsOpen(true);
+    };
+    window.addEventListener("edit-result-analysis", handleEdit);
+    return () => window.removeEventListener("edit-result-analysis", handleEdit);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -61,6 +66,7 @@ export function ResultAnalysisModal({
       try {
         const comps = await getComponentsForOfferingAction(offeringId);
         setComponents(comps);
+        // If we don't have a componentId (not opening from edit), set to first available
         if (comps.length && !componentId) setComponentId(comps[0].component_id);
       } finally {
         setLoading(false);
@@ -127,24 +133,6 @@ export function ResultAnalysisModal({
     }
   }
 
-  async function handleCreateComponent() {
-    const name = newName.trim();
-    if (!name) return;
-    setCreating(true);
-    setErrors([]);
-    try {
-      const created = await createComponentAction(offeringId, name);
-      const comps = await getComponentsForOfferingAction(offeringId);
-      setComponents(comps);
-      setComponentId(created.component_id);
-      setNewName("");
-      setAddingOpen(false);
-    } catch (e) {
-      setErrors([e instanceof Error ? e.message : "Failed to add component."]);
-    } finally {
-      setCreating(false);
-    }
-  }
 
 
 
@@ -152,7 +140,7 @@ export function ResultAnalysisModal({
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-2 rounded-full border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-100"
+        className="inline-flex items-center gap-2 rounded-full border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100 hover:border-blue-400"
       >
         <BarChart3 className="w-3 h-3" />
         Result Analysis
@@ -192,22 +180,13 @@ export function ResultAnalysisModal({
                   <>
                     {/* Component picker */}
                     <div>
-                      <div className="mb-1 flex items-center justify-between">
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500">
-                          Component
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => setAddingOpen((v) => !v)}
-                          className="inline-flex items-center gap-1 text-xs font-medium text-[var(--color-accent)] hover:underline"
-                        >
-                          <Plus className="h-3 w-3" /> New component
-                        </button>
-                      </div>
+                      <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-gray-500">
+                        Component
+                      </label>
 
                       {components.length === 0 ? (
                         <p className="rounded bg-amber-50 p-2 text-xs text-amber-700">
-                          No components yet. Add one below (or ask the coordinator to add them).
+                          No components available for this course. Please contact your coordinator.
                         </p>
                       ) : (
                         <select
@@ -221,33 +200,6 @@ export function ResultAnalysisModal({
                             </option>
                           ))}
                         </select>
-                      )}
-
-                      {addingOpen && (
-                        <div className="mt-2 flex gap-2">
-                          <input
-                            type="text"
-                            value={newName}
-                            onChange={(e) => setNewName(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                handleCreateComponent();
-                              }
-                            }}
-                            placeholder="e.g. CT1, FT3, LLT1"
-                            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                          />
-                          <button
-                            type="button"
-                            onClick={handleCreateComponent}
-                            disabled={creating || !newName.trim()}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
-                          >
-                            {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                            Add
-                          </button>
-                        </div>
                       )}
                     </div>
 
