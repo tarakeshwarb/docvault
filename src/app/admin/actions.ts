@@ -780,3 +780,41 @@ export async function bulkAddOfferings(rows: OfferingExcelRow[]): Promise<{ inse
   revalidatePath("/admin/offerings");
   return { inserted };
 }
+
+export async function bulkUploadFaculty(
+  facultyList: Array<{
+    faculty_id: number;
+    faculty_name: string;
+    email: string;
+    mobile_no?: string;
+    designation?: string;
+  }>
+) {
+  const session = await getFacultySession();
+  if (session?.role !== "admin" && session?.role !== "developer") {
+    throw new Error("Unauthorized");
+  }
+
+  let count = 0;
+  for (const fac of facultyList) {
+    if (!fac.faculty_id || !fac.faculty_name || !fac.email) continue;
+    try {
+      await executeDb(
+        `INSERT INTO public.faculty (faculty_id, faculty_name, email, mobile_no, designation, role)
+         VALUES ($1, $2, $3, $4, $5, 'faculty')
+         ON CONFLICT (faculty_id) DO UPDATE SET
+           faculty_name = EXCLUDED.faculty_name,
+           email = EXCLUDED.email,
+           mobile_no = EXCLUDED.mobile_no,
+           designation = EXCLUDED.designation`,
+        [fac.faculty_id, fac.faculty_name, fac.email, fac.mobile_no || null, fac.designation || "Assistant Professor"]
+      );
+      count++;
+    } catch (error) {
+      console.error(`Failed to insert faculty ${fac.faculty_id}:`, error);
+    }
+  }
+
+  revalidatePath("/admin/faculty");
+  return { success: true, count };
+}

@@ -3,6 +3,7 @@ import { getAllFaculty } from "../actions";
 import { getDepartments } from "../departments/actions";
 import { getFacultySession } from "@/lib/auth";
 import { FacultyDirectoryTable } from "./FacultyDirectoryTable";
+import { BulkUploadFaculty } from "./BulkUploadFaculty";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,7 @@ export default async function FacultyDirectoryPage() {
             <span className="font-medium text-gray-700">Edit</span> to modify.
           </p>
         </div>
+        <BulkUploadFaculty />
       </div>
 
       <FacultyDirectoryTable faculty={faculty} departments={departments} />

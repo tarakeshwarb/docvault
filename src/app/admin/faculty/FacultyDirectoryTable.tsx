@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
-import { Pencil, X, Check, AlertTriangle, Loader2, Building2, ShieldAlert } from "lucide-react";
+import { Pencil, X, Check, AlertTriangle, Loader2, Building2, ShieldAlert, Search } from "lucide-react";
 import { updateFaculty, type Faculty } from "../actions";
 
 type Department = { department_id: string; department_name: string };
@@ -9,10 +9,7 @@ type Department = { department_id: string; department_name: string };
 const ALL_ROLES = [
   "admin",
   "hod",
-  "main_coordinator",
-  "dept_coordinator",
   "faculty",
-  "audit",
   "developer",
 ] as const;
 
@@ -192,6 +189,7 @@ export function FacultyDirectoryTable({
   const [editState, setEditState] = useState<EditState | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [isPending, startTransition] = useTransition();
 
   // The original faculty row being edited (for change diffs in modal)
@@ -251,6 +249,11 @@ export function FacultyDirectoryTable({
   const deptName = (id: string | null | undefined) =>
     departments.find((d) => d.department_id === id)?.department_name ?? null;
 
+  const filteredFaculty = faculty.filter(f => 
+    f.faculty_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    f.faculty_id.toString().includes(searchQuery)
+  );
+
   return (
     <>
       {/* Confirmation Modal */}
@@ -270,6 +273,18 @@ export function FacultyDirectoryTable({
       />
 
       <div className="panel-card overflow-hidden">
+        <div className="p-4 border-b border-gray-100 bg-white flex items-center">
+          <div className="relative w-full max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search faculty by name or ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 transition-shadow"
+            />
+          </div>
+        </div>
         <table className="w-full text-sm text-left">
           <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5">
             <tr>
@@ -284,14 +299,14 @@ export function FacultyDirectoryTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-black/5">
-            {faculty.length === 0 ? (
+            {filteredFaculty.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
-                  No faculty found.
+                  No faculty found matching "{searchQuery}".
                 </td>
               </tr>
             ) : (
-              faculty.map((f) => {
+              filteredFaculty.map((f) => {
                 const isEditing = editingId === f.faculty_id;
                 const badge = roleBadge[f.role] ?? roleBadge.faculty;
 
