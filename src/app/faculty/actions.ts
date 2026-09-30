@@ -115,8 +115,7 @@ export async function recordFileUpload(data: {
   );
 
   // We should revalidate paths in the caller or here if we know them, but let's assume UI handles refresh.
-
-  revalidatePath("/faculty");
+  revalidatePath("/", "layout");
 }
 
 export type FileMetadata = {
@@ -155,16 +154,14 @@ export async function deleteFileAction(file_id: string, submission_id: string, s
   );
 
   if (Number(remaining[0]?.count) === 0) {
-    // 4. If no files left, mark as 'unsubmitted' (NOT 'pending') so the audit trail
-    // retains a record that files were once submitted and then deleted by the faculty.
-    // submitted_at is intentionally preserved as the timestamp of their last submission.
+    // If no files left, fully reset: status back to pending and clear the submitted_at timestamp
     await executeDb(
-      "UPDATE public.submission SET status = 'unsubmitted' WHERE submission_id = $1",
+      "UPDATE public.submission SET status = 'pending', submitted_at = NULL WHERE submission_id = $1",
       [submission_id]
     );
   }
 
-  revalidatePath("/faculty");
+  revalidatePath("/", "layout");
 }
 
 export type FacultyCourseBroadcast = {
@@ -195,5 +192,48 @@ export async function getFacultyBroadcasts(faculty_id: number): Promise<FacultyC
     WHERE fa.faculty_id = $1
     ORDER BY cb.created_at DESC
   `, [faculty_id]);
+}
+
+export async function getFacultyReviewerComponents(faculty_id: number, offering_id: string) {
+  return queryDb<{ component_id: string, component_name: string }>(`
+    SELECT cc.id as component_id, cm.component_name
+    FROM public.component_reviewer cr
+    JOIN public.course_component cc ON cc.id = cr.course_component_id
+    JOIN public.component_master cm ON cm.component_id = cc.component_id
+    WHERE cr.faculty_id = $1 AND cc.offering_id = $2
+  `, [faculty_id, offering_id]);
+}
+
+export async function getReviewerSubmissions(component_ids: string[]) {
+  if (component_ids.length === 0) return [];
+  
+  // Use ANY array for IN clause
+  return queryDb<{
+    submission_id: string;
+    faculty_assignment_id: string;
+    course_component_id: string;
+    status: string;
+    submitted_at: string;
+    remarks: string;
+    audit_remarks: string;
+    faculty_name: string;
+    section_name: string;
+  }>(`
+    SELECT 
+      s.submission_id, s.faculty_assignment_id, s.course_component_id, s.status, s.submitted_at, s.remarks, s.audit_remarks,
+      f.faculty_name, fa.section_name
+    FROM public.submission s
+    JOIN public.faculty_assignment fa ON fa.id = s.faculty_assignment_id
+    JOIN public.faculty f ON f.faculty_id = fa.faculty_id
+    WHERE s.course_component_id = ANY($1::uuid[])
+  `, [component_ids]);
+}
+
+export async function approveSubmission(submission_id: string, faculty_id: number) {
+  await executeDb(`
+    UPDATE public.submission
+    SET status = 'approved', approved_by = $2, approved_at = now()
+    WHERE submission_id = $1
+  `, [submission_id, faculty_id]);
 }
 

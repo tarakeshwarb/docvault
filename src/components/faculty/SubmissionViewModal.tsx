@@ -194,26 +194,11 @@ export function FacultySubmissionViewModal({
                           >
                             <FileText className="w-3.5 h-3.5" />
                             <span className="max-w-[150px] truncate">{f.file_name}</span>
-                            <span className="text-[10px] text-gray-400">v{f.version}</span>
                           </button>
                         ))}
                       </div>
                     )}
 
-                    {/* File metadata bar */}
-                    {currentFile && (
-                      <div className="flex items-center gap-3 bg-white border-b border-black/5 px-4 py-2 shrink-0 text-xs text-gray-500">
-                        <FileText className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                        <span className="font-medium text-gray-700 truncate">
-                          {currentFile.file_name}
-                        </span>
-                        <span className="shrink-0">{formatBytes(currentFile.file_size)}</span>
-                        <span className="shrink-0">
-                          Uploaded{" "}
-                          {new Date(currentFile.uploaded_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                    )}
 
                     <div className="flex-1 overflow-hidden relative">
                       {currentFile &&

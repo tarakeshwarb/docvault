@@ -57,7 +57,7 @@ export function SubmissionFilesModal({
   const [files, setFiles] = useState<FileItem[]>([]);
   const [selectedFileIndex, setSelectedFileIndex] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [localStatus, setLocalStatus] = useState(status);
+  const [localStatus, setLocalStatus] = useState(status === "unsubmitted" ? "pending" : status);
   const [acting, setActing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   
@@ -73,11 +73,18 @@ export function SubmissionFilesModal({
     setLoading(true);
     setActionError(null);
     try {
-      const res = await fetch(`/api/submission-files?submission_id=${submission_id}`);
+      const res = await fetch(`/api/submission-files?submission_id=${submission_id}&t=${Date.now()}`, {
+        cache: 'no-store'
+      });
       const data = await res.json();
       const fetchedFiles = data.files ?? [];
       setFiles(fetchedFiles);
       setSelectedFileIndex(fetchedFiles.length > 0 ? fetchedFiles.length - 1 : 0);
+      
+      // Auto-heal stale cache: If server says there are no files but UI thought it was submitted
+      if (fetchedFiles.length === 0 && localStatus === "submitted") {
+        setLocalStatus("pending");
+      }
     } catch {
       setFiles([]);
     } finally {
@@ -293,7 +300,6 @@ export function SubmissionFilesModal({
                         >
                           <FileText className="w-3.5 h-3.5" />
                           <span className="max-w-[150px] truncate">{f.file_name}</span>
-                          <span className="text-[10px] text-gray-400">v{f.version}</span>
                         </button>
                       ))}
                     </div>

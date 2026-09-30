@@ -198,6 +198,11 @@ export default async function CoordinatorResultAnalysisPage({
                     Total Students vs. Range of Marks (All Sections Combined)
                   </p>
                   <ResultAnalysisChart data={chartData} />
+                  <div className="mt-8 flex justify-end">
+                    <p className="text-sm font-semibold text-[var(--color-ink)] border-t border-gray-400 inline-block pt-2 pr-8 pl-8">
+                      Signature of Main Coordinator
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

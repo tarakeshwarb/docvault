@@ -121,6 +121,7 @@ export async function getAllFaculty(): Promise<Faculty[]> {
         d.department_name
       FROM public.faculty f
       LEFT JOIN public.department_master d ON f.department_id = d.department_id
+      WHERE f.faculty_id NOT IN (99901, 99902)
       ORDER BY f.faculty_name ASC
     `);
   } catch (error) {

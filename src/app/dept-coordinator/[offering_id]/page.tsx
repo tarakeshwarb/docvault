@@ -14,7 +14,9 @@ import {
   getCoordinatorOfferings,
   getCourseBroadcasts,
   getDeptCoordinatorDeptId,
+  getAllComponentReviewers,
 } from "../actions";
+import { getComponentsForOffering } from "@/lib/result-analysis-data";
 import { AddFacultyForm } from "./AddFacultyForm";
 import { AddComponentForm } from "./AddComponentForm";
 import { AddBroadcastForm } from "./AddBroadcastForm";
@@ -85,6 +87,8 @@ export default async function OfferingDetailPage({
     componentMasters,
     allFaculty,
     broadcasts,
+    allReviewers,
+    raComponents,
   ] =
     await Promise.all([
       getCoordinatorOfferings(session.faculty_id),
@@ -94,6 +98,8 @@ export default async function OfferingDetailPage({
       getComponentMasters(),
       getAllFacultyForAssignment(),
       getCourseBroadcasts(offering_id),
+      getAllComponentReviewers(offering_id),
+      getComponentsForOffering(offering_id),
     ]);
 
   const offering = offerings.find((o) => o.offering_id === offering_id);
@@ -214,20 +220,33 @@ export default async function OfferingDetailPage({
                         <th className="px-5 py-3">Component</th>
                         <th className="px-5 py-3 text-center">Mandatory</th>
                         <th className="px-5 py-3">Deadline</th>
-                        <th className="px-5 py-3"></th>
+                        <th className="px-5 py-3 text-center">Assign Reviewers</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-black/5">
-                      {components.map((comp) => (
-                        <EditableComponentRow
-                          key={comp.id}
-                          comp={comp}
-                          offering_id={offering_id}
-                          currentFacultyId={session.faculty_id}
-                          baseUrl={process.env.R2_PUBLIC_BASE_URL}
-                          readonly={true}
-                        />
-                      ))}
+                      {components.map((comp) => {
+                        const compReviewers = allReviewers.filter(r => r.course_component_id === comp.id).map(r => Number(r.faculty_id));
+                        return (
+                          <EditableComponentRow
+                            key={comp.id}
+                            comp={comp}
+                            offering_id={offering_id}
+                            currentFacultyId={session.faculty_id}
+                            baseUrl={process.env.R2_PUBLIC_BASE_URL}
+                            readonly={true}
+                            canAssignReviewers={true}
+                            assignedReviewers={compReviewers}
+                            allFaculty={Array.from(
+                              new Map(
+                                assignments
+                                  .filter(a => a.faculty_id !== 99901 && a.faculty_id !== 99902)
+                                  .map(a => [a.faculty_id, { faculty_id: a.faculty_id, faculty_name: a.faculty_name, email: a.email ?? "" }])
+                              ).values()
+                            )}
+                            globalAllFaculty={allFaculty}
+                          />
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -315,7 +334,7 @@ export default async function OfferingDetailPage({
               <CoordinatorResultAnalysis
                 offeringId={offering_id}
                 courseCode={offering.course_code}
-                components={components}
+                components={raComponents}
               />
             </div>
           </div>

@@ -217,14 +217,15 @@ export function ResultAnalysisSummary({
                         <button
                           onClick={() => downloadTemplate(row.component_id)}
                           disabled={downloading === row.component_id}
-                          className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-gray-200 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/5 hover:border-[var(--color-accent)]/20 transition-all disabled:opacity-50"
-                          title="Download Analysis Type Excel"
+                          className="inline-flex items-center justify-center gap-1.5 px-3 h-8 rounded-lg border border-gray-200 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/5 hover:border-[var(--color-accent)]/20 transition-all disabled:opacity-50 text-xs font-medium"
+                          title="Download Analysis"
                         >
                           {downloading === row.component_id ? (
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
                           ) : (
                             <FileSpreadsheet className="h-3.5 w-3.5" />
                           )}
+                          Download
                         </button>
                         <button
                           onClick={() => handleDelete(row.component_id)}

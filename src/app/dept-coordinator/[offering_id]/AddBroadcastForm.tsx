@@ -6,17 +6,7 @@ import { UploadCloud, Loader2, X, Plus } from "lucide-react";
 import { addCourseBroadcast } from "../actions";
 import { formatBytes } from "@/lib/utils";
 
-const ALLOWED_TYPES = [
-  "application/pdf",
-  "application/vnd.ms-excel",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "image/jpeg",
-  "image/png",
-  "application/zip",
-];
-const ALLOWED_EXTS = ".pdf,.xls,.xlsx,.doc,.docx,.jpg,.jpeg,.png,.zip";
+// No restricted file types for broadcasts as per user request
 
 export function AddBroadcastForm({
   offering_id,
@@ -51,10 +41,7 @@ export function AddBroadcastForm({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      setError(`Invalid file type.`);
-      return;
-    }
+
     if (file.size > 50 * 1024 * 1024) {
       setError(`File is too large.`);
       return;
@@ -172,7 +159,6 @@ export function AddBroadcastForm({
                   <input
                     ref={inputRef}
                     type="file"
-                    accept={ALLOWED_EXTS}
                     className="hidden"
                     onChange={handleFileSelect}
                   />

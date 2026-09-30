@@ -133,6 +133,14 @@ create table if not exists public.course_component (
   unique (offering_id, component_id)
 );
 
+create table if not exists public.component_reviewer (
+  id uuid primary key default gen_random_uuid(),
+  course_component_id uuid not null references public.course_component(id) on delete cascade,
+  faculty_id bigint not null references public.faculty(faculty_id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (course_component_id, faculty_id)
+);
+
 create table if not exists public.submission (
   submission_id uuid primary key default gen_random_uuid(),
   faculty_assignment_id uuid not null references public.faculty_assignment(id) on delete cascade,

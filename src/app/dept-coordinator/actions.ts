@@ -210,7 +210,7 @@ export async function getComponentMasters(): Promise<ComponentMaster[]> {
 
 export async function getAllFacultyForAssignment() {
   return queryDb<{ faculty_id: number; faculty_name: string; designation: string; role: string; email: string }>(
-    "SELECT faculty_id, faculty_name, designation, role, email FROM public.faculty ORDER BY faculty_name"
+    "SELECT faculty_id, faculty_name, designation, role, email FROM public.faculty WHERE faculty_id NOT IN (99901, 99902) ORDER BY faculty_name"
   );
 }
 
@@ -376,13 +376,29 @@ export async function updateCourseComponent(data: {
   offering_id: string;
   deadline: string | null;
   mandatory: boolean;
+  component_name?: string;
 }) {
-  await executeDb(
-    `UPDATE public.course_component
-     SET deadline = $1, mandatory = $2
-     WHERE id = $3 AND offering_id = $4`,
-    [data.deadline, data.mandatory, data.id, data.offering_id]
-  );
+  let componentIdToUpdate: string | undefined = undefined;
+
+  if (data.component_name) {
+    componentIdToUpdate = await createCustomComponent(data.component_name);
+  }
+
+  if (componentIdToUpdate) {
+    await executeDb(
+      `UPDATE public.course_component
+       SET deadline = $1, mandatory = $2, component_id = $3
+       WHERE id = $4 AND offering_id = $5`,
+      [data.deadline, data.mandatory, componentIdToUpdate, data.id, data.offering_id]
+    );
+  } else {
+    await executeDb(
+      `UPDATE public.course_component
+       SET deadline = $1, mandatory = $2
+       WHERE id = $3 AND offering_id = $4`,
+      [data.deadline, data.mandatory, data.id, data.offering_id]
+    );
+  }
   revalidatePath("/dept-coordinator", "layout");
   revalidatePath("/dept-coordinator", "layout");
 }
@@ -413,6 +429,34 @@ export async function createCustomComponent(component_name: string): Promise<str
     [component_name]
   );
   return existing[0]!.component_id;
+}
+
+export async function getComponentReviewers(component_id: string): Promise<number[]> {
+  const rows = await queryDb<{ faculty_id: string }>(
+    `SELECT faculty_id FROM public.component_reviewer WHERE course_component_id = $1`,
+    [component_id]
+  );
+  return rows.map(r => parseInt(r.faculty_id, 10));
+}
+
+export async function getAllComponentReviewers(offering_id: string) {
+  return queryDb<{ course_component_id: string, faculty_id: string }>(
+    `SELECT cr.course_component_id, cr.faculty_id
+     FROM public.component_reviewer cr
+     JOIN public.course_component cc ON cc.id = cr.course_component_id
+     WHERE cc.offering_id = $1`,
+    [offering_id]
+  );
+}
+
+export async function setComponentReviewers(component_id: string, faculty_ids: number[]) {
+  await executeDb(`DELETE FROM public.component_reviewer WHERE course_component_id = $1`, [component_id]);
+  if (faculty_ids.length === 0) return;
+  const values = faculty_ids.map((fid, i) => `($1, $${i + 2})`).join(", ");
+  await executeDb(
+    `INSERT INTO public.component_reviewer (course_component_id, faculty_id) VALUES ${values}`,
+    [component_id, ...faculty_ids]
+  );
 }
 
 export async function addFacultyAssignments(data: {

@@ -3,19 +3,21 @@ import {
   getFacultyCourses,
   getFacultySubmissions,
   getFacultyBroadcasts,
+  getFacultyReviewerComponents,
+  getReviewerSubmissions,
   type PendingSubmission,
 } from "../actions";
 import { UploadModal } from "../UploadModal";
 import { ResultAnalysisModal } from "../ResultAnalysisModal";
 import { BroadcastCard } from "@/components/ui/BroadcastCard";
-import { BookOpen, CheckCircle2, Clock, AlertCircle, Megaphone, ArrowLeft } from "lucide-react";
+import { BookOpen, CheckCircle2, Clock, AlertCircle, Megaphone, ArrowLeft, XCircle } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { getFacultySession } from "@/lib/auth";
 import Link from "next/link";
 import { FacultyTabs } from "@/components/faculty/FacultyTabs";
 import { FacultySubmissionViewModal } from "@/components/faculty/SubmissionViewModal";
 import { ResultAnalysisSummary } from "../ResultAnalysisSummary";
-import { XCircle } from "lucide-react";
+import { FacultyReviewSubmissions } from "@/components/faculty/FacultyReviewSubmissions";
 
 export const dynamic = "force-dynamic";
 
@@ -65,11 +67,17 @@ export default async function FacultyCoursePage({
     return null;
   }
 
-  const [allCourses, allSubmissions, allBroadcasts] = await Promise.all([
+  const [allCourses, allSubmissions, allBroadcasts, reviewerComponents] = await Promise.all([
     getFacultyCourses(session.faculty_id),
     getFacultySubmissions(session.faculty_id),
     getFacultyBroadcasts(session.faculty_id),
+    getFacultyReviewerComponents(session.faculty_id, offering_id),
   ]);
+
+  // This must be sequential — needs reviewerComponents first
+  const reviewerSubmissions = reviewerComponents.length > 0
+    ? await getReviewerSubmissions(reviewerComponents.map(c => c.component_id))
+    : [];
 
   const course = allCourses.find((c) => c.offering_id === offering_id);
   
@@ -361,6 +369,17 @@ export default async function FacultyCoursePage({
                   })
                 )}
               </div>
+            }
+            reviewsContent={
+              reviewerComponents.length > 0 ? (
+                <FacultyReviewSubmissions
+                  components={reviewerComponents}
+                  submissions={reviewerSubmissions}
+                  facultyId={session.faculty_id}
+                  baseUrl={process.env.R2_PUBLIC_BASE_URL}
+                  offeringId={offering_id}
+                />
+              ) : undefined
             }
           />
         </div>

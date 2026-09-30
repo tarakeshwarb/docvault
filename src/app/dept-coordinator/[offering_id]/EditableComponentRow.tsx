@@ -8,6 +8,7 @@ import {
 } from "../actions";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { formatDate } from "@/lib/utils";
+import { ManageReviewersModal } from "./ManageReviewersModal";
 
 type CourseComponent = {
   id: string;
@@ -22,20 +23,30 @@ export function EditableComponentRow({
   currentFacultyId,
   baseUrl,
   readonly = false,
+  canAssignReviewers = false,
+  assignedReviewers = [],
+  allFaculty = [],
+  globalAllFaculty = [],
 }: {
   comp: CourseComponent;
   offering_id: string;
   currentFacultyId?: number;
   baseUrl?: string;
   readonly?: boolean;
+  canAssignReviewers?: boolean;
+  assignedReviewers?: number[];
+  allFaculty?: { faculty_id: number; faculty_name: string; email: string }[];
+  globalAllFaculty?: { faculty_id: number; faculty_name: string }[];
 }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [componentName, setComponentName] = useState(comp.component_name);
   const [mandatory, setMandatory] = useState(comp.mandatory);
   const [deadline, setDeadline] = useState(
     comp.deadline ? new Date(comp.deadline).toISOString().slice(0, 10) : ""
   );
   const [loading, setLoading] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isReviewersOpen, setIsReviewersOpen] = useState(false);
 
 
 
@@ -44,7 +55,13 @@ export function EditableComponentRow({
     setLoading(true);
     try {
       const deadlineValue = deadline ? `${deadline}T23:59:59` : null;
-      await updateCourseComponent({ id: comp.id, offering_id, mandatory, deadline: deadlineValue });
+      await updateCourseComponent({ 
+        id: comp.id, 
+        offering_id, 
+        mandatory, 
+        deadline: deadlineValue,
+        component_name: componentName !== comp.component_name ? componentName : undefined
+      });
       setIsEditing(false);
     } catch {
       alert("Failed to update component");
@@ -65,9 +82,32 @@ export function EditableComponentRow({
     }
   }
 
-  const nameCell = (
-    <div className="flex items-center gap-2">
+  const nameCell = isEditing && !readonly ? (
+    <input
+      type="text"
+      value={componentName}
+      onChange={(e) => setComponentName(e.target.value)}
+      className="w-full max-w-[250px] rounded border border-gray-300 px-2 py-1 text-sm outline-none focus:border-[var(--color-accent)]"
+    />
+  ) : (
+    <div className="flex flex-col items-start gap-1">
       <span>{comp.component_name}</span>
+      {canAssignReviewers && assignedReviewers.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+          {assignedReviewers.map((id) => {
+            const fac = (globalAllFaculty.length > 0 ? globalAllFaculty : allFaculty).find((f) => Number(f.faculty_id) === Number(id));
+            if (!fac) return null;
+            return (
+              <span
+                key={id}
+                className="inline-flex items-center px-1.5 py-0.5 rounded bg-[var(--color-accent)]/10 text-[10px] font-medium text-[var(--color-accent)]"
+              >
+                {fac.faculty_name}
+              </span>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 
@@ -136,9 +176,20 @@ export function EditableComponentRow({
         {comp.deadline ? formatDate(comp.deadline) : "No deadline"}
       </td>
       <td className="px-5 py-3 text-right">
-        {!readonly && (
-          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center justify-end gap-2 transition-opacity">
+          {canAssignReviewers && (
             <button
+              onClick={() => setIsReviewersOpen(true)}
+              disabled={loading}
+              className="p-1.5 text-gray-400 hover:text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded transition-colors"
+              title="Assign Reviewers"
+            >
+              <Users className="w-4 h-4" />
+            </button>
+          )}
+          {!readonly && (
+            <>
+              <button
               onClick={() => setIsEditing(true)}
               disabled={loading}
               className="p-1.5 text-gray-400 hover:text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded transition-colors"
@@ -154,8 +205,9 @@ export function EditableComponentRow({
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
             </button>
-          </div>
-        )}
+            </>
+          )}
+        </div>
 
         <ConfirmDialog
           isOpen={isConfirmOpen}
@@ -165,6 +217,18 @@ export function EditableComponentRow({
           onCancel={() => setIsConfirmOpen(false)}
           isLoading={loading}
         />
+
+        {canAssignReviewers && allFaculty && assignedReviewers && (
+          <ManageReviewersModal
+            isOpen={isReviewersOpen}
+            onClose={() => setIsReviewersOpen(false)}
+            componentId={comp.id}
+            componentName={comp.component_name}
+            assignedReviewers={assignedReviewers}
+            allFaculty={allFaculty}
+            globalAllFaculty={globalAllFaculty}
+          />
+        )}
       </td>
     </tr>
   );

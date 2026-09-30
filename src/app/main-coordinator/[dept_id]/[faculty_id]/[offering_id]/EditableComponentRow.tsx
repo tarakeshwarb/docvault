@@ -28,6 +28,7 @@ export function EditableComponentRow({
   baseUrl?: string;
 }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [componentName, setComponentName] = useState(comp.component_name);
   const [mandatory, setMandatory] = useState(comp.mandatory);
   const [deadline, setDeadline] = useState(
     comp.deadline ? new Date(comp.deadline).toISOString().slice(0, 16) : ""
@@ -40,7 +41,13 @@ export function EditableComponentRow({
   async function handleSave() {
     setLoading(true);
     try {
-      await updateCourseComponent({ id: comp.id, offering_id, mandatory, deadline: deadline || null });
+      await updateCourseComponent({ 
+        id: comp.id, 
+        offering_id, 
+        mandatory, 
+        deadline: deadline || null,
+        component_name: componentName !== comp.component_name ? componentName : undefined
+      });
       setIsEditing(false);
     } catch {
       alert("Failed to update component");
@@ -60,7 +67,14 @@ export function EditableComponentRow({
     }
   }
 
-  const nameCell = (
+  const nameCell = isEditing ? (
+    <input
+      type="text"
+      value={componentName}
+      onChange={(e) => setComponentName(e.target.value)}
+      className="w-full max-w-[250px] rounded border border-gray-300 px-2 py-1 text-sm outline-none focus:border-[var(--color-accent)]"
+    />
+  ) : (
     <div className="flex items-center gap-2">
       <span>{comp.component_name}</span>
     </div>
