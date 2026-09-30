@@ -58,7 +58,9 @@ export function UploadModal({
 
     for (const f of files) {
       if (f.size > 3 * 1024 * 1024) {
-        fileErrors.push(`"${f.name}" (${formatBytes(f.size)}) exceeds the 3MB size limit.`);
+        const msg = `"${f.name}" (${formatBytes(f.size)}) exceeds the 3MB size limit.`;
+        fileErrors.push(msg);
+        alert(msg);
         continue;
       }
       validFiles.push(f);

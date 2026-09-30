@@ -376,7 +376,7 @@ export async function getComponentMasters(): Promise<ComponentMaster[]> {
 
 export async function getAllFacultyForAssignment() {
   return queryDb<{ faculty_id: number; faculty_name: string; designation: string; role: string; email: string }>(
-    "SELECT faculty_id, faculty_name, designation, role, email FROM public.faculty ORDER BY faculty_name"
+    "SELECT faculty_id, faculty_name, designation, role, email FROM public.faculty WHERE faculty_id NOT IN (99901, 99902) ORDER BY faculty_name"
   );
 }
 
@@ -538,13 +538,29 @@ export async function updateCourseComponent(data: {
   offering_id: string;
   deadline: string | null;
   mandatory: boolean;
+  component_name?: string;
 }) {
-  await executeDb(
-    `UPDATE public.course_component
-     SET deadline = $1, mandatory = $2
-     WHERE id = $3 AND offering_id = $4`,
-    [data.deadline, data.mandatory, data.id, data.offering_id]
-  );
+  let componentIdToUpdate: string | undefined = undefined;
+
+  if (data.component_name) {
+    componentIdToUpdate = await createCustomComponent(data.component_name);
+  }
+
+  if (componentIdToUpdate) {
+    await executeDb(
+      `UPDATE public.course_component
+       SET deadline = $1, mandatory = $2, component_id = $3
+       WHERE id = $4 AND offering_id = $5`,
+      [data.deadline, data.mandatory, componentIdToUpdate, data.id, data.offering_id]
+    );
+  } else {
+    await executeDb(
+      `UPDATE public.course_component
+       SET deadline = $1, mandatory = $2
+       WHERE id = $3 AND offering_id = $4`,
+      [data.deadline, data.mandatory, data.id, data.offering_id]
+    );
+  }
   revalidatePath("/main-coordinator", "layout");
   revalidatePath("/dept-coordinator", "layout");
 }

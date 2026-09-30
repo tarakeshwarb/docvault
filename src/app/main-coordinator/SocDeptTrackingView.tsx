@@ -125,19 +125,19 @@ export function SocDeptTrackingView({
           <p className="text-sm text-gray-500">No faculty found for the selected department.</p>
         </div>
       ) : (
-        <div className="panel-card overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5 whitespace-nowrap">
+        <div className="panel-card overflow-x-auto [transform:rotateX(180deg)]">
+          <table className="w-full text-sm text-left [transform:rotateX(180deg)]">
+            <thead className="bg-gray-100 text-gray-700 font-semibold border-b border-black/10 whitespace-nowrap">
               <tr>
-                <th className="px-5 py-3 sticky left-0 bg-gray-50/70 z-10 min-w-[200px] shadow-[inset_-1px_0_0_rgba(0,0,0,0.05)]">Faculty / Section</th>
+                <th className="px-5 py-3 sticky left-0 bg-gray-100 z-10 min-w-[200px] shadow-[inset_-1px_0_0_rgba(0,0,0,0.1)]">Faculty / Section</th>
                 {components.map((comp) => (
-                  <th key={comp.id} className="px-5 py-3 text-center border-l border-black/5 min-w-[150px]">
+                  <th key={comp.id} className="px-5 py-3 text-center border-l border-black/10 min-w-[150px]">
                     <div className="flex flex-col items-center justify-center">
-                      <span className="max-w-[110px] truncate" title={comp.component_name}>
+                      <span className="max-w-[110px] truncate font-bold text-[var(--color-ink)]" title={comp.component_name}>
                         {comp.component_name}
                       </span>
                       {comp.deadline && (
-                        <span className="text-[10px] font-normal mt-1 text-gray-400">
+                        <span className="text-[10px] font-medium mt-1 text-gray-500">
                           Due:{" "}
                           {new Date(comp.deadline).toLocaleDateString("en-IN", {
                             day: "2-digit",
@@ -157,7 +157,7 @@ export function SocDeptTrackingView({
                 );
                 return (
                   <tr key={fa.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-5 py-3 sticky left-0 bg-white z-10 shadow-[inset_-1px_0_0_rgba(0,0,0,0.05)] group-hover:bg-gray-50/50">
+                    <td className="px-5 py-3 sticky left-0 bg-white z-10 shadow-[inset_-1px_0_0_rgba(0,0,0,0.1)] group-hover:bg-gray-50/50">
                       <div className="font-medium text-[var(--color-ink)]">{fa.faculty_name}</div>
                       <div className="text-xs text-gray-500 mt-0.5">{fa.section_name}</div>
                     </td>
@@ -165,7 +165,8 @@ export function SocDeptTrackingView({
                       const sub = facultySubmissions.find(
                         (s) => s.course_component_id === comp.id
                       );
-                      const status = sub ? sub.status : "pending";
+                      const rawStatus = sub ? sub.status : "pending";
+                      const status = rawStatus === "unsubmitted" ? "pending" : rawStatus;
                       return (
                         <td key={comp.id} className="px-5 py-3 text-center border-l border-black/5">
                           <SubmissionFilesModal

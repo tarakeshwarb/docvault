@@ -14,6 +14,7 @@ import {
   getFacultyOfferings,
   getCourseBroadcasts,
 } from "../../../actions";
+import { getComponentsForOffering } from "@/lib/result-analysis-data";
 import { AddFacultyForm } from "./AddFacultyForm";
 import { AddComponentForm } from "./AddComponentForm";
 import { AddBroadcastForm } from "./AddBroadcastForm";
@@ -82,6 +83,7 @@ export default async function OfferingDetailPage({
     componentMasters,
     allFaculty,
     broadcasts,
+    raComponents,
   ] =
     await Promise.all([
       getFacultyOfferings(Number(faculty_id)),
@@ -91,6 +93,7 @@ export default async function OfferingDetailPage({
       getComponentMasters(),
       getAllFacultyForAssignment(),
       getCourseBroadcasts(offering_id),
+      getComponentsForOffering(offering_id),
     ]);
 
   let filteredAssignments = assignments.filter(a => a.faculty_id === Number(faculty_id));
@@ -323,7 +326,7 @@ export default async function OfferingDetailPage({
               <CoordinatorResultAnalysis
                 offeringId={offering_id}
                 courseCode={offering.course_code}
-                components={components}
+                components={raComponents}
               />
             </div>
           </div>

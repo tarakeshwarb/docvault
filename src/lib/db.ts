@@ -11,6 +11,8 @@ export function getPool(): Pool {
     globalForPg.cachedPool = new Pool({
       connectionString: requireEnv("DATABASE_URL"),
       max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
     });
   }
   return globalForPg.cachedPool;
@@ -18,7 +20,7 @@ export function getPool(): Pool {
 
 export async function queryDb<T extends QueryResultRow>(
   text: string,
-  params: Array<string | number | boolean | null> = []
+  params: any[] = []
 ): Promise<T[]> {
   const pool = getPool();
   const result = await pool.query<T>(text, params);
@@ -27,7 +29,7 @@ export async function queryDb<T extends QueryResultRow>(
 
 export async function executeDb(
   text: string,
-  params: Array<string | number | boolean | null> = []
+  params: any[] = []
 ): Promise<void> {
   const pool = getPool();
   await pool.query(text, params);

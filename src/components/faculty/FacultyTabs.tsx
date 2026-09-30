@@ -1,18 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { LayoutDashboard, FileStack, BarChart3 } from "lucide-react";
+import { LayoutDashboard, FileStack, BarChart3, CheckCircle2 } from "lucide-react";
 
 export function FacultyTabs({
   overviewContent,
   submissionsContent,
   resultsContent,
+  reviewsContent,
 }: {
   overviewContent: React.ReactNode;
   submissionsContent: React.ReactNode;
   resultsContent: React.ReactNode;
+  reviewsContent?: React.ReactNode;
 }) {
-  const [activeTab, setActiveTab] = useState<"overview" | "submissions" | "results">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "submissions" | "results" | "reviews">("overview");
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -20,6 +22,8 @@ export function FacultyTabs({
         setActiveTab("submissions");
       } else if (window.location.hash === "#results") {
         setActiveTab("results");
+      } else if (window.location.hash === "#reviews" && reviewsContent) {
+        setActiveTab("reviews");
       } else {
         setActiveTab("overview");
       }
@@ -76,6 +80,22 @@ export function FacultyTabs({
             <BarChart3 className="w-4 h-4" />
             Result Upload/Analysis
           </button>
+          {reviewsContent && (
+            <button
+              onClick={() => {
+                setActiveTab("reviews");
+                window.location.hash = "reviews";
+              }}
+              className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
+                activeTab === "reviews"
+                  ? "border-[var(--color-accent)] text-[var(--color-accent)]"
+                  : "border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              Review Submissions
+            </button>
+          )}
         </nav>
       </div>
 
@@ -89,6 +109,11 @@ export function FacultyTabs({
         <div className={activeTab === "results" ? "block" : "hidden"}>
           {resultsContent}
         </div>
+        {reviewsContent && (
+          <div className={activeTab === "reviews" ? "block" : "hidden"}>
+            {reviewsContent}
+          </div>
+        )}
       </div>
     </div>
   );

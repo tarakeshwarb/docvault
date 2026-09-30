@@ -68,26 +68,26 @@ export function SubmissionTrackingMatrix({
         </p>
       </div>
       
-      <div className="panel-card overflow-x-auto">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-gray-50/70 text-gray-500 font-medium border-b border-black/5 whitespace-nowrap">
+      <div className="panel-card overflow-x-auto [transform:rotateX(180deg)]">
+        <table className="w-full text-sm text-left [transform:rotateX(180deg)]">
+          <thead className="bg-gray-100 text-gray-700 font-semibold border-b border-black/10 whitespace-nowrap">
             <tr>
-              <th className="px-5 py-3 sticky left-0 bg-gray-50/70 z-10 min-w-[200px] shadow-[inset_-1px_0_0_rgba(0,0,0,0.05)]">Faculty</th>
+              <th className="px-5 py-3 sticky left-0 bg-gray-100 z-10 min-w-[200px] shadow-[inset_-1px_0_0_rgba(0,0,0,0.1)]">Faculty</th>
               {components.map((comp) => (
-                <th key={comp.id} className="px-5 py-3 text-center border-l border-black/5 min-w-[150px]">
+                <th key={comp.id} className="px-5 py-3 text-center border-l border-black/10 min-w-[150px]">
                   <div className="flex flex-col items-center justify-center">
-                    <span className="max-w-[120px] truncate" title={comp.component_name}>
+                    <span className="max-w-[140px] whitespace-normal break-words text-xs font-bold leading-tight text-[var(--color-ink)]" title={comp.component_name}>
                       {comp.component_name}
                     </span>
                     {comp.deadline && (
-                      <span className="text-[10px] font-normal mt-1">
+                      <span className="text-[10px] font-medium text-gray-500 mt-1">
                         Due: {new Date(comp.deadline).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                       </span>
                     )}
                   </div>
                 </th>
               ))}
-              <th className="px-5 py-3 text-right border-l border-black/5">Actions</th>
+              <th className="px-5 py-3 text-right border-l border-black/10 sticky right-0 bg-gray-100 z-10 shadow-[inset_1px_0_0_rgba(0,0,0,0.1)]">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-black/5">
@@ -101,7 +101,8 @@ export function SubmissionTrackingMatrix({
               
               const cells = components.map((comp) => {
                 const sub = facultySubmissions.find((s) => s.course_component_id === comp.id);
-                const status = sub ? sub.status : "pending";
+                const rawStatus = sub ? sub.status : "pending";
+                const status = rawStatus === "unsubmitted" ? "pending" : rawStatus;
                 
                 const isDone = status === "submitted" || status === "approved";
                 if (!isDone) allDone = false;
@@ -134,7 +135,7 @@ export function SubmissionTrackingMatrix({
                   
                   {cells}
 
-                  <td className="px-5 py-3 text-right border-l border-black/5 whitespace-nowrap">
+                  <td className="px-5 py-3 text-right border-l border-black/5 whitespace-nowrap sticky right-0 bg-white group-hover:bg-gray-50/50 transition-colors z-10 shadow-[inset_1px_0_0_rgba(0,0,0,0.05)]">
                     {allDone ? (
                       <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-600 px-3 py-1.5 bg-green-50 rounded-full">
                         <CheckCircle2 className="w-3.5 h-3.5" /> All Done
