@@ -1,4 +1,5 @@
 "use server";
+import { getFacultySession } from "@/lib/auth";
 
 import { queryDb, executeDb } from "@/lib/db";
 import { revalidatePath } from "next/cache";
@@ -209,9 +210,12 @@ export async function getComponentMasters(): Promise<ComponentMaster[]> {
 }
 
 export async function getAllFacultyForAssignment() {
-  return queryDb<{ faculty_id: number; faculty_name: string; designation: string; role: string; email: string }>(
-    "SELECT faculty_id, faculty_name, designation, role, email FROM public.faculty WHERE faculty_id NOT IN (99901, 99902) ORDER BY faculty_name"
-  );
+  const session = await getFacultySession();
+  const isDev = session?.faculty_id === 99901 || session?.faculty_id === 99902;
+  const query = isDev 
+    ? "SELECT faculty_id, faculty_name, designation, role, email FROM public.faculty ORDER BY faculty_name"
+    : "SELECT faculty_id, faculty_name, designation, role, email FROM public.faculty WHERE faculty_id NOT IN (99901, 99902) ORDER BY faculty_name";
+  return queryDb<{ faculty_id: number; faculty_name: string; designation: string; role: string; email: string }>(query);
 }
 
 export async function getSubmissionStatus(offering_id: string): Promise<SubmissionStatus[]> {
