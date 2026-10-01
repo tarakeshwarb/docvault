@@ -239,7 +239,7 @@ export default async function OfferingDetailPage({
                             allFaculty={Array.from(
                               new Map(
                                 assignments
-                                  .filter(a => a.faculty_id !== 99901 && a.faculty_id !== 99902)
+                                  .filter(a => (session.faculty_id === 99901 || session.faculty_id === 99902) ? true : (a.faculty_id !== 99901 && a.faculty_id !== 99902))
                                   .map(a => [a.faculty_id, { faculty_id: a.faculty_id, faculty_name: a.faculty_name, email: a.email ?? "" }])
                               ).values()
                             )}
