@@ -6,7 +6,34 @@ import ProfileRoleDropdown from "./ProfileRoleDropdown";
 
 export default async function Header() {
   const session = await getFacultySession();
-  const assignedRoles = session ? await getUserAssignedRoles(session.faculty_id) : [];
+  let assignedRoles = session ? await getUserAssignedRoles(session.faculty_id) : [];
+
+  // Ensure current active role is always in assignedRoles
+  if (session && !assignedRoles.some((r) => r.role === session.role)) {
+    const roleLabels: Record<string, string> = {
+      admin: "Admin",
+      hod: "HoD/AC/Chair",
+      main_coordinator: "SOC Coord.",
+      dept_coordinator: "Dept Coord.",
+      faculty: "Faculty",
+      audit: "Audit",
+      developer: "Developer",
+    };
+    const rolePaths: Record<string, string> = {
+      admin: "/admin",
+      hod: "/hod",
+      main_coordinator: "/main-coordinator",
+      dept_coordinator: "/dept-coordinator",
+      faculty: "/faculty",
+      audit: "/audit",
+      developer: "/admin",
+    };
+    assignedRoles.unshift({
+      role: session.role,
+      label: roleLabels[session.role] ?? session.role,
+      path: rolePaths[session.role] ?? "/faculty",
+    });
+  }
 
   return (
     <header className="relative">

@@ -48,34 +48,70 @@ export async function getUserAssignedRoles(facultyId: number): Promise<UserAssig
       assigned.push({ role: "hod", label: "HoD/AC/Chair", path: "/hod" });
     }
 
-    // Check SOC (Main Coordinator) Assignment
-    try {
-      const mainCoordRows = await queryDb<{ count: string }>(
-        `SELECT COUNT(*) AS count FROM public.main_coordinator_assignment WHERE faculty_id = $1`,
-        [facultyId]
-      );
-      if (Number(mainCoordRows[0]?.count ?? 0) > 0) {
-        assigned.push({ role: "main_coordinator", label: "SOC Coord.", path: "/main-coordinator" });
+    // Check SOC (Main Coordinator) Assignment or base role
+    let isMainCoord = baseRole === "main_coordinator";
+    if (!isMainCoord) {
+      try {
+        const mainCoordRows = await queryDb<{ count: string }>(
+          `SELECT COUNT(*) AS count FROM public.main_coordinator_assignment WHERE faculty_id = $1`,
+          [facultyId]
+        );
+        if (Number(mainCoordRows[0]?.count ?? 0) > 0) {
+          isMainCoord = true;
+        }
+      } catch {
+        try {
+          const coordRows = await queryDb<{ count: string }>(
+            `SELECT COUNT(*) AS count FROM public.coordinator_assignment WHERE faculty_id = $1`,
+            [facultyId]
+          );
+          if (Number(coordRows[0]?.count ?? 0) > 0) {
+            isMainCoord = true;
+          }
+        } catch {
+          // Table may not exist yet
+        }
       }
-    } catch {
-      // Ignore if table query fails
+    }
+    if (isMainCoord) {
+      assigned.push({ role: "main_coordinator", label: "SOC Coord.", path: "/main-coordinator" });
+      // Main coordinator also has dept coordinator access
+      assigned.push({ role: "dept_coordinator", label: "Dept Coord.", path: "/dept-coordinator" });
     }
 
-    // Check Dept Coordinator Assignment
-    try {
-      const deptCoordRows = await queryDb<{ count: string }>(
-        `SELECT COUNT(*) AS count FROM public.dept_coordinator_assignment WHERE faculty_id = $1`,
-        [facultyId]
-      );
-      if (Number(deptCoordRows[0]?.count ?? 0) > 0) {
+    // Check Dept Coordinator Assignment or base role (if not already added as main coord)
+    if (!isMainCoord) {
+      let isDeptCoord = baseRole === "dept_coordinator";
+      if (!isDeptCoord) {
+        try {
+          const deptCoordRows = await queryDb<{ count: string }>(
+            `SELECT COUNT(*) AS count FROM public.dept_coordinator_assignment WHERE faculty_id = $1`,
+            [facultyId]
+          );
+          if (Number(deptCoordRows[0]?.count ?? 0) > 0) {
+            isDeptCoord = true;
+          }
+        } catch {
+          try {
+            const secRows = await queryDb<{ count: string }>(
+              `SELECT COUNT(*) AS count FROM public.secondary_coordinator_assignment WHERE faculty_id = $1`,
+              [facultyId]
+            );
+            if (Number(secRows[0]?.count ?? 0) > 0) {
+              isDeptCoord = true;
+            }
+          } catch {
+            // Table may not exist yet
+          }
+        }
+      }
+      if (isDeptCoord) {
         assigned.push({ role: "dept_coordinator", label: "Dept Coord.", path: "/dept-coordinator" });
       }
-    } catch {
-      // Table may not exist yet
     }
 
-    // Check Audit Assignment or special audit ID
-    if (facultyId === 100174) {
+    // Check Audit Assignment or special audit ID or base role
+    if (facultyId === 100174 || baseRole === "audit") {
       assigned.push({ role: "audit", label: "Audit", path: "/audit" });
     } else {
       try {
@@ -97,18 +133,39 @@ export async function getUserAssignedRoles(facultyId: number): Promise<UserAssig
         `SELECT COUNT(*) AS count FROM public.faculty_assignment WHERE faculty_id = $1`,
         [facultyId]
       );
-      if (Number(facRows[0]?.count ?? 0) > 0 || baseRole === "faculty") {
+      if (Number(facRows[0]?.count ?? 0) > 0 || baseRole === "faculty" || assigned.some((r) => r.role === "dept_coordinator" || r.role === "main_coordinator")) {
         if (!assigned.some((r) => r.role === "faculty")) {
           assigned.push({ role: "faculty", label: "Faculty", path: "/faculty" });
         }
       }
     } catch {
-      if (baseRole === "faculty" && !assigned.some((r) => r.role === "faculty")) {
+      if (!assigned.some((r) => r.role === "faculty")) {
         assigned.push({ role: "faculty", label: "Faculty", path: "/faculty" });
       }
     }
 
-    return assigned;
+    // Ensure at least baseRole or faculty is in assigned list
+    if (assigned.length === 0) {
+      if (baseRole === "dept_coordinator") {
+        assigned.push({ role: "dept_coordinator", label: "Dept Coord.", path: "/dept-coordinator" });
+      } else if (baseRole === "main_coordinator") {
+        assigned.push({ role: "main_coordinator", label: "SOC Coord.", path: "/main-coordinator" });
+      } else if (baseRole === "hod") {
+        assigned.push({ role: "hod", label: "HoD/AC/Chair", path: "/hod" });
+      } else if (baseRole === "admin") {
+        assigned.push({ role: "admin", label: "Admin", path: "/admin" });
+      } else {
+        assigned.push({ role: "faculty", label: "Faculty", path: "/faculty" });
+      }
+    }
+
+    // Deduplicate by role
+    const seen = new Set<string>();
+    return assigned.filter((item) => {
+      if (seen.has(item.role)) return false;
+      seen.add(item.role);
+      return true;
+    });
   } catch (err) {
     console.error("getUserAssignedRoles error:", err);
     return [];

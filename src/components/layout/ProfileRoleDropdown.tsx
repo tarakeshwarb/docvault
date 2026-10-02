@@ -77,11 +77,16 @@ export default function ProfileRoleDropdown({
     };
   }, [isOpen]);
 
+  const currentRoleDisplay = ROLE_LABELS[currentRole] ?? currentRole;
+
   // If assigned to only 1 role or no roles, render as simple pill (no dropdown)
   if (assignedRoles.length <= 1) {
     return (
       <div className="flex items-center gap-2 rounded-full bg-[var(--color-ink)] px-3 py-1.5 text-[11px] font-medium text-white sm:px-4 sm:py-2 sm:text-sm">
-        {facultyName}
+        <span>{facultyName}</span>
+        <span className="hidden sm:inline-flex items-center rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold text-white/90">
+          {currentRoleDisplay}
+        </span>
       </div>
     );
   }
@@ -103,8 +108,6 @@ export default function ProfileRoleDropdown({
       setSwitchingTo(null);
     }
   }
-
-  const currentRoleDisplay = ROLE_LABELS[currentRole] ?? currentRole;
 
   return (
     <div className="relative inline-block text-left" ref={dropdownRef}>
