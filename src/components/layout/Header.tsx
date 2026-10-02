@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { getFacultySession } from "@/lib/auth";
 import { logoutFaculty } from "@/app/actions/auth-actions";
+import { getUserAssignedRoles } from "@/lib/user-roles";
+import ProfileRoleDropdown from "./ProfileRoleDropdown";
 
 export default async function Header() {
   const session = await getFacultySession();
+  const assignedRoles = session ? await getUserAssignedRoles(session.faculty_id) : [];
 
   return (
     <header className="relative">
@@ -45,9 +48,11 @@ export default async function Header() {
                 </Link>
               )}
 
-              <div className="flex items-center gap-2 rounded-full bg-[var(--color-ink)] px-3 py-1.5 text-[11px] font-medium text-white sm:px-4 sm:py-2 sm:text-sm">
-                {session.faculty_name}
-              </div>
+              <ProfileRoleDropdown
+                facultyName={session.faculty_name}
+                currentRole={session.role}
+                assignedRoles={assignedRoles}
+              />
 
               <form action={logoutFaculty}>
                 <button

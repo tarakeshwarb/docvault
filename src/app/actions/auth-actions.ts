@@ -6,9 +6,11 @@ import { queryDb } from "@/lib/db";
 import {
   clearFacultySession,
   getDashboardPathForRole,
+  getFacultySession,
   setFacultySession,
   type FacultySession,
 } from "@/lib/auth";
+import { getUserAssignedRoles } from "@/lib/user-roles";
 
 type FacultyAuthRow = {
   faculty_id: number;
@@ -226,4 +228,37 @@ export async function loginFaculty(
 export async function logoutFaculty() {
   await clearFacultySession();
   redirect("/");
+}
+
+export async function switchFacultyRole(targetRole: FacultySession["role"]): Promise<{
+  ok: boolean;
+  message?: string;
+  redirectTo?: string;
+}> {
+  const session = await getFacultySession();
+  if (!session) {
+    return { ok: false, message: "Not authenticated" };
+  }
+
+  // Fetch allowed assigned roles for this faculty member
+  const assignedRoles = await getUserAssignedRoles(session.faculty_id);
+  const isAllowed = assignedRoles.some((r) => r.role === targetRole);
+
+  if (!isAllowed && session.role !== "developer") {
+    return { ok: false, message: "You are not assigned to this role." };
+  }
+
+  // Update session
+  const updatedSession: FacultySession = {
+    ...session,
+    role: targetRole,
+  };
+
+  await setFacultySession(updatedSession);
+  const redirectTo = getDashboardPathForRole(targetRole);
+
+  return {
+    ok: true,
+    redirectTo,
+  };
 }
