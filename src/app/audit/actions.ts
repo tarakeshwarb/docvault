@@ -165,13 +165,13 @@ export async function getAuditCourses(params?: {
   isAdmin?: boolean;
 }): Promise<AuditCourseOffering[]> {
   const scoped = !params?.isAdmin && params?.facultyId != null;
-  const whereClause = scoped
+  const activeWhere = scoped
     ? `WHERE co.offering_id IN (
          SELECT offering_id FROM public.audit_assignment WHERE faculty_id = $1
-       )`
-    : "";
+       ) AND sm.is_active = true`
+    : `WHERE sm.is_active = true`;
 
-  const query = `
+  const queryActive = `
     SELECT DISTINCT
       co.offering_id,
       cm.course_code,
@@ -184,11 +184,11 @@ export async function getAuditCourses(params?: {
     JOIN public.course_master cm ON co.course_id = cm.course_id
     JOIN public.semester_master sm ON co.semester_id = sm.semester_id
     JOIN public.academic_year ay ON sm.year_id = ay.year_id
-    ${whereClause}
+    ${activeWhere}
     ORDER BY sm.is_active DESC, ay.year_name DESC, cm.course_code ASC
   `;
 
-  return queryDb<AuditCourseOffering>(query, scoped ? [params!.facultyId!] : []);
+  return queryDb<AuditCourseOffering>(queryActive, scoped ? [params!.facultyId!] : []);
 }
 
 export async function getAuditOfferingComponents(

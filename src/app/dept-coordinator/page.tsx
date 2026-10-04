@@ -15,9 +15,28 @@ export default async function DeptCoordinatorPage() {
 
   const offerings = await getCoordinatorOfferings(session.faculty_id);
 
-  // If assigned to exactly one offering, go straight to it — no need for the listing.
   if (offerings.length === 1) {
     redirect(`/dept-coordinator/${offerings[0].offering_id}`);
+  }
+
+  if (offerings.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="rounded-[28px] bg-[#0c4da2] p-6 text-white shadow-[0_18px_50px_rgba(12,77,162,0.18)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/60">
+            Dept Coordinator Dashboard
+          </p>
+          <h1 className="mt-2 text-3xl font-semibold">My Course Offerings</h1>
+        </div>
+        <div className="panel-card border-dashed border-gray-300 p-5 text-center">
+          <BookOpen className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+          <h2 className="font-semibold text-gray-600">No courses assigned</h2>
+          <p className="text-sm text-gray-400 mt-1">
+            Ask an Admin to assign you as a coordinator to a course offering for this semester.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   const totalOfferings = offerings.length;
@@ -48,16 +67,7 @@ export default async function DeptCoordinatorPage() {
         </div>
       </div>
 
-      {offerings.length === 0 ? (
-        <div className="panel-card border-dashed border-gray-300 p-5 text-center">
-          <BookOpen className="w-10 h-10 mx-auto mb-3 text-gray-300" />
-          <h2 className="font-semibold text-gray-600">No courses assigned</h2>
-          <p className="text-sm text-gray-400 mt-1">
-            Ask an Admin to assign you as coordinator to a course offering.
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {offerings.map((offering) => (
             <Link
               key={offering.offering_id}
@@ -89,7 +99,6 @@ export default async function DeptCoordinatorPage() {
             </Link>
           ))}
         </div>
-      )}
     </div>
   );
 }

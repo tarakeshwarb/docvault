@@ -65,7 +65,7 @@ export async function getDepartments(): Promise<{department_id: string; departme
 export async function getCourses(): Promise<Course[]> {
   try {
     const session = await getFacultySession();
-    const isDev = session?.role === "developer";
+    const isDev = session?.faculty_id === 99901 || session?.faculty_id === 99902;
     
     const query = isDev 
       ? "SELECT * FROM public.course_master WHERE course_code LIKE 'DEV%' ORDER BY course_code ASC"
@@ -174,7 +174,7 @@ export async function updateFaculty(
 export async function getCourseOfferings(): Promise<CourseOffering[]> {
   try {
     const session = await getFacultySession();
-    const isDev = session?.role === "developer";
+    const isDev = session?.faculty_id === 99901 || session?.faculty_id === 99902;
     const devFilter = isDev ? "AND cm.course_code LIKE 'DEV%'" : "AND cm.course_code NOT LIKE 'DEV%'";
 
     const offerings = await queryDb<{

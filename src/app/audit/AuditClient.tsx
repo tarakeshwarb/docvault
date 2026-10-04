@@ -426,6 +426,26 @@ export default function AuditClient({
   const hasDeleted = groups.filter((g) => g.unsubmittedCount > 0).length;
   const hasPending = groups.filter((g) => g.pendingCount > 0).length;
 
+  if (auditCourses.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="rounded-[28px] bg-[var(--color-accent)] p-6 text-white shadow-[0_18px_50px_rgba(12,77,162,0.18)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/60">
+            IQAC Audit &amp; Compliance
+          </p>
+          <h1 className="mt-2 text-3xl font-semibold">Audit Dashboard</h1>
+        </div>
+        <div className="panel-card border-dashed border-gray-300 p-5 text-center">
+          <ShieldCheck className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+          <h2 className="font-semibold text-gray-600">No courses assigned</h2>
+          <p className="text-sm text-gray-400 mt-1">
+            You are not assigned as an auditor for any courses this semester.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Hero Header */}

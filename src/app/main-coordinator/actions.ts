@@ -952,17 +952,33 @@ if (!assignment) throw new Error("Faculty assignment not found");
     }
   }
 
-  const components = await getCourseComponents(offering_id);
-  const trackedComponents = components;
-  
-  const submissions = await getSubmissionStatus(offering_id);
-  const facultySubmissions = submissions.filter((s) => s.faculty_assignment_id === faculty_assignment_id);
+  let pendingComponents: Array<{ id: string; component_name: string; deadline?: string | Date | null }> = [];
 
-  const pendingComponents = trackedComponents.filter((comp) => {
-    if (specific_component_id && comp.id !== specific_component_id) return false;
-    const sub = facultySubmissions.find((s) => s.course_component_id === comp.id);
-    return !sub || sub.status === "pending" || sub.status === "late" || sub.status === "rejected";
-  });
+  if (context === "marks" && specific_component_id) {
+    // For result analysis marks, check public.result_analysis table
+    const raRows = await queryDb<{ count: string; component_name: string }>(
+      `SELECT 
+        (SELECT COUNT(*) FROM public.result_analysis WHERE faculty_assignment_id = $1 AND component_id = $2) as count,
+        (SELECT component_name FROM public.component_main WHERE component_id = $2 LIMIT 1) as component_name`,
+      [faculty_assignment_id, specific_component_id]
+    );
+    if (Number(raRows[0]?.count ?? 0) === 0) {
+      pendingComponents = [{ id: specific_component_id, component_name: raRows[0]?.component_name ?? "Result Analysis" }];
+    }
+  } else {
+    // For document submissions, check public.submission
+    const components = await getCourseComponents(offering_id);
+    const trackedComponents = components;
+    
+    const submissions = await getSubmissionStatus(offering_id);
+    const facultySubmissions = submissions.filter((s) => s.faculty_assignment_id === faculty_assignment_id);
+
+    pendingComponents = trackedComponents.filter((comp) => {
+      if (specific_component_id && comp.id !== specific_component_id) return false;
+      const sub = facultySubmissions.find((s) => s.course_component_id === comp.id);
+      return !sub || sub.status === "pending" || sub.status === "late" || sub.status === "rejected";
+    });
+  }
 
   if (pendingComponents.length === 0) {
     return { success: true, message: "No pending components to remind about." };

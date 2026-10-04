@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function FacultyDirectoryPage() {
   const session = await getFacultySession();
-  const isDev = session?.role === "developer";
+  const isDev = session?.faculty_id === 99901 || session?.faculty_id === 99902;
 
   let faculty = await getAllFaculty();
   if (!isDev) {

@@ -19,7 +19,7 @@ export type HodCourse = {
 
 export async function getHodCourses(): Promise<HodCourse[]> {
   const session = await getFacultySession();
-  const isDev = session?.role === "developer";
+  const isDev = session?.faculty_id === 99901 || session?.faculty_id === 99902;
   const devCondition = isDev ? "AND cm.course_code LIKE 'DEV%'" : "AND cm.course_code NOT LIKE 'DEV%'";
 
   return queryDb<HodCourse>(`
@@ -65,7 +65,7 @@ export type HodDeptStats = {
 
 export async function getHodDeptStats(): Promise<HodDeptStats> {
   const session = await getFacultySession();
-  const isDev = session?.role === "developer";
+  const isDev = session?.faculty_id === 99901 || session?.faculty_id === 99902;
   const devCondition = isDev ? "AND cm.course_code LIKE 'DEV%'" : "AND cm.course_code NOT LIKE 'DEV%'";
 
   const rows = await queryDb<HodDeptStats>(`
@@ -120,7 +120,7 @@ export type HodDetailedSubmission = {
 
 export async function getHodDetailedData(): Promise<HodDetailedSubmission[]> {
   const session = await getFacultySession();
-  const isDev = session?.role === "developer";
+  const isDev = session?.faculty_id === 99901 || session?.faculty_id === 99902;
   const devCondition = isDev ? "AND cm.course_code LIKE 'DEV%'" : "AND cm.course_code NOT LIKE 'DEV%'";
 
   const query = `
@@ -186,7 +186,7 @@ export type HodAuditReport = {
 
 export async function getHodAuditReports(): Promise<HodAuditReport[]> {
   const session = await getFacultySession();
-  const isDev = session?.role === "developer";
+  const isDev = session?.faculty_id === 99901 || session?.faculty_id === 99902;
   const devCondition = isDev ? "AND cm.course_code LIKE 'DEV%'" : "AND cm.course_code NOT LIKE 'DEV%'";
 
   const query = `

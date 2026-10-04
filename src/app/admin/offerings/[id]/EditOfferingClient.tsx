@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { updateCourseOffering, deleteCourseOffering, CourseOffering } from "../../actions";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Trash2, Plus, X } from "lucide-react";
 
 type Course = { course_id: string; course_code: string; course_name: string };
@@ -31,6 +32,7 @@ export default function EditOfferingClient({
   const [auditProfessorRows, setAuditProfessorRows] = useState<{ id: string }[]>([{ id: "" }]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   // Initialize state from offering data
   useEffect(() => {
@@ -125,8 +127,11 @@ export default function EditOfferingClient({
     }
   }
 
-  async function handleDelete() {
-    if (!window.confirm("Are you sure you want to delete this offering? This action cannot be undone.")) return;
+  function handleDelete() {
+    setIsDeleteOpen(true);
+  }
+
+  async function performDelete() {
     setLoading(true);
     try {
       await deleteCourseOffering(offering.offering_id);
@@ -134,6 +139,7 @@ export default function EditOfferingClient({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete offering.");
       setLoading(false);
+      setIsDeleteOpen(false);
     }
   }
 
@@ -301,6 +307,15 @@ export default function EditOfferingClient({
           </a>
         </div>
       </form>
+
+      <ConfirmDialog
+        isOpen={isDeleteOpen}
+        title="Delete Course Offering"
+        message="Are you sure you want to delete this offering? This action cannot be undone and will remove all associated assignments and submissions."
+        onConfirm={performDelete}
+        onCancel={() => setIsDeleteOpen(false)}
+        isLoading={loading}
+      />
     </div>
   );
 }

@@ -84,36 +84,6 @@ type OfferingSummary = {
 
 export async function getCoordinatorOfferings(faculty_id: number): Promise<CoordinatorOffering[]> {
   try {
-    const res = await queryDb<CoordinatorOffering>(`
-      WITH offering_ids AS (
-        SELECT ca.offering_id
-        FROM public.main_coordinator_assignment ca
-        WHERE ca.faculty_id = $1
-        UNION
-        SELECT sca.offering_id
-        FROM public.dept_coordinator_assignment sca
-        WHERE sca.faculty_id = $1
-      )
-      SELECT DISTINCT
-        co.offering_id,
-        cm.course_code,
-        cm.course_name,
-        cm.credits,
-        sm.semester_name,
-        ay.year_name,
-        ay.start_date
-      FROM offering_ids oi
-      JOIN public.course_offering co ON oi.offering_id = co.offering_id
-      JOIN public.course_master cm ON co.course_id = cm.course_id
-      JOIN public.semester_master sm ON co.semester_id = sm.semester_id
-      JOIN public.academic_year ay ON sm.year_id = ay.year_id
-      WHERE sm.is_active = true
-      ORDER BY ay.start_date DESC, sm.semester_name, cm.course_code
-    `, [faculty_id]);
-
-    if (res.length > 0) return res;
-
-    // Fallback: If no offerings found with sm.is_active = true, return without active filter
     return await queryDb<CoordinatorOffering>(`
       WITH offering_ids AS (
         SELECT ca.offering_id
@@ -137,6 +107,7 @@ export async function getCoordinatorOfferings(faculty_id: number): Promise<Coord
       JOIN public.course_master cm ON co.course_id = cm.course_id
       JOIN public.semester_master sm ON co.semester_id = sm.semester_id
       JOIN public.academic_year ay ON sm.year_id = ay.year_id
+      WHERE sm.is_active = true
       ORDER BY ay.start_date DESC, sm.semester_name, cm.course_code
     `, [faculty_id]);
   } catch (error) {
@@ -166,6 +137,7 @@ export async function getCoordinatorOfferings(faculty_id: number): Promise<Coord
         JOIN public.course_master cm ON co.course_id = cm.course_id
         JOIN public.semester_master sm ON co.semester_id = sm.semester_id
         JOIN public.academic_year ay ON sm.year_id = ay.year_id
+        WHERE sm.is_active = true
         ORDER BY ay.start_date DESC, sm.semester_name, cm.course_code
       `, [faculty_id]);
     } catch {
