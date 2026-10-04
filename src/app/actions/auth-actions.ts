@@ -6,9 +6,11 @@ import { queryDb } from "@/lib/db";
 import {
   clearFacultySession,
   getDashboardPathForRole,
+  getFacultySession,
   setFacultySession,
   type FacultySession,
 } from "@/lib/auth";
+import { getUserAssignedRoles } from "@/lib/user-roles";
 
 type FacultyAuthRow = {
   faculty_id: number;
@@ -166,16 +168,41 @@ export async function loginFaculty(
         return { ok: false, message: "You are not assigned as a Main Coordinator." };
       }
     } else if (requestedRole === "dept_coordinator") {
-      try {
-        const rows = await queryDb<{ count: string }>(
-          `SELECT COUNT(*) AS count FROM public.dept_coordinator_assignment WHERE faculty_id = $1`,
-          [matched.faculty_id]
-        );
-        if (Number(rows[0]?.count ?? 0) === 0) {
-          return { ok: false, message: "You are not assigned as a Dept Coordinator." };
+      if (matched.role === "dept_coordinator") {
+        // Allowed based on faculty table base role
+      } else {
+        try {
+          const rows = await queryDb<{ count: string }>(
+            `SELECT COUNT(*) AS count FROM public.dept_coordinator_assignment WHERE faculty_id = $1`,
+            [matched.faculty_id]
+          );
+          if (Number(rows[0]?.count ?? 0) === 0) {
+            // Check fallback table secondary_coordinator_assignment
+            try {
+              const secRows = await queryDb<{ count: string }>(
+                `SELECT COUNT(*) AS count FROM public.secondary_coordinator_assignment WHERE faculty_id = $1`,
+                [matched.faculty_id]
+              );
+              if (Number(secRows[0]?.count ?? 0) === 0) {
+                return { ok: false, message: "You are not assigned as a Dept Coordinator." };
+              }
+            } catch {
+              return { ok: false, message: "You are not assigned as a Dept Coordinator." };
+            }
+          }
+        } catch (e) {
+          try {
+            const secRows = await queryDb<{ count: string }>(
+              `SELECT COUNT(*) AS count FROM public.secondary_coordinator_assignment WHERE faculty_id = $1`,
+              [matched.faculty_id]
+            );
+            if (Number(secRows[0]?.count ?? 0) === 0) {
+              return { ok: false, message: "You are not assigned as a Dept Coordinator." };
+            }
+          } catch {
+            return { ok: false, message: "Dept coordinator verification failed." };
+          }
         }
-      } catch (e) {
-        return { ok: false, message: "Dept coordinator verification failed." };
       }
     } else if (requestedRole === "faculty") {
       const rows = await queryDb<{ count: string }>(
@@ -226,4 +253,41 @@ export async function loginFaculty(
 export async function logoutFaculty() {
   await clearFacultySession();
   redirect("/");
+}
+
+export async function switchFacultyRole(targetRole: FacultySession["role"]): Promise<{
+  ok: boolean;
+  message?: string;
+  redirectTo?: string;
+}> {
+  const session = await getFacultySession();
+  if (!session) {
+    return { ok: false, message: "Not authenticated" };
+  }
+
+  // Fetch allowed assigned roles for this faculty member
+  const assignedRoles = await getUserAssignedRoles(session.faculty_id);
+  const isAllowed =
+    assignedRoles.some((r) => r.role === targetRole) ||
+    session.role === targetRole ||
+    session.role === "developer" ||
+    session.role === "admin";
+
+  if (!isAllowed) {
+    return { ok: false, message: "You are not assigned to this role." };
+  }
+
+  // Update session
+  const updatedSession: FacultySession = {
+    ...session,
+    role: targetRole,
+  };
+
+  await setFacultySession(updatedSession);
+  const redirectTo = getDashboardPathForRole(targetRole);
+
+  return {
+    ok: true,
+    redirectTo,
+  };
 }

@@ -1,9 +1,39 @@
 import Link from "next/link";
 import { getFacultySession } from "@/lib/auth";
 import { logoutFaculty } from "@/app/actions/auth-actions";
+import { getUserAssignedRoles } from "@/lib/user-roles";
+import ProfileRoleDropdown from "./ProfileRoleDropdown";
 
 export default async function Header() {
   const session = await getFacultySession();
+  let assignedRoles = session ? await getUserAssignedRoles(session.faculty_id) : [];
+
+  // Ensure current active role is always in assignedRoles
+  if (session && !assignedRoles.some((r) => r.role === session.role)) {
+    const roleLabels: Record<string, string> = {
+      admin: "Admin",
+      hod: "HoD/AC/Chair",
+      main_coordinator: "SOC Coord.",
+      dept_coordinator: "Dept Coord.",
+      faculty: "Faculty",
+      audit: "Audit",
+      developer: "Developer",
+    };
+    const rolePaths: Record<string, string> = {
+      admin: "/admin",
+      hod: "/hod",
+      main_coordinator: "/main-coordinator",
+      dept_coordinator: "/dept-coordinator",
+      faculty: "/faculty",
+      audit: "/audit",
+      developer: "/admin",
+    };
+    assignedRoles.unshift({
+      role: session.role,
+      label: roleLabels[session.role] ?? session.role,
+      path: rolePaths[session.role] ?? "/faculty",
+    });
+  }
 
   return (
     <header className="relative">
@@ -25,29 +55,12 @@ export default async function Header() {
         <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-end">
           {session ? (
             <>
-              {/* HOD link — only visible to hod role */}
-              {session.role === "hod" && (
-                <Link
-                  href="/hod"
-                  className="rounded-full border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 px-3 py-1.5 text-[11px] font-medium text-[var(--color-accent)] transition hover:bg-[var(--color-accent)] hover:text-white sm:px-4 sm:py-2 sm:text-sm"
-                >
-                  HOD Dashboard
-                </Link>
-              )}
 
-              {/* Audit link — only visible to hod role or auditor */}
-              {(session.role === "hod" || session.faculty_id === 100174) && (
-                <Link
-                  href="/audit"
-                  className="rounded-full border border-black/10 bg-white px-3 py-1.5 text-[11px] font-medium text-[var(--color-ink)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] sm:px-4 sm:py-2 sm:text-sm"
-                >
-                  Audit
-                </Link>
-              )}
-
-              <div className="flex items-center gap-2 rounded-full bg-[var(--color-ink)] px-3 py-1.5 text-[11px] font-medium text-white sm:px-4 sm:py-2 sm:text-sm">
-                {session.faculty_name}
-              </div>
+              <ProfileRoleDropdown
+                facultyName={session.faculty_name}
+                currentRole={session.role}
+                assignedRoles={assignedRoles}
+              />
 
               <form action={logoutFaculty}>
                 <button
