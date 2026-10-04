@@ -934,7 +934,7 @@ export async function rejectSubmission(submission_id: string, reason: string, of
   revalidatePath(`/faculty`);
 }
 
-export async function sendReminderEmail(offering_id: string, faculty_assignment_id: string) {
+export async function sendReminderEmail(offering_id: string, faculty_assignment_id: string, specific_component_id?: string, context: "document" | "marks" = "document") {
   const assignments = await getFacultyAssignments(offering_id);
   const assignment = assignments.find((a) => a.id === faculty_assignment_id);
   
@@ -959,6 +959,7 @@ if (!assignment) throw new Error("Faculty assignment not found");
   const facultySubmissions = submissions.filter((s) => s.faculty_assignment_id === faculty_assignment_id);
 
   const pendingComponents = trackedComponents.filter((comp) => {
+    if (specific_component_id && comp.id !== specific_component_id) return false;
     const sub = facultySubmissions.find((s) => s.course_component_id === comp.id);
     return !sub || sub.status === "pending" || sub.status === "late" || sub.status === "rejected";
   });
@@ -979,15 +980,24 @@ if (!assignment) throw new Error("Faculty assignment not found");
     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
       <h2 style="color: #0c4da2;">Submission Reminder</h2>
       <p>Dear ${assignment.faculty_name},</p>
-      <p>This is a gentle reminder that you have pending document submissions for <strong>${courseName}</strong> (Section: ${assignment.section_name}).</p>
-      <p>Please submit the following required documents as soon as possible:</p>
-      <div style="margin-left: 20px; color: #d32f2f;">
+      ${context === "marks" 
+        ? `<p>This is a gentle reminder to upload the marks for Result Analysis for <strong>${courseName}</strong> (Section: ${assignment.section_name}).</p>
+           <p>Please complete the result analysis for the following components as soon as possible:</p>`
+        : `<p>This is a gentle reminder that you have pending document submissions for <strong>${courseName}</strong> (Section: ${assignment.section_name}).</p>
+           <p>Please submit the following required documents as soon as possible:</p>`
+      }
+      <div style="margin-left: 20px; font-weight: bold;">
         ${componentNames}
       </div>
       <br/>
-      <p>You can upload these documents by logging into the Faculty Portal at <a href="https://docvault-rho.vercel.app/" style="color: #0c4da2; text-decoration: underline;">https://docvault-rho.vercel.app/</a>.</p>
+      ${context === "marks"
+        ? `<p>You can upload the marks by logging into the Faculty Portal and visiting the Result Analysis section at <a href="https://docvault-rho.vercel.app/" style="color: #0c4da2; text-decoration: underline;">https://docvault-rho.vercel.app/</a>.</p>`
+        : `<p>You can upload these documents by logging into the Faculty Portal at <a href="https://docvault-rho.vercel.app/" style="color: #0c4da2; text-decoration: underline;">https://docvault-rho.vercel.app/</a>.</p>`
+      }
       <p>Thank you,</p>
       <p>Course Coordinator Team</p>
+      <br/>
+      <p style="font-size: 12px; color: #888;">Note: This is an automated message. Please do not reply directly to this email.</p>
     </div>
   `;
 
@@ -1069,5 +1079,50 @@ export async function sendRemindersToAllPending(offering_id: string) {
   if (errorCount > 0) {
     msg += ` (${errorCount} failed)`;
   }
+  return { success: true, message: msg };
+}
+
+export async function sendRemindersForComponent(offering_id: string, component_id: string) {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    return {
+      success: false,
+      message: "Email sending failed: SMTP credentials are not configured."
+    };
+  }
+
+  const assignments = await getFacultyAssignments(offering_id);
+  let sentCount = 0;
+  let skippedCount = 0;
+  let errorCount = 0;
+  let lastErrorMsg = "";
+
+  for (const assignment of assignments) {
+    if (!assignment.email) continue;
+    try {
+      const res = await sendReminderEmail(offering_id, assignment.id, component_id, "marks");
+      if (res.success && res.message !== "No pending components to remind about.") {
+        sentCount++;
+      } else if (res.skipped) {
+        skippedCount++;
+      } else if (res.success === false) {
+        errorCount++;
+        lastErrorMsg = res.message;
+      }
+    } catch (err) {
+      errorCount++;
+      lastErrorMsg = err instanceof Error ? err.message : "Unknown error";
+    }
+  }
+
+  if (sentCount === 0 && errorCount > 0) {
+    return { success: false, message: `Failed to send reminders: ${lastErrorMsg}` };
+  }
+  if (sentCount === 0 && errorCount === 0 && skippedCount === 0) {
+    return { success: false, message: "No pending faculties found." };
+  }
+
+  let msg = `Sent ${sentCount} reminders.`;
+  if (skippedCount > 0) msg += ` (${skippedCount} skipped)`;
+  if (errorCount > 0) msg += ` (${errorCount} failed)`;
   return { success: true, message: msg };
 }

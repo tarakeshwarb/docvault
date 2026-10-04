@@ -30,7 +30,7 @@ export async function sendEmail({
   });
 
   const mailOptions = {
-    from: `"Main Coordinator Portal" <${user}>`,
+    from: `"no-reply Doc Vault" <${user}>`,
     to: to,
     subject: subject,
     html: html,

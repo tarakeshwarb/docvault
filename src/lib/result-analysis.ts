@@ -222,6 +222,8 @@ function addWorksheet(wb: ExcelJS.Workbook, input: ResultAnalysisInput) {
 
   ws.getCell("H40").value = "Signature of Staff In Charge";
   ws.getCell("H40").font = { bold: true };
+  ws.getCell("H43").value = `(${input.staffName})`;
+  ws.getCell("H43").font = { bold: true };
 }
 
 export async function generateResultAnalysisXlsx(
@@ -655,6 +657,19 @@ function addPdfPage(pdf: PDFDocument, font: PDFFont, fontBold: PDFFont, input: R
   page.drawText("Signature of Staff In Charge", {
     x: 360,
     y: 90,
+    size: 9,
+    font: fontBold,
+    color: rgb(...INK),
+  });
+  
+  const signatureWidth = fontBold.widthOfTextAtSize("Signature of Staff In Charge", 9);
+  const nameLabel = `(${input.staffName})`;
+  const nameWidth = fontBold.widthOfTextAtSize(nameLabel, 9);
+  const nameX = 360 + (signatureWidth - nameWidth) / 2;
+
+  page.drawText(nameLabel, {
+    x: nameX,
+    y: 60,
     size: 9,
     font: fontBold,
     color: rgb(...INK),

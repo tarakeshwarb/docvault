@@ -195,9 +195,11 @@ export async function createOfferingComponent(
 /** Components available for an offering (for the faculty to pick). */
 export async function getComponentsForOffering(
   offering_id: string
-): Promise<Array<{ component_id: string; component_name: string }>> {
-  return queryDb<{ component_id: string; component_name: string }>(
-    `SELECT cm.component_id, cm.component_name
+): Promise<Array<{ component_id: string; component_name: string; submitted_sections?: number; total_sections?: number }>> {
+  return queryDb<{ component_id: string; component_name: string; submitted_sections: number; total_sections: number }>(
+    `SELECT cm.component_id, cm.component_name,
+        (SELECT COUNT(*) FROM public.result_analysis ra WHERE ra.component_id = cm.component_id AND ra.offering_id = co.offering_id) as submitted_sections,
+        (SELECT COUNT(DISTINCT fa.id) FROM public.faculty_assignment fa WHERE fa.offering_id = co.offering_id) as total_sections
      FROM public.component_main cm
      JOIN public.course_master c_master ON cm.course_code = c_master.course_code
      JOIN public.course_offering co ON co.course_id = c_master.course_id

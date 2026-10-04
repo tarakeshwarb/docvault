@@ -1,20 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { LayoutDashboard, CheckCircle2, Users, BarChart3 } from "lucide-react";
+import { LayoutDashboard, CheckCircle2, Users, BarChart3, MessageSquare } from "lucide-react";
 
 export function OfferingTabs({
   overviewContent,
   facultyContent,
   trackingContent,
   resultAnalysisContent,
+  officialRemarksContent,
 }: {
   overviewContent: React.ReactNode;
   facultyContent: React.ReactNode;
   trackingContent: React.ReactNode;
   resultAnalysisContent?: React.ReactNode;
+  officialRemarksContent?: React.ReactNode;
 }) {
-  const [activeTab, setActiveTab] = useState<"overview" | "faculty" | "tracking" | "result-analysis">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "faculty" | "tracking" | "result-analysis" | "official-remarks">("overview");
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -24,6 +26,8 @@ export function OfferingTabs({
         setActiveTab("faculty");
       } else if (window.location.hash === "#result-analysis") {
         setActiveTab("result-analysis");
+      } else if (window.location.hash === "#official-remarks") {
+        setActiveTab("official-remarks");
       } else {
         setActiveTab("overview");
       }
@@ -96,6 +100,22 @@ export function OfferingTabs({
               Result Analysis
             </button>
           )}
+          {officialRemarksContent && (
+            <button
+              onClick={() => {
+                setActiveTab("official-remarks");
+                window.history.replaceState(null, "", "#official-remarks");
+              }}
+              className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
+                activeTab === "official-remarks"
+                  ? "border-[var(--color-accent)] text-[var(--color-accent)]"
+                  : "border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              <MessageSquare className="w-4 h-4" />
+              Official Remarks
+            </button>
+          )}
         </nav>
       </div>
 
@@ -112,6 +132,11 @@ export function OfferingTabs({
         {resultAnalysisContent && (
           <div className={activeTab === "result-analysis" ? "block" : "hidden"}>
             {resultAnalysisContent}
+          </div>
+        )}
+        {officialRemarksContent && (
+          <div className={activeTab === "official-remarks" ? "block" : "hidden"}>
+            {officialRemarksContent}
           </div>
         )}
       </div>

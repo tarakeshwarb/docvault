@@ -29,10 +29,14 @@ export async function getGlobalResultAnalysisData(offeringId: string) {
     const components = await queryDb<{
       component_id: string;
       component_name: string;
+      submitted_sections: number;
+      total_sections: number;
     }>(
       `SELECT DISTINCT ON (cmp.component_id)
         cmp.component_id,
-        cmp.component_name
+        cmp.component_name,
+        (SELECT COUNT(*) FROM public.result_analysis ra WHERE ra.component_id = cmp.component_id AND ra.offering_id = co.offering_id) as submitted_sections,
+        (SELECT COUNT(DISTINCT fa.id) FROM public.faculty_assignment fa WHERE fa.offering_id = co.offering_id) as total_sections
       FROM public.component_main cmp
       JOIN public.course_master c_master ON cmp.course_code = c_master.course_code
       JOIN public.course_offering co ON co.course_id = c_master.course_id

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Download, Loader2, CheckSquare, Square, FileSpreadsheet } from "lucide-react";
-
+import { SendComponentReminderButton } from "@/components/coordinator/SendComponentReminderButton";
 
 export function CoordinatorResultAnalysis({
   offeringId,
@@ -153,7 +153,8 @@ export function CoordinatorResultAnalysis({
                 </button>
               </th>
               <th className="px-4 py-3 font-semibold text-gray-500">Component Name</th>
-              <th className="px-4 py-3 font-semibold text-gray-500 text-right">Added On</th>
+              <th className="px-4 py-3 font-semibold text-gray-500 text-center">Submission Status</th>
+              <th className="px-4 py-3 w-28 text-right font-semibold text-gray-500">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-black/5">
@@ -171,8 +172,15 @@ export function CoordinatorResultAnalysis({
                     </button>
                   </td>
                   <td className="px-4 py-3 font-medium text-gray-900">{c.component_name}</td>
-                  <td className="px-4 py-3 text-right text-gray-500">
-                    {new Date(c.created_at).toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric' })}
+                  <td className="px-4 py-3 text-center">
+                    <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                      {c.submitted_sections || 0} / {c.total_sections || 0} Submitted
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {(c.submitted_sections || 0) < (c.total_sections || 0) && (
+                      <SendComponentReminderButton offering_id={offeringId} component_id={c.component_id} />
+                    )}
                   </td>
                 </tr>
               );
