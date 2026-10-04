@@ -82,7 +82,7 @@ export async function POST(request: Request) {
 
     if (matched.role === "developer") {
       hasRole = true;
-      finalRole = "developer";
+      // Allow developer to assume the selected role rather than forcing "developer" session
     } else if (matched.role === selectedRole) {
       hasRole = true;
     } else if (selectedRole === "admin" || selectedRole === "hod") {

@@ -8,8 +8,11 @@ export default async function Header() {
   const session = await getFacultySession();
   let assignedRoles = session ? await getUserAssignedRoles(session.faculty_id) : [];
 
+  // Fix stale 'developer' sessions by mapping them to 'admin'
+  const effectiveRole = session?.role === "developer" ? "admin" : session?.role;
+
   // Ensure current active role is always in assignedRoles
-  if (session && !assignedRoles.some((r) => r.role === session.role)) {
+  if (session && effectiveRole && !assignedRoles.some((r) => r.role === effectiveRole)) {
     const roleLabels: Record<string, string> = {
       admin: "Admin",
       hod: "HoD/AC/Chair",
@@ -17,7 +20,6 @@ export default async function Header() {
       dept_coordinator: "Dept Coord.",
       faculty: "Faculty",
       audit: "Audit",
-      developer: "Developer",
     };
     const rolePaths: Record<string, string> = {
       admin: "/admin",
@@ -26,12 +28,11 @@ export default async function Header() {
       dept_coordinator: "/dept-coordinator",
       faculty: "/faculty",
       audit: "/audit",
-      developer: "/admin",
     };
     assignedRoles.unshift({
-      role: session.role,
-      label: roleLabels[session.role] ?? session.role,
-      path: rolePaths[session.role] ?? "/faculty",
+      role: effectiveRole as any,
+      label: roleLabels[effectiveRole] ?? effectiveRole,
+      path: rolePaths[effectiveRole] ?? "/faculty",
     });
   }
 
@@ -58,7 +59,7 @@ export default async function Header() {
 
               <ProfileRoleDropdown
                 facultyName={session.faculty_name}
-                currentRole={session.role}
+                currentRole={effectiveRole as any}
                 assignedRoles={assignedRoles}
               />
 
