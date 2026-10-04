@@ -27,16 +27,13 @@ export default async function DeptCoordinatorLayout({
   }
 
   // Strict role isolation: only dept_coordinator, main_coordinator, admin, and developer can access this portal
-  if (session.role !== "dept_coordinator" && session.role !== "main_coordinator" && session.role !== "admin" && session.role !== "developer") {
+  if (
+    session.role !== "dept_coordinator" &&
+    session.role !== "main_coordinator" &&
+    session.role !== "admin" &&
+    session.role !== "developer"
+  ) {
     redirect("/");
-  }
-
-  // Double-check they still have an active offering
-  if (session.role !== "admin" && session.role !== "developer") {
-    const offerings = await getCoordinatorOfferings(session.faculty_id);
-    if (offerings.length === 0) {
-      redirect("/"); // Send back to login if they lost access
-    }
   }
 
   return (

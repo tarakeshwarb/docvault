@@ -12,6 +12,7 @@ import {
   getComponentMasters,
   getAllFacultyForAssignment,
   getCoordinatorOfferings,
+  getCoordinatorOfferingById,
   getCourseBroadcasts,
   getDeptCoordinatorDeptId,
   getAllComponentReviewers,
@@ -103,7 +104,10 @@ export default async function OfferingDetailPage({
       getComponentsForOffering(offering_id),
     ]);
 
-  const offering = offerings.find((o) => o.offering_id === offering_id);
+  let offering = offerings.find((o) => o.offering_id === offering_id);
+  if (!offering) {
+    offering = (await getCoordinatorOfferingById(offering_id)) ?? undefined;
+  }
   if (!offering) notFound();
 
   const trackedComponents = components;

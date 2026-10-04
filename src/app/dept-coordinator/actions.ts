@@ -84,7 +84,7 @@ type OfferingSummary = {
 
 export async function getCoordinatorOfferings(faculty_id: number): Promise<CoordinatorOffering[]> {
   try {
-    return await queryDb<CoordinatorOffering>(`
+    const res = await queryDb<CoordinatorOffering>(`
       WITH offering_ids AS (
         SELECT ca.offering_id
         FROM public.main_coordinator_assignment ca
@@ -110,10 +110,20 @@ export async function getCoordinatorOfferings(faculty_id: number): Promise<Coord
       WHERE sm.is_active = true
       ORDER BY ay.start_date DESC, sm.semester_name, cm.course_code
     `, [faculty_id]);
-  } catch (error) {
-    // Fallback to query without dept_coordinator_assignment if table doesn't exist
-    console.warn("dept_coordinator_assignment table not found, using fallback query");
-    return queryDb<CoordinatorOffering>(`
+
+    if (res.length > 0) return res;
+
+    // Fallback: If no offerings found with sm.is_active = true, return without active filter
+    return await queryDb<CoordinatorOffering>(`
+      WITH offering_ids AS (
+        SELECT ca.offering_id
+        FROM public.main_coordinator_assignment ca
+        WHERE ca.faculty_id = $1
+        UNION
+        SELECT sca.offering_id
+        FROM public.dept_coordinator_assignment sca
+        WHERE sca.faculty_id = $1
+      )
       SELECT DISTINCT
         co.offering_id,
         cm.course_code,
@@ -122,14 +132,45 @@ export async function getCoordinatorOfferings(faculty_id: number): Promise<Coord
         sm.semester_name,
         ay.year_name,
         ay.start_date
-      FROM public.main_coordinator_assignment ca
-      JOIN public.course_offering co ON ca.offering_id = co.offering_id
+      FROM offering_ids oi
+      JOIN public.course_offering co ON oi.offering_id = co.offering_id
       JOIN public.course_master cm ON co.course_id = cm.course_id
       JOIN public.semester_master sm ON co.semester_id = sm.semester_id
       JOIN public.academic_year ay ON sm.year_id = ay.year_id
-      WHERE ca.faculty_id = $1 AND sm.is_active = true
       ORDER BY ay.start_date DESC, sm.semester_name, cm.course_code
     `, [faculty_id]);
+  } catch (error) {
+    // Fallback to query with secondary_coordinator_assignment or coordinator_assignment
+    console.warn("dept_coordinator_assignment query failed, using fallback query:", error);
+    try {
+      return await queryDb<CoordinatorOffering>(`
+        WITH offering_ids AS (
+          SELECT ca.offering_id
+          FROM public.main_coordinator_assignment ca
+          WHERE ca.faculty_id = $1
+          UNION
+          SELECT sca.offering_id
+          FROM public.secondary_coordinator_assignment sca
+          WHERE sca.faculty_id = $1
+        )
+        SELECT DISTINCT
+          co.offering_id,
+          cm.course_code,
+          cm.course_name,
+          cm.credits,
+          sm.semester_name,
+          ay.year_name,
+          ay.start_date
+        FROM offering_ids oi
+        JOIN public.course_offering co ON oi.offering_id = co.offering_id
+        JOIN public.course_master cm ON co.course_id = cm.course_id
+        JOIN public.semester_master sm ON co.semester_id = sm.semester_id
+        JOIN public.academic_year ay ON sm.year_id = ay.year_id
+        ORDER BY ay.start_date DESC, sm.semester_name, cm.course_code
+      `, [faculty_id]);
+    } catch {
+      return [];
+    }
   }
 }
 
@@ -141,7 +182,15 @@ export async function getDeptCoordinatorDeptId(faculty_id: number, offering_id: 
     );
     return rows[0]?.department_id ?? null;
   } catch {
-    return null;
+    try {
+      const rows = await queryDb<{ department_id: string }>(
+        `SELECT department_id FROM public.secondary_coordinator_assignment WHERE faculty_id = $1 AND offering_id = $2 LIMIT 1`,
+        [faculty_id, offering_id]
+      );
+      return rows[0]?.department_id ?? null;
+    } catch {
+      return null;
+    }
   }
 }
 
@@ -259,6 +308,27 @@ export async function getGeneratedReports(offering_id: string): Promise<Generate
     WHERE gr.offering_id = $1
     ORDER BY gr.generated_at DESC
   `, [offering_id]);
+}
+
+export async function getCoordinatorOfferingById(offering_id: string): Promise<CoordinatorOffering | null> {
+  const rows = await queryDb<CoordinatorOffering>(`
+    SELECT
+      co.offering_id,
+      cm.course_code,
+      cm.course_name,
+      cm.credits,
+      sm.semester_name,
+      ay.year_name,
+      ay.start_date
+    FROM public.course_offering co
+    JOIN public.course_master cm ON co.course_id = cm.course_id
+    JOIN public.semester_master sm ON co.semester_id = sm.semester_id
+    JOIN public.academic_year ay ON sm.year_id = ay.year_id
+    WHERE co.offering_id = $1
+    LIMIT 1
+  `, [offering_id]);
+
+  return rows[0] ?? null;
 }
 
 async function getOfferingSummary(offering_id: string): Promise<OfferingSummary | null> {
