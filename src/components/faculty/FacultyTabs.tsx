@@ -4,17 +4,15 @@ import { useState, useEffect } from "react";
 import { LayoutDashboard, FileStack, BarChart3, CheckCircle2 } from "lucide-react";
 
 export function FacultyTabs({
-  overviewContent,
   submissionsContent,
   resultsContent,
   reviewsContent,
 }: {
-  overviewContent: React.ReactNode;
   submissionsContent: React.ReactNode;
   resultsContent: React.ReactNode;
   reviewsContent?: React.ReactNode;
 }) {
-  const [activeTab, setActiveTab] = useState<"overview" | "submissions" | "results" | "reviews">("overview");
+  const [activeTab, setActiveTab] = useState<"submissions" | "results" | "reviews">("submissions");
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -25,7 +23,7 @@ export function FacultyTabs({
       } else if (window.location.hash === "#reviews" && reviewsContent) {
         setActiveTab("reviews");
       } else {
-        setActiveTab("overview");
+        setActiveTab("submissions");
       }
     };
 
@@ -40,20 +38,6 @@ export function FacultyTabs({
         <nav className="-mb-px flex gap-6" aria-label="Tabs">
           <button
             onClick={() => {
-              setActiveTab("overview");
-              window.location.hash = "overview";
-            }}
-            className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
-              activeTab === "overview"
-                ? "border-[var(--color-accent)] text-[var(--color-accent)]"
-                : "border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300"
-            }`}
-          >
-            <LayoutDashboard className="w-4 h-4" />
-            Overview
-          </button>
-          <button
-            onClick={() => {
               setActiveTab("submissions");
               window.location.hash = "submissions";
             }}
@@ -64,7 +48,7 @@ export function FacultyTabs({
             }`}
           >
             <FileStack className="w-4 h-4" />
-            Submissions
+            Documents / Submissions
           </button>
           <button
             onClick={() => {
@@ -100,9 +84,6 @@ export function FacultyTabs({
       </div>
 
       <div className="pt-2 animate-in fade-in duration-500">
-        <div className={activeTab === "overview" ? "block" : "hidden"}>
-          {overviewContent}
-        </div>
         <div className={activeTab === "submissions" ? "block" : "hidden"}>
           {submissionsContent}
         </div>

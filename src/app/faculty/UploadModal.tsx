@@ -96,6 +96,7 @@ export function UploadModal({
       }
     }
 
+    setIsOpen(false);
     setUploading(true);
     setError(null);
 
@@ -162,13 +163,21 @@ export function UploadModal({
     <>
       <button
         onClick={() => setIsOpen(true)}
+        disabled={uploading}
         className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-          isSubmitted
+          uploading
+            ? "border-amber-300 text-amber-700 bg-amber-50 cursor-not-allowed"
+            : isSubmitted
             ? "border-[var(--color-accent)] text-[var(--color-accent)] hover:bg-[var(--color-accent)] hover:text-white"
             : "border-gray-300 text-gray-700 hover:bg-gray-100"
         }`}
       >
-        {isSubmitted ? (
+        {uploading ? (
+          <>
+            <Loader2 className="w-3 h-3 animate-spin" />
+            Uploading...
+          </>
+        ) : isSubmitted ? (
           <>
             <Upload className="w-3 h-3" />
             Manage Files

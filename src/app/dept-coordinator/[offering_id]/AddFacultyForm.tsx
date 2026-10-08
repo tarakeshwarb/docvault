@@ -4,7 +4,8 @@ import { useState, useRef } from "react";
 import { addFacultyAssignments, bulkAddFacultyAssignments, parseAssignmentExcel, type ExcelParsedResult } from "../actions";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { SearchableMultiSelect } from "@/components/ui/searchable-multi-select";
-import { UserPlus, Loader2, Upload, FileSpreadsheet, X, CheckCircle2, AlertCircle } from "lucide-react";
+import { UserPlus, Loader2, Upload, FileSpreadsheet, X, CheckCircle2, AlertCircle, Download } from "lucide-react";
+import * as XLSX from "xlsx";
 
 type Faculty = { faculty_id: number; faculty_name: string; designation: string; role: string; email: string };
 type Section = { section_id: string; section_name: string };
@@ -92,15 +93,21 @@ export function AddFacultyForm({
 
   async function handleBulkSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const validFaculties = parsedResults.filter(r => !r.error && r.faculty_id && r.section_name);
-    if (validFaculties.length === 0) return setError("No valid faculties to assign.");
+    
+    // Check if ANY row has an error or is missing data
+    const hasErrors = parsedResults.some(r => r.error || !r.faculty_id || !r.section_name);
+    if (hasErrors) {
+      return setError("Cannot assign faculties. Please resolve all errors before submitting.");
+    }
+
+    if (parsedResults.length === 0) return setError("No valid faculties to assign.");
     
     setError(null);
     setLoading(true);
     try {
       await bulkAddFacultyAssignments({
         offering_id,
-        assignments: validFaculties.map(f => ({
+        assignments: parsedResults.map(f => ({
           faculty_id: f.faculty_id,
           section_name: f.section_name!,
           batch: f.batch || 1
@@ -115,6 +122,22 @@ export function AddFacultyForm({
       setLoading(false);
     }
   }
+
+  const handleDownloadTemplate = () => {
+    const ws = XLSX.utils.json_to_sheet([
+      {
+        "S.No": 1,
+        "Faculty ID": 103905,
+        "Email ID": "sheebar1@srmist.edu.in",
+        "Section/Classroom": "AE1",
+        "Batch": 1,
+      },
+    ]);
+    ws['!cols'] = [{ wch: 8 }, { wch: 15 }, { wch: 30 }, { wch: 20 }, { wch: 10 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Template");
+    XLSX.writeFile(wb, "Faculty_Assignment_Template.xlsx");
+  };
 
   function handleRowChange(index: number, field: "faculty_id" | "section_name" | "batch", value: string) {
     const newResults = [...parsedResults];
@@ -244,13 +267,23 @@ export function AddFacultyForm({
                     className="hidden"
                     id="excel-upload"
                   />
-                  <label
-                    htmlFor="excel-upload"
-                    className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-white border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[var(--color-accent)] transition-colors shadow-sm"
-                  >
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                    Browse Excel File
-                  </label>
+                  <div className="flex items-center justify-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleDownloadTemplate}
+                      className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download Format
+                    </button>
+                    <label
+                      htmlFor="excel-upload"
+                      className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[var(--color-ink)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-ink)]/90 transition-colors shadow-sm"
+                    >
+                      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      Browse Excel File
+                    </label>
+                  </div>
                 </div>
               ) : (
                 <div className="border border-gray-200 rounded-xl overflow-hidden">
@@ -328,7 +361,7 @@ export function AddFacultyForm({
                 </button>
                 <button
                   type="submit"
-                  disabled={loading || parsedResults.length === 0}
+                  disabled={loading || parsedResults.length === 0 || parsedResults.some(r => r.error || !r.faculty_id || !r.section_name)}
                   className="inline-flex items-center gap-2 rounded-full bg-[var(--color-ink)] px-6 py-2 text-sm font-medium text-white disabled:opacity-50 hover:bg-[var(--color-ink)]/80 transition-colors"
                 >
                   {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}

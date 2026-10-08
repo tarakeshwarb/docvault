@@ -15,6 +15,7 @@ import {
   Save,
   CheckCircle2,
   AlertCircle,
+  Plus,
 } from "lucide-react";
 
 const RANGE_LABELS = ["0-49", "50-59", "60-69", "70-79", "80-89", "90-100"];
@@ -142,8 +143,8 @@ export function ResultAnalysisModal({
         onClick={() => setIsOpen(true)}
         className="inline-flex items-center gap-2 rounded-full border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100 hover:border-blue-400"
       >
-        <BarChart3 className="w-3 h-3" />
-        Result Analysis
+        <Plus className="w-3 h-3" />
+        Add New
       </button>
 
       {isOpen && typeof document !== "undefined" &&

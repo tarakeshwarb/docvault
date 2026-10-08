@@ -50,9 +50,9 @@ function StatusBadge({ status, deadline }: { status: string; deadline: string | 
       </span>
     );
   return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
-        <Clock className="w-3 h-3" /> Pending
-      </span>
+    <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+      <Clock className="w-3 h-3" /> Pending
+    </span>
   );
 }
 
@@ -80,7 +80,7 @@ export default async function FacultyCoursePage({
     : [];
 
   const course = allCourses.find((c) => c.offering_id === offering_id);
-  
+
   if (!course) {
     notFound();
   }
@@ -92,7 +92,7 @@ export default async function FacultyCoursePage({
   const submitted = submissions.filter(
     (s: PendingSubmission) => s.status === "submitted" || s.status === "approved"
   );
-  
+
   // Group submissions by section (a faculty might teach multiple sections of the same course)
   const grouped = submissions.reduce(
     (acc, s: PendingSubmission) => {
@@ -147,7 +147,7 @@ export default async function FacultyCoursePage({
             </h1>
           </div>
         </div>
-        
+
         {/* Course Stats */}
         <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
@@ -173,74 +173,40 @@ export default async function FacultyCoursePage({
       </div>
 
 
-        {/* Faculty Tabs Structure */}
-        <div className="mt-8">
-          <FacultyTabs
-            overviewContent={
-              <div className="space-y-8">
-                {/* Course Materials / Broadcasts */}
-                <div id="broadcasts" className="space-y-4">
-                  <h2 className="text-lg font-semibold text-[var(--color-ink)] mb-4 flex items-center gap-2">
-                    <Megaphone className="w-5 h-5 text-[var(--color-accent)]" />
-                    Course Materials & Broadcasts
-                  </h2>
+      {/* Faculty Tabs Structure */}
+      <div className="mt-8">
+        <FacultyTabs
+          submissionsContent={
+            <div className="space-y-8">
+              {/* Course Materials / Broadcasts */}
+              <div id="broadcasts" className="space-y-4">
+                <h2 className="text-lg font-semibold text-[var(--color-ink)] mb-4 flex items-center gap-2">
+                  <Megaphone className="w-5 h-5 text-[var(--color-accent)]" />
+                  Course Materials & Broadcasts
+                </h2>
 
-                  {broadcasts.length === 0 ? (
-                    <div className="panel-card border-dashed border-gray-300 py-[30px] px-5 text-center">
-                      <p className="text-sm text-gray-500">No course materials have been broadcasted for this course.</p>
-                    </div>
-                  ) : (
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                      {broadcasts.map((b) => (
-                        <BroadcastCard
-                          key={b.broadcast_id}
-                          broadcast={{
-                            ...b,
-                            course_code: course.course_code,
-                          }}
-                          baseUrl={process.env.R2_PUBLIC_BASE_URL!}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-
-                {/* Upcoming deadlines */}
-                {pending.length > 0 && (
-                  <div className="panel-card p-5">
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-muted)]">
-                          Priority queue
-                        </p>
-                        <h2 className="mt-1 text-lg font-semibold text-[var(--color-ink)]">Upcoming submissions</h2>
-                      </div>
-                      <p className="text-xs text-gray-400">Sorted by deadline</p>
-                    </div>
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                      {pending.slice(0, 6).map((submission) => (
-                        <div key={submission.submission_id} className="panel-card bg-slate-50/70 p-4">
-                          <div className="flex items-center justify-between gap-3">
-                            <p className="text-sm font-semibold text-[var(--color-ink)]">{submission.component_name}</p>
-                            <StatusBadge status={submission.status} deadline={submission.deadline} />
-                          </div>
-                          <p className="mt-2 text-xs text-gray-500">
-                            Section {submission.section_name}
-                          </p>
-                          <p className="mt-1 text-xs text-gray-400">
-                            Deadline: {submission.deadline ? formatDate(submission.deadline) : "No deadline set"}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
+                {broadcasts.length === 0 ? (
+                  <div className="panel-card border-dashed border-gray-300 py-[30px] px-5 text-center">
+                    <p className="text-sm text-gray-500">No course materials have been broadcasted for this course.</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {broadcasts.map((b) => (
+                      <BroadcastCard
+                        key={b.broadcast_id}
+                        broadcast={{
+                          ...b,
+                          course_code: course.course_code,
+                        }}
+                        baseUrl={process.env.R2_PUBLIC_BASE_URL!}
+                      />
+                    ))}
                   </div>
                 )}
               </div>
-            }
-            submissionsContent={
+
               <div className="space-y-4">
-                <h2 className="text-lg font-semibold text-[var(--color-ink)] mb-4">Course Sections</h2>
+                <h2 className="text-lg font-semibold text-[var(--color-ink)] mb-4">Submissions</h2>
                 {grouped.size === 0 ? (
                   <div className="panel-card p-5 text-center">
                     <p className="text-sm text-gray-500">
@@ -325,64 +291,65 @@ export default async function FacultyCoursePage({
                   ))
                 )}
               </div>
-            }
-            resultsContent={
-              <div className="space-y-6">
-                <h2 className="text-lg font-semibold text-[var(--color-ink)]">Result Upload & Analysis</h2>
-                {grouped.size === 0 ? (
-                  <div className="panel-card p-5 text-center">
-                    <p className="text-sm text-gray-500">
-                      No sections are available for result analysis yet.
-                    </p>
-                  </div>
-                ) : (
-                  Array.from(grouped.entries()).map(([sectionName, group]) => {
-                    if (!group.items[0]) return null;
-                    const assignmentId = group.items[0].faculty_assignment_id;
-                    return (
-                      <div key={sectionName} className="panel-card p-5 space-y-5">
-                        {/* Section header + open modal button */}
-                        <div className="flex flex-wrap items-center gap-3">
-                          <span className="inline-flex items-center rounded-md bg-[var(--color-accent)]/10 px-2 py-1 text-xs font-bold text-[var(--color-accent)] ring-1 ring-inset ring-[var(--color-accent)]/20">
-                            Section {sectionName}
-                          </span>
-                          <div className="ml-auto">
-                            <ResultAnalysisModal
-                              offeringId={group.offeringId}
-                              facultyAssignmentId={assignmentId}
-                              sectionName={sectionName}
-                              courseCode={group.courseCode}
-                              courseName={group.courseName}
-                            />
-                          </div>
+            </div>
+          }
+          resultsContent={
+            <div className="space-y-6">
+              <h2 className="text-lg font-semibold text-[var(--color-ink)]">Result Upload & Analysis</h2>
+              {grouped.size === 0 ? (
+                <div className="panel-card p-5 text-center">
+                  <p className="text-sm text-gray-500">
+                    No sections are available for result analysis yet.
+                  </p>
+                </div>
+              ) : (
+                Array.from(grouped.entries()).map(([sectionName, group]) => {
+                  if (!group.items[0]) return null;
+                  const assignmentId = group.items[0].faculty_assignment_id;
+                  return (
+                    <div key={sectionName} className="panel-card p-5 space-y-5">
+                      {/* Section header + open modal button */}
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="inline-flex items-center rounded-md bg-[var(--color-accent)]/10 px-2 py-1 text-xs font-bold text-[var(--color-accent)] ring-1 ring-inset ring-[var(--color-accent)]/20">
+                          Section {sectionName}
+                        </span>
+                        <div className="ml-auto">
+                          <ResultAnalysisModal
+                            offeringId={group.offeringId}
+                            facultyAssignmentId={assignmentId}
+                            sectionName={sectionName}
+                            courseCode={group.courseCode}
+                            courseName={group.courseName}
+                          />
                         </div>
-                        {/* Saved data summary table */}
-                        <ResultAnalysisSummary
-                          offeringId={group.offeringId}
-                          facultyAssignmentId={assignmentId}
-                          courseCode={group.courseCode}
-                          courseName={group.courseName}
-                          sectionName={sectionName}
-                        />
                       </div>
-                    );
-                  })
-                )}
-              </div>
-            }
-            reviewsContent={
-              reviewerComponents.length > 0 ? (
-                <FacultyReviewSubmissions
-                  components={reviewerComponents}
-                  submissions={reviewerSubmissions}
-                  facultyId={session.faculty_id}
-                  baseUrl={process.env.R2_PUBLIC_BASE_URL}
-                  offeringId={offering_id}
-                />
-              ) : undefined
-            }
-          />
-        </div>
+                      {/* Saved data summary table */}
+                      <ResultAnalysisSummary
+                        offeringId={group.offeringId}
+                        facultyAssignmentId={assignmentId}
+                        courseCode={group.courseCode}
+                        courseName={group.courseName}
+                        sectionName={sectionName}
+                      />
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          }
+          reviewsContent={
+            reviewerComponents.length > 0 ? (
+              <FacultyReviewSubmissions
+                components={reviewerComponents}
+                submissions={reviewerSubmissions}
+                facultyId={session.faculty_id}
+                baseUrl={process.env.R2_PUBLIC_BASE_URL}
+                offeringId={offering_id}
+              />
+            ) : undefined
+          }
+        />
+      </div>
     </div>
   );
 }

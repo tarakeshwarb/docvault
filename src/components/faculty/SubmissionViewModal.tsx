@@ -88,15 +88,18 @@ export function FacultySubmissionViewModal({
             : "bg-amber-50 text-amber-700 ring-amber-600/20 hover:bg-amber-100"
         }`}
         title="View uploaded files"
+        disabled={loading}
       >
-        {isApproved ? (
+        {loading ? (
+          <Loader2 className="w-3 h-3 animate-spin" />
+        ) : isApproved ? (
           <ShieldCheck className="w-3 h-3" />
         ) : isRejected ? (
           <X className="w-3 h-3" />
         ) : (
           <Eye className="w-3 h-3" />
         )}
-        View Files
+        {loading ? "Loading..." : "View Files"}
       </button>
 
       {isOpen &&
@@ -201,16 +204,21 @@ export function FacultySubmissionViewModal({
 
 
                     <div className="flex-1 overflow-hidden relative">
-                      {currentFile &&
-                        (() => {
-                          const { isImage, isPreviewable, previewSrc } = getPreviewData(
-                            currentFile.s3_object_key,
-                            baseUrl
-                          );
+                      {files.map((file, idx) => {
+                        const { isImage, isPreviewable, previewSrc } = getPreviewData(
+                          file.s3_object_key,
+                          baseUrl
+                        );
+                        
+                        const isVisible = selectedFileIndex === idx;
 
-                          if (!isPreviewable) {
-                            return (
-                              <div className="flex h-full flex-col items-center justify-center gap-2">
+                        return (
+                          <div 
+                            key={file.file_id}
+                            className={`w-full h-full ${isVisible ? 'block' : 'hidden'}`}
+                          >
+                            {!isPreviewable ? (
+                              <div className="flex h-full flex-col items-center justify-center gap-2 bg-white">
                                 <FileText className="w-10 h-10 text-gray-300" />
                                 <p className="text-sm text-gray-500">
                                   Preview not available for this file type.
@@ -219,30 +227,25 @@ export function FacultySubmissionViewModal({
                                   Please download the file to view it.
                                 </p>
                               </div>
-                            );
-                          }
-
-                          if (isImage) {
-                            return (
-                              <div className="flex-1 flex items-center justify-center w-full h-full overflow-hidden p-4">
+                            ) : isImage ? (
+                              <div className="flex-1 flex items-center justify-center w-full h-full overflow-hidden p-4 bg-white">
                                 <img
                                   src={previewSrc}
-                                  alt={currentFile.file_name}
+                                  alt={file.file_name}
                                   className="max-w-full max-h-full object-contain rounded-lg shadow-sm"
                                 />
                               </div>
-                            );
-                          }
-
-                          return (
-                            <iframe
-                              src={previewSrc}
-                              className="w-full h-full border-0 bg-white"
-                              title="Document Preview"
-                              allowFullScreen
-                            />
-                          );
-                        })()}
+                            ) : (
+                              <iframe
+                                src={previewSrc}
+                                className="w-full h-full border-0 bg-white"
+                                title={`Document Preview ${idx}`}
+                                allowFullScreen
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
