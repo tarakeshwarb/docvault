@@ -9,14 +9,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, message: "Not authenticated." }, { status: 401 });
   }
 
-  const { currentPassword, newPassword, confirmPassword } = (await request.json()) as {
-    currentPassword: string;
-    newPassword: string;
-    confirmPassword: string;
-  };
+  const body = await request.json();
+  const currentPassword = body.currentPassword || "";
+  const newPassword = body.newPassword;
+  const confirmPassword = body.confirmPassword;
 
-  if (!currentPassword || !newPassword || !confirmPassword) {
-    return NextResponse.json({ ok: false, message: "All fields are required." }, { status: 400 });
+  if (!newPassword || !confirmPassword) {
+    return NextResponse.json({ ok: false, message: "New password fields are required." }, { status: 400 });
+  }
+
+  if (!session.must_change_password && !currentPassword) {
+    return NextResponse.json({ ok: false, message: "Current password is required." }, { status: 400 });
   }
 
   if (newPassword !== confirmPassword) {
@@ -45,16 +48,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, message: "Faculty not found." }, { status: 404 });
   }
 
-  // Verify current password
-  let currentValid = false;
-  if (current.password_hash) {
-    currentValid = await bcrypt.compare(currentPassword, current.password_hash);
-  } else {
-    currentValid = currentPassword.toLowerCase() === session.email.toLowerCase();
-  }
+  // Verify current password if required
+  if (!session.must_change_password || currentPassword) {
+    let currentValid = false;
+    if (current.password_hash) {
+      currentValid = await bcrypt.compare(currentPassword, current.password_hash);
+    } else {
+      currentValid = currentPassword.toLowerCase() === session.email.toLowerCase();
+    }
 
-  if (!currentValid) {
-    return NextResponse.json({ ok: false, message: "Current password is incorrect." }, { status: 401 });
+    if (!currentValid) {
+      return NextResponse.json({ ok: false, message: "Current password is incorrect." }, { status: 401 });
+    }
   }
 
   // Hash and save new password

@@ -152,27 +152,29 @@ function ChangePasswordForm() {
             </p>
 
             <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-              {/* Current Password */}
-              <div>
-                <label className="mb-1.5 block text-[13px] font-semibold text-[var(--color-ink)]">
-                  Current password
-                </label>
-                <div className="relative">
-                  <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-400" />
-                  <input
-                    type={showCurrent ? "text" : "password"}
-                    required
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="Your current password"
-                    className={fieldBase}
-                  />
-                  <button type="button" onClick={() => setShowCurrent(!showCurrent)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400 hover:text-gray-600">
-                    {showCurrent ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
-                  </button>
+              {/* Current Password - Hide if forced */}
+              {!isForced && (
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-semibold text-[var(--color-ink)]">
+                    Current password
+                  </label>
+                  <div className="relative">
+                    <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-400" />
+                    <input
+                      type={showCurrent ? "text" : "password"}
+                      required={!isForced}
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="Your current password"
+                      className={fieldBase}
+                    />
+                    <button type="button" onClick={() => setShowCurrent(!showCurrent)}
+                      className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400 hover:text-gray-600">
+                      {showCurrent ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* New Password */}
               <div>
